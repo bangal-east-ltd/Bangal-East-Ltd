@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Secure Login & Register</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: linear-gradient(135deg,#4facfe,#00f2fe); display: flex; justify-content: center; align-items: center; height: 100vh; margin:0; }
+        .container { width: 350px; background: white; padding: 25px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); text-align: center; }
+        .logo { font-size: 50px; margin-bottom: 10px; }
+        .tabs { display: flex; justify-content: space-around; margin-bottom: 20px; }
+        .tabs button { background: none; border: none; font-size: 16px; cursor: pointer; font-weight: bold; color: #555; padding: 5px 10px; border-bottom: 2px solid transparent; }
+        .tabs button.active { border-bottom: 2px solid #e52e71; color: #e52e71; }
+        
+        .input-group { position: relative; width: 100%; }
+        input { width: 100%; padding: 12px; margin: 8px 0; border-radius: 8px; border: 1px solid #ccc; box-sizing: border-box; }
+        .toggle-pass { position: absolute; right: 10px; top: 18px; cursor: pointer; color: #777; font-size: 18px; }
+
+        button.main { width: 100%; padding: 12px; border: none; border-radius: 25px; background: linear-gradient(90deg,#ff8a00,#e52e71); color: white; font-size: 16px; cursor: pointer; margin-top: 10px; }
+        .hidden { display: none; }
+        p { cursor: pointer; color: #ff8a00; margin-top: 15px; font-size: 14px; }
+        #recaptcha-container { margin: 10px 0; }
+
+        /* কাস্টম টোস্ট মেসেজ স্টাইল */
+        #toast {
+            visibility: hidden; min-width: 250px; background-color: #333; color: #fff;
+            text-align: center; border-radius: 8px; padding: 16px; position: fixed;
+            z-index: 9999; left: 50%; bottom: 30px; transform: translateX(-50%); font-size: 14px;
+        }
+        #toast.show { visibility: visible; animation: fadein 0.5s, fadeout 0.5s 2.5s; }
+        @keyframes fadein { from {bottom: 0; opacity: 0;} to {bottom: 30px; opacity: 1;} }
+        @keyframes fadeout { from {bottom: 30px; opacity: 1;} to {bottom: 0; opacity: 0;} }
+    </style>
+</head>
+<body>
+
+<div id="toast"></div>
+
+<div class="container">
+    <div class="logo">🔐</div>
+    <h2 id="pageTitle">Secure Login</h2>
+
+    <div class="tabs">
+        <button id="loginTab" class="active" onclick="showLogin()">Login</button>
+        <button id="regTab" onclick="showRegister()">Register</button>
+    </div>
+
+    <div id="loginPage">
+        <input type="text" id="loginPhone" placeholder="Phone (e.g. 01712xxxxxx)">
+        <div class="input-group">
+            <input type="password" id="loginPass" placeholder="Password">
+            <span class="toggle-pass" onclick="togglePass('loginPass')">👁️</span>
+        </div>
+        <button class="main" onclick="loginUser()">Login</button>
+        <p onclick="showReset()">Forgot password?</p>
+    </div>
+
+    <div id="registerPage" class="hidden">
+        <input type="text" id="regPhone" placeholder="Phone number">
+        <div class="input-group">
+            <input type="password" id="regPass" placeholder="New Password">
+            <span class="toggle-pass" onclick="togglePass('regPass')">👁️</span>
+        </div>
+        <input type="password" id="regConfirm" placeholder="Confirm Password">
+        
+        <div class="input-group">
+            <input type="number" id="referrerInput" placeholder="Refer Code (Optional)">
+        </div>
+
+        <label style="font-size: 12px;">
+            <input type="checkbox" id="agree"> I agree to privacy policy
+        </label>
+        <button class="main" onclick="registerUser()">Register</button>
+    </div>
+
+    <div id="resetPage" class="hidden">
+        <input type="text" id="resetPhone" placeholder="Registered Phone">
+        <div id="recaptcha-container"></div>
+        <button class="main" onclick="sendOTP()">Send OTP</button>
+        <hr>
+        <input type="text" id="otpInput" placeholder="Enter 6-digit OTP">
+        <input type="password" id="newPass" placeholder="Set New Password">
+        <button class="main" onclick="resetPassword()">Update Password</button>
+        <p onclick="showLogin()">Back to Login</p>
+    </div>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getAuth, RecaptchaVerifier, signInWithPhoneNumber } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+    import { getDatabase, ref, set, get, update } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+    
+    // Firestore ইমপোর্ট যোগ করা হয়েছে
+    import { getFirestore, doc, setDoc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+    // Firebase Configuration
+    const firebaseConfig = {
+      apiKey: "AIzaSyAoZ39EQR-Buy6QJT71P2R4wL0RyiOQaAc",
+      authDomain: "ai-signal-75e73.firebaseapp.com",
+      projectId: "ai-signal-75e73",
+      databaseURL: "https://ai-signal-75e73-default-rtdb.firebaseio.com",
+      storageBucket: "ai-signal-75e73.firebasestorage.app",
+      messagingSenderId: "610985325221",
+      appId: "1:610985325221:web:09032de2788a18a6ae534c"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getDatabase(app);
+    
+    // ফায়ারস্টোর ইনিশিয়ালাইজ করা হয়েছে
+    const firestore = getFirestore(app);
+
+    let confirmationResult;
+
+    // কাস্টম টোস্ট ফাংশন
+    window.showToast = function(msg) {
+        const x = document.getElementById("toast");
+        x.innerText = msg;
+        x.className = "show";
+        setTimeout(function(){ x.className = x.className.replace("show", ""); }, 3000);
+    }
+
+    // UI Toggle functions
+    window.togglePass = function(id) {
+        const input = document.getElementById(id);
+        input.type = input.type === "password" ? "text" : "password";
+    }
+
+    window.showRegister = function() {
+        document.getElementById("loginPage").classList.add("hidden");
+        document.getElementById("registerPage").classList.remove("hidden");
+        document.getElementById("resetPage").classList.add("hidden");
+        document.getElementById("pageTitle").innerText = "Create Account";
+        document.getElementById("regTab").classList.add("active");
+        document.getElementById("loginTab").classList.remove("active");
+    }
+
+    window.showLogin = function() {
+        document.getElementById("loginPage").classList.remove("hidden");
+        document.getElementById("registerPage").classList.add("hidden");
+        document.getElementById("resetPage").classList.add("hidden");
+        document.getElementById("pageTitle").innerText = "Secure Login";
+        document.getElementById("loginTab").classList.add("active");
+        document.getElementById("regTab").classList.remove("active");
+    }
+
+    window.showReset = function() {
+        document.getElementById("loginPage").classList.add("hidden");
+        document.getElementById("registerPage").classList.add("hidden");
+        document.getElementById("resetPage").classList.remove("hidden");
+        document.getElementById("pageTitle").innerText = "Reset Password";
+    }
+
+    // Firestore-এ ডাটা সেভ করার পদ্ধতি
+    async function saveToFirestore(phone, pass, refID) {
+        try {
+            await setDoc(doc(firestore, "users", phone), {
+                phone: phone,
+                pass: pass,
+                balance: 0,
+                referrerID: refID || "none",
+                createdAt: new Date().toISOString()
+            });
+            console.log("Firestore-এ ডাটা সেভ হয়েছে।");
+        } catch (e) {
+            console.error("Firestore Error: ", e);
+        }
+    }
+
+    // Login Function
+    window.loginUser = async function() {
+        let phone = document.getElementById("loginPhone").value.trim();
+        let pass = document.getElementById("loginPass").value;
+        
+        if(!phone || !pass) { showToast("Please enter phone and password"); return; }
+
+        try {
+            const userRef = ref(db, "users/" + phone);
+            const snapshot = await get(userRef);
+
+            if (snapshot.exists() && snapshot.val().pass === pass) {
+                localStorage.setItem("isLoggedIn", "true");
+                localStorage.setItem("loggedUser", phone); 
+                localStorage.setItem("userPhone", phone); 
+
+                showToast("Login Successful!");
+                setTimeout(() => { window.location.href = "home.html"; }, 1500);
+            } else { 
+                showToast("Incorrect Phone or Password"); 
+            }
+        } catch (e) { 
+            console.error(e);
+            showToast("Database Error: " + e.message); 
+        }
+    }
+
+    // Register Function
+    window.registerUser = async function() {
+        let phone = document.getElementById("regPhone").value.trim();
+        let pass = document.getElementById("regPass").value;
+        let confirm = document.getElementById("regConfirm").value;
+        let refID = document.getElementById("referrerInput").value;
+        let agree = document.getElementById("agree").checked;
+
+        if(!phone.startsWith("01") || phone.length !== 11) { 
+            showToast("Invalid! Phone must start with 01 and be 11 digits."); 
+            return; 
+        }
+        
+        if(pass !== confirm) { showToast("Passwords do not match"); return; }
+        if(!agree) { showToast("Please agree to privacy policy"); return; }
+
+        try {
+            const userRef = ref(db, "users/" + phone);
+            const checkUser = await get(userRef);
+            if(checkUser.exists()) { showToast("User already registered!"); return; }
+
+            // Realtime Database-এ সেভ হচ্ছে
+            await set(userRef, { 
+                phone: phone, 
+                pass: pass, 
+                balance: 0, 
+                referrerID: refID || "none",
+                createdAt: new Date().toISOString() 
+            });
+
+            // Firestore-এও ডাটা সেভ হচ্ছে
+            await saveToFirestore(phone, pass, refID);
+
+            showToast("Registration Successful! Now Login.");
+            setTimeout(() => { showLogin(); }, 1500);
+        } catch (e) { showToast("Error: " + e.message); }
+    }
+
+    // OTP and Password Reset
+    window.sendOTP = function() {
+        let phoneField = document.getElementById("resetPhone").value.trim();
+        if(!phoneField) { showToast("Enter phone number first"); return; }
+        const phoneNumber = "+88" + phoneField;
+        signInWithPhoneNumber(auth, phoneNumber, window.recaptchaVerifier)
+            .then((result) => { confirmationResult = result; showToast("OTP Sent!"); })
+            .catch((error) => { showToast("Error: " + error.message); });
+    }
+
+    window.resetPassword = function() {
+        const code = document.getElementById("otpInput").value.trim();
+        const newPass = document.getElementById("newPass").value;
+        const phone = document.getElementById("resetPhone").value.trim();
+        if(!confirmationResult) { showToast("Send OTP first"); return; }
+        
+        confirmationResult.confirm(code).then(async () => {
+            const userRef = ref(db, "users/" + phone);
+            await update(userRef, { pass: newPass });
+            
+            // Firestore-এও পাসওয়ার্ড আপডেট করা হচ্ছে
+            const fsUserRef = doc(firestore, "users", phone);
+            await updateDoc(fsUserRef, { pass: newPass });
+
+            showToast("Password Updated!");
+            setTimeout(() => { showLogin(); }, 1500);
+        }).catch(() => showToast("Invalid OTP"));
+    }
+
+    window.onload = function() {
+        window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
+            'size': 'normal'
+        });
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const refCode = urlParams.get('ref');
+
+        if (refCode) {
+            showRegister();
+            const refField = document.getElementById('referrerInput');
+            if (refField) {
+                refField.value = refCode;
+                refField.readOnly = true;
+                refField.style.backgroundColor = "#f0f0f0";
+            }
+        }
+    };
+</script>
+
+</body>
+</html>
