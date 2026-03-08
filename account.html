@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Account - Premium Dashboard</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        * { margin:0; padding:0; box-sizing:border-box; font-family: 'Segoe UI', sans-serif; }
+        
+        body {
+            background: linear-gradient(180deg, #f0f7f4 0%, #e2ebf0 100%);
+            min-height: 100vh;
+            padding-bottom: 30px;
+        }
+
+        /* হেডার এবং ব্যাক বাটন */
+        .header-gradient {
+            background: linear-gradient(135deg, #11998e, #38ef7d);
+            height: 260px;
+            padding: 20px;
+            color: white;
+            border-bottom-left-radius: 40px;
+            border-bottom-right-radius: 40px;
+            box-shadow: 0 15px 30px rgba(17, 153, 142, 0.3);
+            position: relative;
+        }
+
+        .back-btn {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            font-size: 22px;
+            color: white;
+            cursor: pointer;
+            text-decoration: none;
+            background: rgba(255, 255, 255, 0.2);
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            backdrop-filter: blur(5px);
+        }
+
+        /* প্রোফাইল ইমেজ */
+        .profile-upload-container {
+            position: relative;
+            width: 95px; height: 95px;
+            margin: 10px auto 10px;
+        }
+
+        .user-pic {
+            width: 100%; height: 100%;
+            background: rgba(255, 255, 255, 0.2);
+            border: 3px solid white;
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 45px;
+            overflow: hidden;
+            object-fit: cover;
+            cursor: pointer;
+        }
+
+        .cam-icon {
+            position: absolute;
+            bottom: 5px; right: 5px;
+            background: white; color: #11998e;
+            width: 25px; height: 25px;
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 12px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+
+        .welcome-text { text-align: center; font-size: 20px; font-weight: 700; margin-bottom: 15px; }
+
+        /* আইডি সেকশন */
+        .id-bar-wrapper {
+            display: flex;
+            justify-content: flex-start;
+            padding-left: 10px;
+        }
+
+        .id-container {
+            display: inline-flex;
+            align-items: center;
+            background: rgba(0, 0, 0, 0.15);
+            padding: 6px 15px;
+            border-radius: 12px;
+            gap: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            backdrop-filter: blur(5px);
+        }
+
+        .user-acc-no { font-size: 13px; font-weight: 600; opacity: 0.9; }
+
+        .copy-btn {
+            background: #fff; color: #11998e; border: none;
+            width: 26px; height: 26px; border-radius: 6px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 11px; cursor: pointer;
+        }
+
+        /* ব্যালেন্স কার্ড এবং রিফ্রেশ আইকন */
+        .balance-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            width: 90%;
+            margin: -40px auto 25px;
+            padding: 22px;
+            border-radius: 24px;
+            text-align: center;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.08);
+            border: 1px solid white;
+        }
+
+        .balance-header {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 5px;
+        }
+
+        .balance-label { color: #777; font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; }
+        
+        .refresh-icon {
+            color: #11998e;
+            font-size: 14px;
+            cursor: pointer;
+            transition: 0.5s;
+        }
+        .refresh-icon:active { transform: rotate(180deg); }
+
+        .balance-amount { font-size: 35px; font-weight: 800; color: #2d3436; }
+
+        /* বাটন লিস্ট */
+        .button-list { padding: 0 20px; display: flex; flex-direction: column; gap: 12px; }
+
+        .action-btn {
+            background: white;
+            display: flex; align-items: center;
+            padding: 16px 18px;
+            border-radius: 18px;
+            text-decoration: none; color: #444;
+            font-weight: 600; transition: 0.3s;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.02);
+            border: 1px solid rgba(255,255,255,0.8);
+        }
+
+        .btn-icon {
+            width: 45px; height: 45px;
+            border-radius: 14px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 20px; color: white; margin-right: 15px;
+        }
+
+        .bg-deposit { background: linear-gradient(135deg, #00d2ff, #3a7bd5); }
+        .bg-withdraw { background: linear-gradient(135deg, #ff9966, #ff5e62); }
+        .bg-profile { background: linear-gradient(135deg, #8e2de2, #4a00e0); }
+        .bg-support { background: linear-gradient(135deg, #00b09b, #96c93d); }
+        .bg-signout { background: linear-gradient(135deg, #e53935, #e35d5b); }
+
+        .chevron { margin-left: auto; color: #ddd; font-size: 13px; }
+
+        #profileInput { display: none; }
+    </style>
+</head>
+<body>
+
+    <div class="header-gradient">
+        <a href="home.html" class="back-btn">
+            <i class="fas fa-chevron-left"></i>
+        </a>
+
+        <div class="profile-upload-container" onclick="document.getElementById('profileInput').click()">
+            <div class="user-pic" id="profileDisplay">
+                <i class="fas fa-user-circle"></i>
+            </div>
+            <div class="cam-icon"><i class="fas fa-camera"></i></div>
+        </div>
+        <input type="file" id="profileInput" accept="image/*" onchange="uploadImage(this)">
+
+        <h2 class="welcome-text" id="userName">স্বাগতম!</h2>
+        
+        <div class="id-bar-wrapper">
+            <div class="id-container">
+                <span class="user-acc-no">ID: <span id="userPhoneDisplay">*****</span></span>
+                <button class="copy-btn" onclick="copyUserID()">
+                    <i class="fas fa-copy"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="balance-card">
+        <div class="balance-header">
+            <div class="balance-label">স্মার্ট ব্যালেন্স</div>
+            <i class="fas fa-sync-alt refresh-icon" onclick="fetchBalance()" title="Refresh Balance"></i>
+        </div>
+        <div class="balance-amount">৳ <span id="userBalanceDisplay">0.00</span></div>
+    </div>
+
+    <div class="button-list">
+        <a href="deposit.html" class="action-btn">
+            <div class="btn-icon bg-deposit"><i class="fas fa-wallet"></i></div>
+            <span>Deposit</span>
+            <i class="fas fa-chevron-right chevron"></i>
+        </a>
+        <a href="withdraw.html" class="action-btn">
+            <div class="btn-icon bg-withdraw"><i class="fas fa-money-bill-transfer"></i></div>
+            <span>Withdraw</span>
+            <i class="fas fa-chevron-right chevron"></i>
+        </a>
+        <a href="profile.html" class="action-btn">
+            <div class="btn-icon bg-profile"><i class="fas fa-user-edit"></i></div>
+            <span>Profile Settings</span>
+            <i class="fas fa-chevron-right chevron"></i>
+        </a>
+        <a href="support.html" class="action-btn">
+            <div class="btn-icon bg-support"><i class="fas fa-headset"></i></div>
+            <span>Customer Support</span>
+            <i class="fas fa-chevron-right chevron"></i>
+        </a>
+        <a href="javascript:void(0)" class="action-btn" onclick="handleLogout()" style="margin-top: 5px;">
+            <div class="btn-icon bg-signout"><i class="fas fa-sign-out-alt"></i></div>
+            <span style="color: #e53935;">Sign Out</span>
+            <i class="fas fa-chevron-right chevron"></i>
+        </a>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+
+    <script>
+        // আপনার নতুন কোম্পানি "Bengal East company limited" এর Firebase Configuration
+        const firebaseConfig = {
+          apiKey: "AIzaSyCALYxA2M4BwIXq5KC3VMGsZpAFh8nL3fo",
+          authDomain: "bengal-east-company-limited.firebaseapp.com",
+          projectId: "bengal-east-company-limited",
+          databaseURL: "https://bengal-east-company-limited-default-rtdb.firebaseio.com",
+          storageBucket: "bengal-east-company-limited.firebasestorage.app",
+          messagingSenderId: "653223286483",
+          appId: "1:653223286483:web:8e4ed0782ae807f8f02626",
+          measurementId: "G-R7S444H8KT"
+        };
+
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
+        const database = firebase.database();
+
+        let fullUserID = "";
+
+        window.onload = function() {
+            const loggedUser = localStorage.getItem("loggedUser");
+            if (loggedUser) {
+                fullUserID = loggedUser;
+                const lastFive = loggedUser.slice(-5);
+                document.getElementById("userPhoneDisplay").innerText = "******" + lastFive;
+                
+                const savedImg = localStorage.getItem("userProfilePic");
+                if(savedImg) {
+                    document.getElementById("profileDisplay").innerHTML = `<img src="${savedImg}" style="width:100%;height:100%;">`;
+                }
+
+                // পেজ লোড হওয়ার সময় ব্যালেন্স রিড করবে
+                fetchBalance();
+            } else {
+                window.location.replace("index.html");
+            }
+        };
+
+        function uploadImage(input) {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    document.getElementById("profileDisplay").innerHTML = `<img src="${e.target.result}" style="width:100%;height:100%;object-fit:cover;">`;
+                    localStorage.setItem("userProfilePic", e.target.result);
+                };
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+
+        // রিফ্রেশ ফাংশন - যা ডাটাবেসের নির্দিষ্ট ইউজারের ব্যালেন্স রিড করবে
+        function fetchBalance() {
+            const loggedUser = localStorage.getItem("loggedUser");
+            const refreshBtn = document.querySelector('.refresh-icon');
+            
+            if (loggedUser) {
+                if(refreshBtn) refreshBtn.classList.add('fa-spin');
+
+                // ডাটাবেস পাথ (users/phone/balance)
+                database.ref('users/' + loggedUser + '/balance').once('value', (snapshot) => {
+                    if (snapshot.exists()) {
+                        const balance = snapshot.val();
+                        document.getElementById('userBalanceDisplay').innerText = parseFloat(balance).toFixed(2);
+                    } else {
+                        document.getElementById('userBalanceDisplay').innerText = "0.00";
+                    }
+                    if(refreshBtn) setTimeout(() => { refreshBtn.classList.remove('fa-spin'); }, 1000);
+                });
+            }
+        }
+
+        function copyUserID() {
+            if (fullUserID) {
+                navigator.clipboard.writeText(fullUserID).then(() => {
+                    alert("ID Copied: " + fullUserID);
+                });
+            }
+        }
+
+        function handleLogout() {
+            if(confirm("লগআউট করতে চান?")) {
+                localStorage.clear();
+                window.location.replace("index.html");
+            }
+        }
+    </script>
+</body>
+</html>
