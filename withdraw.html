@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Withdraw - ai-signal</title>
+    <title>Withdraw - global-East-Ltd</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         * { margin:0; padding:0; box-sizing:border-box; font-family: 'Segoe UI', sans-serif; }
@@ -22,19 +22,18 @@
         .action-btn { width: 100%; padding: 14px; border: none; background: #ff8c00; color: white; border-radius: 10px; font-size: 16px; font-weight: bold; cursor: pointer; }
         .action-btn:disabled { background: #ccc; cursor: not-allowed; }
         
-        /* উন্নত হিস্টোরি ডিজাইন */
         .history-item { background: white; padding: 15px; border-radius: 15px; border-left: 5px solid #ff8c00; margin-bottom: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
         .hist-row { display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 13px; }
         .label-text { font-weight: bold; color: #555; }
-        .value-text { font-weight: 800; color: #ff8c00; } /* কমলা এবং বোল্ড টেক্সট */
+        .value-text { font-weight: 800; color: #ff8c00; }
         .status { padding: 4px 10px; border-radius: 20px; font-size: 10px; font-weight: bold; }
         .status.Pending { background: #fff3cd; color: #856404; }
         .status.Approved { background: #d4edda; color: #155724; }
         .status.Rejected { background: #f8d7da; color: #721c24; }
         
-        #timeNotice { color: #d9534f; font-size: 13px; text-align: center; margin-top: 10px; font-weight: bold; display: block; padding: 10px; background: #f9ebeb; border-radius: 8px; }
+        /* উইথড্র টাইম নোটিশের ডিজাইন */
+        #timeNotice { color: #d9534f; font-size: 12px; text-align: center; margin-top: 15px; font-weight: 600; display: block; padding: 8px; border-radius: 8px; border: 1px dashed #d9534f; }
 
-        /* কাস্টম পপ-আপ ডিজাইন */
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1000; align-items: center; justify-content: center; backdrop-filter: blur(3px); }
         .modal-card { background: white; padding: 30px; border-radius: 20px; text-align: center; max-width: 90%; width: 350px; animation: slideUp 0.3s ease-out; }
         @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
@@ -67,8 +66,6 @@
             <p>Your Current Balance</p>
             <h2>৳ <span id="userBalance">0.00</span></h2>
         </div>
-
-        <div id="timeNotice">লোড হচ্ছে...</div>
 
         <div class="card" id="numberSetupCard">
             <div class="card-title"><i class="fas fa-id-card"></i> Setup Withdraw Numbers</div>
@@ -104,6 +101,8 @@
                 <input type="number" id="amount" class="input-field" placeholder="Enter amount">
             </div>
             <button class="action-btn" id="withdrawBtn" onclick="requestWithdraw()">Confirm Withdrawal</button>
+            
+            <div id="timeNotice">সকাল ০৮:০০ থেকে রাত ০৮:০০ পর্যন্ত উইথড্র চালু থাকবে।</div>
         </div>
 
         <div style="font-weight: bold; margin-bottom: 10px;"><i class="fas fa-history"></i> Recent Withdrawals</div>
@@ -129,7 +128,7 @@
 
         if (!loggedUser) window.location.replace("index.html");
 
-        // অটো উইথড্র টাইম সিষ্টেম (08:00 AM - 08:00 PM)
+        // অটো উইথড্র টাইম সিষ্টেম
         function checkWithdrawTime() {
             const now = new Date();
             const hour = now.getHours();
@@ -138,19 +137,18 @@
 
             if (hour >= 8 && hour < 20) {
                 btn.disabled = false;
-                notice.style.color = "green";
-                notice.style.background = "#e8f5e9";
-                notice.innerHTML = "<i class='fas fa-clock'></i> উইথড্র এখন চালু আছে (রাত ০৮:০০ পর্যন্ত)";
+                notice.style.color = "#28a745";
+                notice.style.borderColor = "#28a745";
+                notice.innerHTML = "<i class='fas fa-check-circle'></i> উইথড্র এখন চালু আছে (রাত ০৮:০০ পর্যন্ত)";
             } else {
                 btn.disabled = true;
                 notice.style.color = "#d9534f";
-                notice.style.background = "#f9ebeb";
-                notice.innerHTML = "<i class='fas fa-lock'></i> উইথড্র এখন বন্ধ। সকাল ০৮:০০ টায় আবার চালু হবে।";
+                notice.style.borderColor = "#d9534f";
+                notice.innerHTML = "<i class='fas fa-lock'></i> উইথড্র এখন বন্ধ। সকাল ০৮:০০ টায় আবার চালু হবে।";
             }
         }
         setInterval(checkWithdrawTime, 1000);
 
-        // পপ-আপ ফাংশন
         window.showModal = function(type, title, msg) {
             const modal = document.getElementById("customModal");
             const icon = document.getElementById("modalIcon");
@@ -216,7 +214,7 @@
 
             try {
                 await updateDoc(userRef, { balance: currentBal - amount, lastWithdrawDate: today });
-                const newDoc = await addDoc(collection(db, "withdraws"), {
+                await addDoc(collection(db, "withdraws"), {
                     user: loggedUser,
                     amount: amount,
                     method: method,
@@ -234,7 +232,6 @@
             }
         };
 
-        // হিস্টোরি লোড ও ডিজাইন
         const q = query(collection(db, "withdraws"), where("user", "==", loggedUser));
         onSnapshot(q, (snapshot) => {
             const hist = document.getElementById("withdrawHistory");
@@ -242,14 +239,15 @@
             let items = [];
             snapshot.forEach(doc => {
                 let d = doc.data();
-                d.id = doc.id.substring(0, 8); // শর্ট আইডি
+                // ID হিসেবে ইউজারের রেজিস্ট্রেশন আইডি (loggedUser) ব্যবহার করা হয়েছে
+                d.displayId = data.user || loggedUser; 
                 items.push(d);
             });
             items.sort((a,b) => b.timestamp - a.timestamp).forEach(data => {
                 hist.innerHTML += `
                     <div class="history-item">
                         <div class="hist-row">
-                            <span class="label-text">ID: <span class="value-text">${data.id}</span></span>
+                            <span class="label-text">ID: <span class="value-text">${loggedUser}</span></span>
                             <div class="status ${data.status}">${data.status}</div>
                         </div>
                         <div class="hist-row">
