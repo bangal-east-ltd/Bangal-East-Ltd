@@ -187,7 +187,7 @@
         
         <div class="id-bar-wrapper">
             <div class="id-container">
-                <span class="user-acc-no">ID: <span id="userPhoneDisplay">*****</span></span>
+                <span class="user-acc-no">ID: <span id="userPhoneDisplay">00000</span></span>
                 <button class="copy-btn" onclick="copyUserID()">
                     <i class="fas fa-copy"></i>
                 </button>
@@ -231,49 +231,72 @@
         </a>
     </div>
 
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getFirestore, doc, getDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-    <script>
-        // আপনার নতুন কোম্পানি "Bengal East company limited" এর Firebase Configuration
         const firebaseConfig = {
           apiKey: "AIzaSyCALYxA2M4BwIXq5KC3VMGsZpAFh8nL3fo",
           authDomain: "bengal-east-company-limited.firebaseapp.com",
           projectId: "bengal-east-company-limited",
-          databaseURL: "https://bengal-east-company-limited-default-rtdb.firebaseio.com",
           storageBucket: "bengal-east-company-limited.firebasestorage.app",
           messagingSenderId: "653223286483",
           appId: "1:653223286483:web:8e4ed0782ae807f8f02626",
           measurementId: "G-R7S444H8KT"
         };
 
-        if (!firebase.apps.length) {
-            firebase.initializeApp(firebaseConfig);
-        }
-        const database = firebase.database();
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
 
-        let fullUserID = "";
+        let currentUserID = "";
 
-        window.onload = function() {
-            const loggedUser = localStorage.getItem("loggedUser");
-            if (loggedUser) {
-                fullUserID = loggedUser;
-                const lastFive = loggedUser.slice(-5);
-                document.getElementById("userPhoneDisplay").innerText = "******" + lastFive;
-                
+        window.onload = async function() {
+            const loggedPhone = localStorage.getItem("loggedUser");
+            if (loggedPhone) {
                 const savedImg = localStorage.getItem("userProfilePic");
                 if(savedImg) {
-                    document.getElementById("profileDisplay").innerHTML = `<img src="${savedImg}" style="width:100%;height:100%;">`;
+                    document.getElementById("profileDisplay").innerHTML = `<img src="${savedImg}" style="width:100%;height:100%;object-fit:cover;">`;
                 }
 
-                // পেজ লোড হওয়ার সময় ব্যালেন্স রিড করবে
-                fetchBalance();
+                // Firestore থেকে ৫ সংখ্যার আইডি এবং ব্যালেন্স আনা হচ্ছে
+                const docRef = doc(db, "users", loggedPhone);
+                const docSnap = await getDoc(docRef);
+
+                if (docSnap.exists()) {
+                    const userData = docSnap.data();
+                    currentUserID = userData.userID || "N/A";
+                    document.getElementById("userPhoneDisplay").innerText = currentUserID;
+                    document.getElementById("userBalanceDisplay").innerText = parseFloat(userData.balance || 0).toFixed(2);
+                }
             } else {
                 window.location.replace("index.html");
             }
         };
 
-        function uploadImage(input) {
+        window.fetchBalance = function() {
+            const loggedPhone = localStorage.getItem("loggedUser");
+            const refreshBtn = document.querySelector('.refresh-icon');
+            if (loggedPhone) {
+                refreshBtn.classList.add('fa-spin');
+                const docRef = doc(db, "users", loggedPhone);
+                getDoc(docRef).then((docSnap) => {
+                    if (docSnap.exists()) {
+                        document.getElementById('userBalanceDisplay').innerText = parseFloat(docSnap.data().balance || 0).toFixed(2);
+                    }
+                    setTimeout(() => { refreshBtn.classList.remove('fa-spin'); }, 1000);
+                });
+            }
+        };
+
+        window.copyUserID = function() {
+            if (currentUserID && currentUserID !== "N/A") {
+                navigator.clipboard.writeText(currentUserID).then(() => {
+                    alert("ID Copied: " + currentUserID);
+                });
+            }
+        };
+
+        window.uploadImage = function(input) {
             if (input.files && input.files[0]) {
                 const reader = new FileReader();
                 reader.onload = function(e) {
@@ -282,43 +305,14 @@
                 };
                 reader.readAsDataURL(input.files[0]);
             }
-        }
+        };
 
-        // রিফ্রেশ ফাংশন - যা ডাটাবেসের নির্দিষ্ট ইউজারের ব্যালেন্স রিড করবে
-        function fetchBalance() {
-            const loggedUser = localStorage.getItem("loggedUser");
-            const refreshBtn = document.querySelector('.refresh-icon');
-            
-            if (loggedUser) {
-                if(refreshBtn) refreshBtn.classList.add('fa-spin');
-
-                // ডাটাবেস পাথ (users/phone/balance)
-                database.ref('users/' + loggedUser + '/balance').once('value', (snapshot) => {
-                    if (snapshot.exists()) {
-                        const balance = snapshot.val();
-                        document.getElementById('userBalanceDisplay').innerText = parseFloat(balance).toFixed(2);
-                    } else {
-                        document.getElementById('userBalanceDisplay').innerText = "0.00";
-                    }
-                    if(refreshBtn) setTimeout(() => { refreshBtn.classList.remove('fa-spin'); }, 1000);
-                });
-            }
-        }
-
-        function copyUserID() {
-            if (fullUserID) {
-                navigator.clipboard.writeText(fullUserID).then(() => {
-                    alert("ID Copied: " + fullUserID);
-                });
-            }
-        }
-
-        function handleLogout() {
+        window.handleLogout = function() {
             if(confirm("লগআউট করতে চান?")) {
                 localStorage.clear();
                 window.location.replace("index.html");
             }
-        }
+        };
     </script>
 </body>
 </html>
