@@ -202,6 +202,7 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
+    // --- একাউন্ট পেজ এবং ড্যাশবোর্ড কানেকশন ---
     window.checkAdminLogin = function() {
         const pass = document.getElementById('adminPassInput').value;
         if(pass === "123456") {
@@ -221,9 +222,10 @@
         document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
         document.getElementById(id).classList.add('active');
         document.querySelectorAll('.sidebar nav p').forEach(p => p.classList.remove('active'));
-        if(event) event.currentTarget.classList.add('active');
+        if(event && event.currentTarget) event.currentTarget.classList.add('active');
     }
 
+    // --- ইউজার লিস্ট এবং অনলাইন স্ট্যাটাস নিয়ন্ত্রণ ---
     onSnapshot(collection(db, "users"), (snapshot) => {
         const userListBody = document.getElementById('userListBody');
         userListBody.innerHTML = "";
@@ -238,7 +240,6 @@
             const isOnline = (now - lastSeen < 60000);
             if(isOnline) onlineUsers++;
 
-            // User ID (5-digit) এখানে হ্যান্ডেল করা হচ্ছে
             const displayID = u.userID || "N/A";
 
             userListBody.innerHTML += `<tr>
@@ -253,7 +254,9 @@
         document.getElementById('statOnlineUsers').innerText = onlineUsers;
     });
 
+    // --- ডিপোজিট এবং উইথড্রল বাটন নিয়ন্ত্রণ লজিক ---
     function setupTransactions() {
+        // ডাইনামিক ডিপোজিট আপডেট
         onSnapshot(collection(db, "deposits"), (snapshot) => {
             const depBody = document.getElementById('depositBody');
             const depSuccessBody = document.getElementById('depSuccessBody');
@@ -286,6 +289,7 @@
             document.getElementById('todayDepCount').innerText = todayDepCount;
         });
 
+        // ডাইনামিক উইথড্র আপডেট
         onSnapshot(collection(db, "withdraws"), (snapshot) => {
             const withBody = document.getElementById('withdrawBody');
             const withSuccessBody = document.getElementById('withSuccessBody');
@@ -319,6 +323,7 @@
         });
     }
 
+    // --- অ্যাডমিন কন্ট্রোল ফাংশনস (অ্যাপ্রুভ/রিজেক্ট) ---
     window.approveDep = async function(id, userId, amt) {
         const userRef = doc(db, "users", userId);
         const userSnap = await getDoc(userRef);
@@ -326,7 +331,7 @@
             let newBal = (parseFloat(userSnap.data().balance) || 0) + parseFloat(amt);
             await updateDoc(userRef, { balance: newBal });
             await updateDoc(doc(db, "deposits", id), { status: "Success", time: new Date().toISOString() });
-            alert("Deposit Approved!");
+            alert("Deposit Approved! User balance updated.");
         }
     }
 
@@ -334,6 +339,7 @@
         let reason = prompt("রিজেক্ট করার কারণ লিখুন:");
         if(reason) {
             await updateDoc(doc(db, "deposits", id), { status: "Rejected", note: reason, time: new Date().toISOString() });
+            alert("Deposit Rejected.");
         }
     }
 
@@ -350,15 +356,17 @@
             let returnBal = (parseFloat(userSnap.data().balance) || 0) + parseFloat(amt);
             await updateDoc(userRef, { balance: returnBal });
             await updateDoc(doc(db, "withdraws", id), { status: "Rejected", note: reason, time: new Date().toISOString() });
+            alert("Withdrawal Rejected. Balance returned to user.");
         }
     }
 
+    // --- পেমেন্ট নম্বর সেটিংস (ডিপোজিট পেজের সাথে সরাসরি যুক্ত) ---
     window.updateNumbers = async function() {
         const b = document.getElementById('setBkash').value;
         const n = document.getElementById('setNagad').value;
         const r = document.getElementById('setRocket').value;
         await setDoc(doc(db, "admin_settings", "numbers"), { bkash: b, nagad: n, rocket: r });
-        alert("Numbers Updated!");
+        alert("Payment Numbers Updated! Users will see these now.");
     }
 
     onSnapshot(doc(db, "admin_settings", "numbers"), (s) => {
