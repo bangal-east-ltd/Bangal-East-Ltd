@@ -37,9 +37,7 @@
             background: rgba(255, 255, 255, 0.2);
             width: 40px;
             height: 40px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            display: flex; align-items: center; justify-content: center;
             border-radius: 50%;
             backdrop-filter: blur(5px);
         }
@@ -166,9 +164,35 @@
         .chevron { margin-left: auto; color: #ddd; font-size: 13px; }
 
         #profileInput { display: none; }
+
+        /* Toast Notification Style */
+        .copy-toast {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 8px 20px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+            display: none;
+            z-index: 10000;
+            animation: fadeInOut 2s ease-in-out;
+        }
+
+        @keyframes fadeInOut {
+            0% { opacity: 0; bottom: 20px; }
+            20% { opacity: 1; bottom: 30px; }
+            80% { opacity: 1; bottom: 30px; }
+            100% { opacity: 0; bottom: 20px; }
+        }
     </style>
 </head>
 <body>
+
+    <div id="copyToast" class="copy-toast">Copy</div>
 
     <div class="header-gradient">
         <a href="home.html" class="back-btn">
@@ -258,7 +282,6 @@
                     document.getElementById("profileDisplay").innerHTML = `<img src="${savedImg}" style="width:100%;height:100%;object-fit:cover;">`;
                 }
 
-                // Firestore থেকে ৫ সংখ্যার আইডি এবং ব্যালেন্স আনা হচ্ছে
                 const docRef = doc(db, "users", loggedPhone);
                 const docSnap = await getDoc(docRef);
 
@@ -288,10 +311,13 @@
             }
         };
 
+        // পরিবর্তিত কপি ফাংশন
         window.copyUserID = function() {
             if (currentUserID && currentUserID !== "N/A") {
                 navigator.clipboard.writeText(currentUserID).then(() => {
-                    alert("ID Copied: " + currentUserID);
+                    const toast = document.getElementById("copyToast");
+                    toast.style.display = "block";
+                    setTimeout(() => { toast.style.display = "none"; }, 2000);
                 });
             }
         };
@@ -315,4 +341,5 @@
         };
     </script>
 </body>
-</html>
+    </html>
+    
