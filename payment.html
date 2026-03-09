@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment - Bengal East Ltd</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        /* আপনার ডিজাইন অনুযায়ী স্টাইল */
+        * { margin:0; padding:0; box-sizing:border-box; font-family: 'Segoe UI', sans-serif; }
+        body { background: #f0f2f5; padding-bottom: 50px; }
+        .top-header { text-align: center; padding: 30px 0; background: #fff; margin-bottom: 20px; border-bottom: 1px solid #ddd; }
+        .container { width: 92%; max-width: 500px; margin: 0 auto; }
+        .payment-card { background: #ff8c00; border-radius: 15px; padding: 25px; color: white; box-shadow: 0 10px 20px rgba(0,0,0,0.1); }
+        .bg-bkash { background: #d12053 !important; }
+        .bg-nagad { background: #ff8c00 !important; }
+        .bg-rocket { background: #8c3494 !important; }
+        .info-box { background: white; border-radius: 12px; padding: 20px; color: #333; margin-top: 15px; }
+        .info-row { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #f0f0f0; }
+        .value { font-weight: 700; }
+        .trx-input { width: 100%; padding: 15px; border-radius: 8px; border: none; margin-top: 20px; font-size: 16px; outline: none; }
+        .submit-btn { width: 100%; padding: 15px; border: none; background: rgba(0,0,0,0.3); color: white; border-radius: 8px; font-size: 18px; font-weight: bold; cursor: pointer; margin-top: 20px; border: 1px solid rgba(255,255,255,0.4); }
+    </style>
+</head>
+<body>
+
+    <div class="top-header">
+        <h1>Payment Details</h1>
+        <p id="currentTime">Loading...</p>
+    </div>
+
+    <div class="container">
+        <div id="mainCard" class="payment-card">
+            <h4>সঠিক TxnID পূরণ করুন এবং "জমা দিন" ক্লিক করুন</h4>
+            <div class="info-box">
+                <div class="info-row"><span>ওয়ালেট</span><span id="displayMethod" class="value">...</span></div>
+                <div class="info-row"><span>সংখ্যা</span><span class="value"><span id="adminNumber">...</span> <i class="far fa-copy" onclick="copyText('adminNumber')"></i></span></div>
+                <div class="info-row"><span>পরিমাণ</span><span class="value">৳ <span id="displayAmount">0</span> <i class="far fa-copy" onclick="copyText('displayAmount')"></i></span></div>
+            </div>
+            <input type="text" id="trxID" class="trx-input" placeholder="Transaction ID এখানে দিন">
+            <button class="submit-btn" id="submitBtn">জমা দিন</button>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getFirestore, collection, addDoc, doc, onSnapshot, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCALYxA2M4BwIXq5KC3VMGsZpAFh8nL3fo",
+            authDomain: "bengal-east-company-limited.firebaseapp.com",
+            projectId: "bengal-east-company-limited",
+            storageBucket: "bengal-east-company-limited.firebasestorage.app",
+            messagingSenderId: "653223286483",
+            appId: "1:653223286483:web:8e4ed0782ae807f8f02626"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        window.onload = function() {
+            const method = localStorage.getItem("dep_method") || "bKash";
+            const amount = localStorage.getItem("dep_amt") || "0";
+            document.getElementById("displayMethod").innerText = method;
+            document.getElementById("displayAmount").innerText = amount;
+            document.getElementById("currentTime").innerText = new Date().toLocaleString();
+
+            const card = document.getElementById("mainCard");
+            if(method.toLowerCase() === "bkash") card.classList.add("bg-bkash");
+            if(method.toLowerCase() === "nagad") card.classList.add("bg-nagad");
+            if(method.toLowerCase() === "rocket") card.classList.add("bg-rocket");
+
+            // এডমিন প্যানেল থেকে নম্বর লোড করা
+            onSnapshot(doc(db, "admin_settings", "numbers"), (s) => {
+                if(s.exists()){
+                    const d = s.data();
+                    document.getElementById("adminNumber").innerText = d[method.toLowerCase()] || "01XXXXXXXXX";
+                }
+            });
+        };
+
+        window.copyText = (id) => {
+            navigator.clipboard.writeText(document.getElementById(id).innerText);
+            alert("copy");
+        };
+
+        document.getElementById("submitBtn").addEventListener("click", async () => {
+            const trx = document.getElementById("trxID").value.trim();
+            const userNum = localStorage.getItem("user_num") || "N/A"; // ইউজারের ফোন নম্বর
+            const btn = document.getElementById("submitBtn");
+
+            if(trx.length < 5) { alert("সঠিক Transaction ID দিন"); return; }
+
+            btn.disabled = true;
+            btn.innerText = "যাচাই করা হচ্ছে...";
+
+            try {
+                // ডুপ্লিকেট চেক
+                const q = query(collection(db, "deposits"), where("trxID", "==", trx));
+                const snap = await getDocs(q);
+                if(!snap.empty) { alert("এই ID টি ইতিমধ্যে ব্যবহার করা হয়েছে!"); btn.disabled = false; return; }
+
+                // ডাটাবেজে জমা দেওয়া (অ্যাডমিন প্যানেলে দেখার জন্য)
+                await addDoc(collection(db, "deposits"), {
+                    user: userNum, 
+                    amount: localStorage.getItem("dep_amt"),
+                    method: localStorage.getItem("dep_method"),
+                    trxID: trx,
+                    status: "Pending",
+                    time: new Date().toISOString()
+                });
+
+                alert("Success! আপনার রিকোয়েস্ট জমা হয়েছে। আগামী ৬ ঘণ্টার মধ্যে আপনার একাউন্টে টাকা যোগ হবে।");
+                window.location.href = "account.html";
+            } catch (e) {
+                alert("Error! আবার চেষ্টা করুন।");
+                btn.disabled = false;
+            }
+        });
+    </script>
+</body>
+</html>
+
