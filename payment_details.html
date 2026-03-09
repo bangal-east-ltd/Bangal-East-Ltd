@@ -3,186 +3,139 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Payment - Bangal East Ltd</title>
+    <title>Payment - ai-signal</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
+        /* আপনার দেওয়া স্টাইল অপরিবর্তিত রাখা হয়েছে */
         * { margin:0; padding:0; box-sizing:border-box; font-family: 'Segoe UI', sans-serif; }
         body { background: #f0f2f5; padding-bottom: 50px; transition: 0.3s; }
-
         .top-header { text-align: center; padding: 30px 0; background: #fff; margin-bottom: 20px; border-bottom: 1px solid #ddd; }
-        .top-header h1 { font-size: 26px; color: #333; margin-bottom: 5px; font-weight: 800; }
-        .top-header p { font-size: 13px; color: #888; }
-
+        .top-header h1 { font-size: 28px; color: #333; margin-bottom: 5px; }
+        .top-header p { font-size: 14px; color: #888; }
         .container { width: 92%; max-width: 500px; margin: 0 auto; }
-
-        /* ডাইনামিক পেমেন্ট কার্ড */
-        .payment-card {
-            background: #ff8c00; 
-            border-radius: 20px;
-            padding: 25px;
-            color: white;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-            transition: 0.5s;
-        }
-
-        /* ব্র্যান্ড কালারসমূহ */
+        .payment-card { background: #ff8c00; border-radius: 15px; padding: 25px; color: white; box-shadow: 0 10px 20px rgba(0,0,0,0.1); transition: 0.5s; }
         .bg-bkash { background: #d12053 !important; }
         .bg-nagad { background: #ff8c00 !important; }
         .bg-rocket { background: #8c3494 !important; }
-        .bg-usdt { background: #26a17b !important; }
-
-        .payment-card h4 { font-size: 14px; line-height: 1.6; margin-bottom: 20px; text-align: center; font-weight: 500; }
-        .payment-card .sub-text { display: block; margin-top: 10px; font-weight: bold; background: rgba(0,0,0,0.2); padding: 8px; border-radius: 10px; text-align: center; }
-
-        .info-box { background: white; border-radius: 15px; padding: 20px; color: #333; margin-top: 15px; }
+        .payment-card h4 { font-size: 15px; line-height: 1.6; margin-bottom: 20px; text-align: center; font-weight: 500; }
+        .payment-card .sub-text { display: block; margin-top: 10px; font-weight: bold; background: rgba(0,0,0,0.2); padding: 5px; border-radius: 5px; }
+        .info-box { background: white; border-radius: 12px; padding: 20px; color: #333; }
         .info-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #f0f0f0; }
         .info-row:last-child { border-bottom: none; }
-
-        .label { color: #666; font-size: 14px; font-weight: 600; }
-        .value { font-weight: 800; font-size: 17px; color: #1e293b; display: flex; align-items: center; gap: 10px; }
-        
-        .method-tag { font-weight: bold; font-size: 15px; text-transform: uppercase; color: #11998e; }
-        .copy-icon { color: #cbd5e1; cursor: pointer; transition: 0.3s; font-size: 18px; }
-        .copy-icon:active { color: #11998e; transform: scale(1.2); }
-
+        .label { color: #666; font-size: 14px; display: flex; align-items: center; gap: 8px; }
+        .value { font-weight: 700; font-size: 16px; color: #333; display: flex; align-items: center; gap: 10px; }
+        .method-tag { font-weight: bold; font-size: 14px; text-transform: capitalize; }
+        .copy-icon { color: #aaa; cursor: pointer; transition: 0.3s; }
+        .copy-icon:active { color: #11998e; }
         .trx-section { margin-top: 25px; }
-        .trx-section label { display: block; color: white; margin-bottom: 10px; font-size: 14px; font-weight: 600; }
-        
-        .trx-input { width: 100%; padding: 16px; border-radius: 12px; border: none; outline: none; font-size: 16px; margin-bottom: 20px; color: #333; font-weight: 600; }
-
-        .submit-btn { width: 100%; padding: 16px; border: none; background: rgba(0,0,0,0.3); color: white; border-radius: 12px; font-size: 18px; font-weight: 800; cursor: pointer; border: 1px solid rgba(255,255,255,0.4); transition: 0.3s; }
-        .submit-btn:not(:disabled):hover { background: rgba(0,0,0,0.5); }
-        .submit-btn:disabled { opacity: 0.6; cursor: not-allowed; }
-
-        .instruction { margin-top: 30px; padding: 0 5px; }
-        .instruction h3 { font-size: 16px; color: #333; margin-bottom: 15px; border-left: 4px solid #11998e; padding-left: 10px; }
-        .instruction li { font-size: 13px; color: #64748b; margin-bottom: 12px; line-height: 1.6; }
-
-        /* Custom Popup Styles */
-        .popup-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.7); display: none; justify-content: center; align-items: center; z-index: 1000;
-        }
-        .popup-card {
-            background: white; width: 85%; max-width: 350px; border-radius: 20px;
-            padding: 30px; text-align: center; animation: popupAnim 0.4s ease-out;
-        }
-        @keyframes popupAnim { from { transform: scale(0.7); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-        .popup-card i { font-size: 60px; color: #10b981; margin-bottom: 15px; }
-        .popup-card h2 { font-size: 22px; color: #333; margin-bottom: 10px; }
-        .popup-card p { font-size: 14px; color: #666; line-height: 1.5; margin-bottom: 20px; }
-        .popup-btn {
-            background: #11998e; color: white; border: none; padding: 12px 30px;
-            border-radius: 10px; font-weight: 700; cursor: pointer; width: 100%;
-        }
+        .trx-section label { display: block; color: white; margin-bottom: 10px; font-size: 14px; }
+        .trx-input { width: 100%; padding: 15px; border-radius: 8px; border: none; outline: none; font-size: 16px; margin-bottom: 20px; box-shadow: inset 0 2px 5px rgba(0,0,0,0.1); }
+        .submit-btn { width: 100%; padding: 15px; border: none; background: rgba(0,0,0,0.3); color: white; border-radius: 8px; font-size: 18px; font-weight: bold; cursor: pointer; border: 1px solid rgba(255,255,255,0.4); }
+        .submit-btn:hover { background: rgba(0,0,0,0.5); }
+        .instruction { margin-top: 30px; }
+        .instruction h3 { font-size: 16px; color: #333; margin-bottom: 15px; border-left: 4px solid #333; padding-left: 10px; }
+        .instruction li { font-size: 13px; color: #555; margin-bottom: 12px; line-height: 1.5; }
     </style>
 </head>
 <body>
 
     <div class="top-header">
         <h1>Payment Details</h1>
-        <p id="currentTime">Loading time...</p>
+        <p id="currentTime">Loading...</p>
     </div>
 
     <div class="container">
         <div id="mainCard" class="payment-card">
-            <h4>অনুগ্রহ করে সঠিক পরিমাণ টাকা পাঠান এবং পেমেন্ট শেষে Transaction ID সংগ্রহ করুন।</h4>
-            <h4 class="sub-text">এই <span id="displayMethod2">...</span> ওয়ালেটে <span id="paymentType">...</span> করুন</h4>
+            <h4>অনুগ্রহ করে একই পরিমাণ স্থানান্তর করুন এবং ব্যর্থ এড়াতে সঠিক TxnID পূরণ করুন</h4>
+            <h4 class="sub-text">এই <span id="displayMethod2">...</span> এজেন্টে অর্থ প্রদান করতে <span id="paymentType">ক্যাশ আউট</span> ব্যবহার করুন</h4>
             
             <div class="info-box">
                 <div class="info-row">
-                    <span class="label">পেমেন্ট মেথড</span>
-                    <span id="displayMethod" class="method-tag">...</span>
+                    <span class="label">ওয়ালেট</span>
+                    <span id="displayMethod" class="method-tag">Loading...</span>
                 </div>
                 <div class="info-row">
-                    <span class="label">অ্যাডমিন নম্বর</span>
+                    <span class="label">সংখ্যা</span>
                     <span class="value"><span id="adminNumber">Loading...</span> <i class="far fa-copy copy-icon" onclick="copyText('adminNumber')"></i></span>
                 </div>
                 <div class="info-row">
-                    <span class="label">পাঠানোর পরিমাণ</span>
-                    <span class="value" style="color: #10b981;">৳ <span id="displayAmount">00</span> <i class="far fa-copy copy-icon" onclick="copyText('displayAmount')"></i></span>
+                    <span class="label">পরিমাণ</span>
+                    <span class="value" style="color: #28a745;">৳ <span id="displayAmount">00</span> <i class="far fa-copy copy-icon" onclick="copyText('displayAmount')"></i></span>
                 </div>
             </div>
 
             <div class="trx-section">
-                <label>আপনার পেমেন্ট Transaction ID দিন</label>
-                <input type="text" id="trxID" class="trx-input" placeholder="যেমন: 8N349XKP">
-                <button class="submit-btn" id="submitBtn" onclick="saveToFirestore()">রিকোয়েস্ট জমা দিন</button>
+                <label id="inputLabel">রিচার্জ সম্পূর্ণ করতে অনুগ্রহ করে লেনদেন আইডি লিখুন</label>
+                <input type="text" id="trxID" class="trx-input" placeholder="Transaction ID এখানে দিন">
+                <button class="submit-btn" id="submitBtn" onclick="saveToFirestore()">জমা দিন</button>
             </div>
         </div>
 
         <div class="instruction">
-            <h3>কিভাবে পেমেন্ট করবেন?</h3>
+            <h3>ব্যাখ্যা:</h3>
             <ol>
-                <li>উপরে দেওয়া অ্যাডমিন নম্বরটি কপি করুন এবং আপনার ব্যাকিং অ্যাপ (বিকাশ/নগদ/রকেট) এ যান।</li>
-                <li>নির্ধারিত পরিমাণ টাকা <b><span id="paymentTypeInst">...</span></b> করুন।</li>
-                <li>পেমেন্ট সফল হওয়ার পর অ্যাপ থেকে <b>Transaction ID (TrxID)</b> কপি করে এখানে ইনপুট বক্সে দিন।</li>
-                <li>সঠিক তথ্য দিয়ে "রিকোয়েস্ট জমা দিন" বাটনে ক্লিক করলে ৫-৬০ মিনিটের মধ্যে ব্যালেন্স যোগ হবে।</li>
+                <li>ওয়ালেট জমা ব্যবহারকারীদের জন্য নির্দেশিকা: সঠিক নম্বর ও পরিমাণ মিলিয়ে টাকা পাঠান।</li>
+                <li>টাকা পাঠানোর পর প্রাপ্ত TrxID টি সঠিকভাবে ইনপুট বক্সে দিয়ে "জমা দিন" বাটনে ক্লিক করুন।</li>
+                <li>অ্যাডমিন আপনার পেমেন্ট যাচাই করে ৫-৩০ মিনিটের মধ্যে ব্যালেন্স যোগ করে দিবে।</li>
             </ol>
         </div>
     </div>
 
-    <div class="popup-overlay" id="successPopup">
-        <div class="popup-card">
-            <i class="fas fa-check-circle"></i>
-            <h2>Success</h2>
-            <p>আপনার রিকোয়েস্ট সফলভাবে জমা হয়েছে!<br><b>চিন্তা করবেন না ৬ ঘণ্টার মধ্যে ব্যালেন্স অ্যাড হবে।</b></p>
-            <button class="popup-btn" onclick="closePopup()">OK</button>
-        </div>
-    </div>
-
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore, doc, getDoc, collection, addDoc, query, where, getDocs, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getFirestore, doc, onSnapshot, addDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
+        // আপনার প্রদান করা নতুন ডাটাবেজ কনফিগ
         const firebaseConfig = {
-            apiKey: "AIzaSyAoZ39EQR-Buy6QJT71P2R4wL0RyiOQaAc",
-            projectId: "ai-signal-75e73",
-            authDomain: "ai-signal-75e73.firebaseapp.com",
-            storageBucket: "ai-signal-75e73.appspot.com",
-            messagingSenderId: "753223286483",
-            appId: "1:753223286483:web:8e4ed0782ae807f8f02626"
+            apiKey: "AIzaSyCALYxA2M4BwIXq5KC3VMGsZpAFh8nL3fo",
+            authDomain: "bengal-east-company-limited.firebaseapp.com",
+            projectId: "bengal-east-company-limited",
+            storageBucket: "bengal-east-company-limited.firebasestorage.app",
+            messagingSenderId: "653223286483",
+            appId: "1:653223286483:web:8e4ed0782ae807f8f02626",
+            measurementId: "G-R7S444H8KT"
         };
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        window.addEventListener('load', async () => {
-            const method = localStorage.getItem("dep_method") || "Nagad";
+        window.onload = function() {
+            const method = localStorage.getItem("dep_method") || "bKash";
             const amount = localStorage.getItem("dep_amt") || "0";
             
             document.getElementById("displayMethod").innerText = method;
             document.getElementById("displayMethod2").innerText = method;
             document.getElementById("displayAmount").innerText = amount;
-            document.getElementById("currentTime").innerText = new Date().toLocaleString('bn-BD');
+            document.getElementById("currentTime").innerText = new Date().toLocaleString();
 
             const card = document.getElementById("mainCard");
-            const methodLower = method.toLowerCase();
-            if(methodLower === "bkash") card.classList.add("bg-bkash");
-            else if(methodLower === "nagad") card.classList.add("bg-nagad");
-            else if(methodLower === "rocket") card.classList.add("bg-rocket");
+            if(method.toLowerCase() === "bkash") card.classList.add("bg-bkash");
+            else if(method.toLowerCase() === "nagad") card.classList.add("bg-nagad");
+            else if(method.toLowerCase() === "rocket") card.classList.add("bg-rocket");
 
-            try {
-                // Correct path for VIP2 Admin Panel
-                const adminDoc = await getDoc(doc(db, "admin_settings", "vip2", methodLower, "config"));
-                if(adminDoc.exists()){
-                    const data = adminDoc.data();
-                    document.getElementById("adminNumber").innerText = data.number;
-                    document.getElementById("paymentType").innerText = data.type || "Cash Out";
-                    document.getElementById("paymentTypeInst").innerText = data.type || "Cash Out";
+            // অ্যাডমিন সেটিংস থেকে রিয়েল-টাইম নম্বর লোড করা
+            onSnapshot(doc(db, "admin_settings", "numbers"), (snapshot) => {
+                if(snapshot.exists()){
+                    const data = snapshot.val() || snapshot.data();
+                    const num = data[method.toLowerCase()];
+                    document.getElementById("adminNumber").innerText = num || "নম্বর পাওয়া যায়নি";
                 }
-            } catch(e) {
-                console.error(e);
-            }
-        });
+            });
+        };
+
+        window.copyText = function(id) {
+            const text = document.getElementById(id).innerText;
+            navigator.clipboard.writeText(text);
+            alert("কপি হয়েছে!");
+        }
 
         window.saveToFirestore = async function() {
+            const loggedUser = localStorage.getItem("loggedUser") || "Unknown"; 
+            const userNum = localStorage.getItem("user_num") || "N/A"; 
             const trx = document.getElementById("trxID").value.trim();
-            const btn = document.getElementById("submitBtn");
-            const loggedUser = localStorage.getItem("loggedUser") || "Guest";
-            const senderNo = localStorage.getItem("sender_num") || "N/A";
-            const amount = localStorage.getItem("dep_amt");
+            const amt = localStorage.getItem("dep_amt");
             const method = localStorage.getItem("dep_method");
+            const btn = document.getElementById("submitBtn");
 
             if(trx.length < 5) {
                 alert("সঠিক Transaction ID দিন");
@@ -190,47 +143,41 @@
             }
 
             btn.disabled = true;
-            btn.innerText = "যাচাই হচ্ছে...";
+            btn.innerText = "যাচাই করা হচ্ছে...";
 
             try {
+                // TrxID ডুপ্লিকেট চেক
                 const q = query(collection(db, "deposits"), where("trxID", "==", trx));
-                const snap = await getDocs(q);
+                const querySnapshot = await getDocs(q);
 
-                if (!snap.empty) {
-                    alert("ID টি আগে ব্যবহার হয়েছে!");
+                if (!querySnapshot.empty) {
+                    alert("এই Transaction ID টি ইতিমধ্যে ব্যবহার করা হয়েছে!");
                     btn.disabled = false;
-                    btn.innerText = "রিকোয়েস্ট জমা দিন";
+                    btn.innerText = "জমা দিন";
                     return;
                 }
 
+                // Firestore এ নতুন ডিপোজিট ডকুমেন্ট তৈরি
                 await addDoc(collection(db, "deposits"), {
-                    user: loggedUser,
-                    sender_number: senderNo,
-                    amount: Number(amount),
+                    user: userNum,         // আপনার অ্যাডমিন প্যানেল child.id (ফোন নম্বর) খোঁজে
+                    amount: amt,
                     method: method,
                     trxID: trx,
                     status: "Pending",
-                    timestamp: serverTimestamp()
+                    time: new Date().toISOString(),
+                    timestamp: Date.now()
                 });
 
-                document.getElementById("successPopup").style.display = "flex";
+                alert("আপনার ডিপোজিট রিকোয়েস্ট সফলভাবে জমা হয়েছে!");
+                window.location.href = "account.html";
 
             } catch (error) {
+                console.error("Error adding document: ", error);
+                alert("দুঃখিত, পুনরায় চেষ্টা করুন।");
                 btn.disabled = false;
-                btn.innerText = "রিকোয়েস্ট জমা দিন";
+                btn.innerText = "জমা দিন";
             }
-        };
-
-        window.closePopup = function() {
-            window.location.href = "account.html";
-        };
-
-        window.copyText = function(id) {
-            const text = document.getElementById(id).innerText;
-            navigator.clipboard.writeText(text).then(() => {
-                alert("কপি হয়েছে!");
-            });
-        };
+        }
     </script>
 </body>
 </html>
