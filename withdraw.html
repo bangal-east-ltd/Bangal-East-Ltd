@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Withdraw - global-East-Ltd</title>
+    <title>Withdraw - ai-signal</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         * { margin:0; padding:0; box-sizing:border-box; font-family: 'Segoe UI', sans-serif; }
@@ -31,7 +31,6 @@
         .status.Approved { background: #d4edda; color: #155724; }
         .status.Rejected { background: #f8d7da; color: #721c24; }
         
-        /* উইথড্র টাইম নোটিশের ডিজাইন */
         #timeNotice { color: #d9534f; font-size: 12px; text-align: center; margin-top: 15px; font-weight: 600; display: block; padding: 8px; border-radius: 8px; border: 1px dashed #d9534f; }
 
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1000; align-items: center; justify-content: center; backdrop-filter: blur(3px); }
@@ -102,7 +101,7 @@
             </div>
             <button class="action-btn" id="withdrawBtn" onclick="requestWithdraw()">Confirm Withdrawal</button>
             
-            <div id="timeNotice">সকাল ০৮:০০ থেকে রাত ০৮:০০ পর্যন্ত উইথড্র চালু থাকবে।</div>
+            <div id="timeNotice">রাত ০৮:০০ PM উইথড্র বন্ধ হবে। সকাল ০৮:০০ AM থেকে রাত ০৮:০০ PM পর্যন্ত উইথড্র চালু থাকবে।</div>
         </div>
 
         <div style="font-weight: bold; margin-bottom: 10px;"><i class="fas fa-history"></i> Recent Withdrawals</div>
@@ -111,7 +110,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        import { getFirestore, doc, onSnapshot, updateDoc, collection, addDoc, query, where, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+        import { getFirestore, doc, onSnapshot, updateDoc, collection, addDoc, query, where, getDocs, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyCALYxA2M4BwIXq5KC3VMGsZpAFh8nL3fo",
@@ -128,7 +127,6 @@
 
         if (!loggedUser) window.location.replace("index.html");
 
-        // অটো উইথড্র টাইম সিষ্টেম
         function checkWithdrawTime() {
             const now = new Date();
             const hour = now.getHours();
@@ -139,12 +137,12 @@
                 btn.disabled = false;
                 notice.style.color = "#28a745";
                 notice.style.borderColor = "#28a745";
-                notice.innerHTML = "<i class='fas fa-check-circle'></i> উইথড্র এখন চালু আছে (রাত ০৮:০০ পর্যন্ত)";
+                notice.innerHTML = "<i class='fas fa-check-circle'></i> উইথড্র এখন চালু আছে (রাত ০৮:০০ PM পর্যন্ত)";
             } else {
                 btn.disabled = true;
                 notice.style.color = "#d9534f";
                 notice.style.borderColor = "#d9534f";
-                notice.innerHTML = "<i class='fas fa-lock'></i> উইথড্র এখন বন্ধ। সকাল ০৮:০০ টায় আবার চালু হবে।";
+                notice.innerHTML = "<i class='fas fa-lock'></i> রাত ০৮:০০ PM উইথড্র বন্ধ হয়েছে। সকাল ০৮:০০ AM টায় আবার চালু হবে।";
             }
         }
         setInterval(checkWithdrawTime, 1000);
@@ -182,10 +180,31 @@
             }
         });
 
+        // ডুপ্লিকেট নম্বর চেক করার ফাংশন
+        async function isNumberInUse(num) {
+            if(!num) return false;
+            const q1 = query(collection(db, "users"), where("withdrawNo1", "==", num));
+            const q2 = query(collection(db, "users"), where("withdrawNo2", "==", num));
+            const snap1 = await getDocs(q1);
+            const snap2 = await getDocs(q2);
+            return !snap1.empty || !snap2.empty;
+        }
+
         window.saveWithdrawNumbers = async function() {
             const n1 = document.getElementById("savedNo1").value;
             const n2 = document.getElementById("savedNo2").value;
+            
             if (n1.length < 11) { alert("সঠিক নম্বর দিন!"); return; }
+            
+            // ইউনিক নম্বর চেক
+            const check1 = await isNumberInUse(n1);
+            const check2 = n2 ? await isNumberInUse(n2) : false;
+
+            if(check1 || check2) {
+                alert("এই নম্বরটি ইতিমধ্যে অন্য একটি একাউন্টে ব্যবহার করা হয়েছে। দয়া করে অন্য নম্বর দিন।");
+                return;
+            }
+
             await updateDoc(doc(db, "users", loggedUser), { withdrawNo1: n1, withdrawNo2: n2 || "" });
             showModal('success', 'Save Success', 'আপনার নম্বরগুলো সফলভাবে সেভ করা হয়েছে।');
         };
@@ -232,6 +251,7 @@
             }
         };
 
+        // হিস্টোরি সব সময় দেখানোর জন্য স্ন্যাপশট
         const q = query(collection(db, "withdraws"), where("user", "==", loggedUser));
         onSnapshot(q, (snapshot) => {
             const hist = document.getElementById("withdrawHistory");
@@ -239,8 +259,6 @@
             let items = [];
             snapshot.forEach(doc => {
                 let d = doc.data();
-                // ID হিসেবে ইউজারের রেজিস্ট্রেশন আইডি (loggedUser) ব্যবহার করা হয়েছে
-                d.displayId = data.user || loggedUser; 
                 items.push(d);
             });
             items.sort((a,b) => b.timestamp - a.timestamp).forEach(data => {
