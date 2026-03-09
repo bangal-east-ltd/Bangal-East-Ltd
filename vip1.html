@@ -151,7 +151,7 @@
                     timerElement.innerHTML = `<i class="fas fa-check-circle"></i> ${daysEarned} Day(s) income ready!`;
                     btnElement.className = "btn claim-btn";
                     btnElement.innerHTML = `<i class="fas fa-coins"></i> Claim ৳${(daysEarned * dailyIncome).toFixed(2)}`;
-                    btnElement.onclick = () => claimIncome(pkgId, dailyIncome, daysEarned);
+                    btnElement.onclick = () => claimIncome(pkgId, dailyAmount, days);
                 } else {
                     const timeLeft = oneDay - timePassed;
                     const hours = Math.floor((timeLeft / (1000 * 60 * 60)) % 24);
@@ -175,21 +175,17 @@
                 
                 if(balance >= price) {
                     const startTime = Date.now();
-                    // ১. ইউজারের ব্যালেন্স কাটা
                     await updateDoc(userRef, { balance: balance - price });
                     
-                    // ২. প্যাকেজ একটিভ করা
                     await setDoc(doc(db, "user_subscriptions", userPhone, "active_plans", pkgId), {
                         name: name, daily_income: daily, last_claim: startTime,
                         expire_time: startTime + (validity * 24 * 60 * 60 * 1000),
                         status: "active", bought_at: startTime
                     });
 
-                    // ৩. টিম কমিশন লজিক (Referrer কে কমিশন দেওয়া)
-                    const referrer = userData.referredBy; // রেজিস্ট্রেশনের সময় এই ফিল্ডে ইনভাইটারের ফোন নম্বর থাকতে হবে
+                    const referrer = userData.referredBy; 
                     if(referrer) {
                         const refRef = doc(db, "users", referrer);
-                        // এডমিন প্যানেলে 'commissions' -> 'vip1_percent' থেকে পার্সেন্টেজ নিতে পারেন, এখানে ১০% উদাহরণ হিসেবে দেওয়া হলো
                         const commissionAmount = price * 0.10; 
                         await updateDoc(refRef, { 
                             team_commission: increment(commissionAmount) 
