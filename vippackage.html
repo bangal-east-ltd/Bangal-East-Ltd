@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VIP Package - VIP 1 Plans</title>
+    <title>VIP Package - Plans</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; }
@@ -42,14 +42,14 @@
     </div>
 
     <div class="container">
-        <h3 class="section-title">My Active VIP 1 Equipment</h3>
+        <h3 class="section-title">My Active VIP Package Equipment</h3>
         <div id="myPlansDisplay">
             <p style="color: #666; font-size: 14px;">No active equipment found.</p>
         </div>
 
-        <h3 class="section-title">VIP 1 Investment Plans</h3>
+        <h3 class="section-title">VIP Package Investment Plans</h3>
         <div id="packageDisplay">
-            <p style="text-align: center; color: #888;">Fetching VIP 1 packages...</p>
+            <p style="text-align: center; color: #888;">Fetching VIP Package packages...</p>
         </div>
     </div>
 
@@ -151,7 +151,7 @@
                     timerElement.innerHTML = `<i class="fas fa-check-circle"></i> ${daysEarned} Day(s) income ready!`;
                     btnElement.className = "btn claim-btn";
                     btnElement.innerHTML = `<i class="fas fa-coins"></i> Claim ৳${(daysEarned * dailyIncome).toFixed(2)}`;
-                    btnElement.onclick = () => claimIncome(pkgId, dailyAmount, days);
+                    btnElement.onclick = () => claimIncome(pkgId, dailyIncome, daysEarned);
                 } else {
                     const timeLeft = oneDay - timePassed;
                     const hours = Math.floor((timeLeft / (1000 * 60 * 60)) % 24);
