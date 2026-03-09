@@ -8,7 +8,7 @@
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; }
         body { background-color: #121212; color: white; padding-bottom: 80px; }
-        .header-card { background: linear-gradient(135deg, #11998e, #38ef7d); padding: 40px 20px; text-align: center; border-bottom-left-radius: 30px; border-bottom-right-radius: 30px; margin-bottom: 20px; box-shadow: 0 10px 20px rgba(0,0,0,0.3); position: relative; }
+        .header-card { background: linear-gradient(135deg, #11998e, #38ef7d); padding: 40px 20px; text-align: center; border-bottom-left-radius: 30px; border-bottom-right-radius: 30px; margin-bottom: 20px; box-shadow: 0 10px 20px rgba(0,0,0,0.3); }
         .container { padding: 0 15px; }
         
         .section-title { margin: 20px 0 10px; color: #38ef7d; font-size: 18px; border-left: 4px solid #38ef7d; padding-left: 10px; }
@@ -25,7 +25,7 @@
         .claim-btn { background: #ff9800; color: white; box-shadow: 0 4px 10px rgba(255,152,0,0.3); }
         
         .my-plan-card { background: #252525; border: 1px dashed #38ef7d; border-radius: 15px; padding: 15px; margin-bottom: 15px; }
-        .back-btn { position: absolute; top: 15px; left: 15px; color: white; font-size: 20px; text-decoration: none; }
+        .back-btn { position: absolute; top: 15px; left: 15px; color: white; font-size: 20px; }
 
         .custom-alert { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(30, 30, 30, 0.95); border: 1px solid #38ef7d; color: white; padding: 20px 30px; border-radius: 15px; z-index: 1000; text-align: center; box-shadow: 0 0 20px rgba(0,0,0,0.5); display: none; min-width: 250px; }
         .timer-text { font-size: 12px; color: #ff9800; margin-top: 5px; font-weight: normal; }
@@ -37,42 +37,39 @@
 
     <div class="header-card">
         <a href="home.html" class="back-btn"><i class="fas fa-arrow-left"></i></a>
-        <h3 style="font-weight: normal; font-size: 14px; opacity: 0.9;">Current Balance</h3>
+        <h3>Current Balance</h3>
         <h1>৳ <span id="userBalance">0.00</span></h1>
     </div>
 
     <div class="container">
         <h3 class="section-title">My Active VIP Package Equipment</h3>
         <div id="myPlansDisplay">
-            <p style="color: #666; font-size: 14px; padding: 10px;">No active equipment found.</p>
+            <p style="color: #666; font-size: 14px;">No active equipment found.</p>
         </div>
 
         <h3 class="section-title">VIP Package Investment Plans</h3>
         <div id="packageDisplay">
-            <p style="text-align: center; color: #888; padding: 20px;">Fetching VIP Package packages...</p>
+            <p style="text-align: center; color: #888;">Fetching VIP Package packages...</p>
         </div>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        import { getFirestore, doc, getDoc, updateDoc, onSnapshot, collection, query, where, getDocs, addDoc, deleteDoc, runTransaction, increment } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+        import { getFirestore, doc, getDoc, updateDoc, onSnapshot, collection, setDoc, deleteDoc, runTransaction, increment, addDoc, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-        // আপনার প্রজেক্টের অরিজিনাল Firebase কনফিগ
+        // অ্যাডমিন প্যানেলের কনফিগ অনুযায়ী ডাটাবেজ কানেকশন
         const firebaseConfig = {
-          apiKey: "AIzaSyCALYxA2M4BwIXq5KC3VMGsZpAFh8nL3fo",
-          authDomain: "bengal-east-company-limited.firebaseapp.com",
-          projectId: "bengal-east-company-limited",
-          storageBucket: "bengal-east-company-limited.firebasestorage.app",
-          messagingSenderId: "653223286483",
-          appId: "1:653223286483:web:8e4ed0782ae807f8f02626"
+            apiKey: "AIzaSyAoZ39EQR-Buy6QJT71P2R4wL0RyiOQaAc",
+            authDomain: "ai-signal-75e73.firebaseapp.com",
+            projectId: "ai-signal-75e73",
+            storageBucket: "ai-signal-75e73.appspot.com",
+            messagingSenderId: "753223286483",
+            appId: "1:753223286483:web:8e4ed0782ae807f8f02626"
         };
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
-        const userPhone = localStorage.getItem("userPhone");
-
-        // ইউজার লগইন না থাকলে রিডাইরেক্ট
-        if (!userPhone) { window.location.assign("index.html"); }
+        const userPhone = localStorage.getItem("userPhone") || "guest_user";
 
         function showToast(message) {
             const alertBox = document.getElementById('customAlert');
@@ -81,14 +78,13 @@
             setTimeout(() => { alertBox.style.display = 'none'; }, 2000);
         }
 
-        // রিয়েল-টাইম ব্যালেন্স আপডেট
         onSnapshot(doc(db, "users", userPhone), (snapshot) => {
             if(snapshot.exists()) {
                 document.getElementById('userBalance').innerText = parseFloat(snapshot.data().balance || 0).toFixed(2);
             }
         });
 
-        // সাবস্ক্রিপশন এবং প্যাকেজ কানেকশন
+        // অ্যাডমিন প্যানেলের user_subscriptions কালেকশন চেক করা
         onSnapshot(collection(db, "user_subscriptions"), (subSnapshot) => {
             const mySubs = {};
             const now = Date.now();
@@ -96,15 +92,14 @@
             subSnapshot.forEach(child => {
                 const data = child.data();
                 if (data.phone === userPhone) {
+                    mySubs[data.package_id] = data;
                     if (now >= data.expire_time) {
                         deleteDoc(doc(db, "user_subscriptions", child.id));
-                    } else {
-                        mySubs[data.package_id] = { ...data, subDocId: child.id };
                     }
                 }
             });
 
-            // প্যাকেজগুলো লোড করা
+            // অ্যাডমিন প্যানেলের packages_vip1 থেকে প্যাকেজ লোড
             onSnapshot(collection(db, "packages_vip1"), (pkgSnapshot) => {
                 const pkgDisplay = document.getElementById('packageDisplay');
                 pkgDisplay.innerHTML = "";
@@ -143,17 +138,16 @@
                         <div id="timer_${pkgId}" class="timer-text">Checking timer...</div>
                         <button id="btn_${pkgId}" class="btn bought-btn">Please Wait...</button>
                     </div>`;
-                startTimer(pkgId, data.timestamp, data.daily, data.subDocId);
+                startTimer(pkgId, data.timestamp, data.daily);
             }
-            if(activeCount === 0) myDisplay.innerHTML = "<p style='color: #666; font-size: 14px; padding: 10px;'>No active equipment found.</p>";
+            if(activeCount === 0) myDisplay.innerHTML = "<p style='color: #666; font-size: 14px;'>No active equipment found.</p>";
         }
 
-        function startTimer(pkgId, lastClaim, dailyIncome, subDocId) {
+        function startTimer(pkgId, lastClaim, dailyIncome) {
             const interval = setInterval(() => {
                 const timerElement = document.getElementById(`timer_${pkgId}`);
                 const btnElement = document.getElementById(`btn_${pkgId}`);
                 if(!timerElement || !btnElement) { clearInterval(interval); return; }
-                
                 const now = Date.now();
                 const oneDay = 24 * 60 * 60 * 1000;
                 const timePassed = now - lastClaim;
@@ -164,13 +158,13 @@
                     timerElement.innerHTML = `<i class="fas fa-check-circle"></i> ${daysEarned} Day(s) income ready!`;
                     btnElement.className = "btn claim-btn";
                     btnElement.innerHTML = `<i class="fas fa-coins"></i> Claim ৳${(daysEarned * dailyIncome).toFixed(2)}`;
-                    btnElement.onclick = () => claimIncome(subDocId, dailyIncome, daysEarned);
+                    btnElement.onclick = () => claimIncome(pkgId, dailyIncome, daysEarned);
                 } else {
                     const timeLeft = oneDay - timePassed;
-                    const h = Math.floor((timeLeft / 3600000) % 24);
-                    const m = Math.floor((timeLeft / 60000) % 60);
-                    const s = Math.floor((timeLeft / 1000) % 60);
-                    timerElement.innerText = `Next claim in: ${h}h ${m}m ${s}s`;
+                    const hours = Math.floor((timeLeft / (1000 * 60 * 60)) % 24);
+                    const minutes = Math.floor((timeLeft / (1000 * 60)) % 60);
+                    const seconds = Math.floor((timeLeft / 1000) % 60);
+                    timerElement.innerText = `Next claim in: ${hours}h ${minutes}m ${seconds}s`;
                     btnElement.className = "btn bought-btn";
                     btnElement.innerHTML = "Income Claimed (Wait)";
                     btnElement.onclick = null;
@@ -183,12 +177,16 @@
             const userSnap = await getDoc(userRef);
             
             if(userSnap.exists()) {
-                const balance = parseFloat(userSnap.data().balance || 0);
+                const userData = userSnap.data();
+                const balance = parseFloat(userData.balance || 0);
+                
                 if(balance >= price) {
                     const startTime = Date.now();
                     const expireTime = startTime + (validity * 24 * 60 * 60 * 1000);
                     
-                    await updateDoc(userRef, { balance: increment(-price) });
+                    await updateDoc(userRef, { balance: balance - price });
+                    
+                    // অ্যাডমিন প্যানেলের user_subscriptions কালেকশনে ডাটা সেভ
                     await addDoc(collection(db, "user_subscriptions"), {
                         phone: userPhone,
                         package_id: pkgId,
@@ -200,10 +198,13 @@
                         status: "active"
                     });
 
-                    // রেফারেল কমিশন লজিক (ঐচ্ছিক)
-                    const refID = userSnap.data().referrerID;
-                    if(refID && refID !== "none") {
-                        // এখানে রেফার কমিশন যোগ করার কোড দিতে পারেন
+                    const referrer = userData.referredBy; 
+                    if(referrer) {
+                        const refRef = doc(db, "users", referrer);
+                        const commissionAmount = price * 0.10; 
+                        await updateDoc(refRef, { 
+                            team_commission: increment(commissionAmount) 
+                        });
                     }
 
                     showToast("প্যাকেজটি সফলভাবে সক্রিয় হয়েছে!");
@@ -211,24 +212,33 @@
             }
         };
 
-        window.claimIncome = async function(subDocId, dailyAmount, days) {
+        window.claimIncome = async function(pkgId, dailyAmount, days) {
             const totalToClaim = dailyAmount * days;
             const extraTime = days * 24 * 60 * 60 * 1000;
             const userRef = doc(db, "users", userPhone);
-            const subRef = doc(db, "user_subscriptions", subDocId);
             
-            try {
-                await runTransaction(db, async (transaction) => {
-                    const userDoc = await transaction.get(userRef);
-                    const subDoc = await transaction.get(subRef);
-                    const newBalance = (parseFloat(userDoc.data().balance) || 0) + totalToClaim;
-                    const newLastClaim = subDoc.data().timestamp + extraTime;
-                    transaction.update(userRef, { balance: newBalance });
-                    transaction.update(subRef, { timestamp: newLastClaim });
-                });
-                showToast(`৳${totalToClaim.toFixed(2)} সফলভাবে ক্লেম করা হয়েছে!`);
-            } catch (e) { showToast("ক্লেম ব্যর্থ হয়েছে।"); }
+            // সাবস্ক্রিপশন আইডি খুঁজে বের করা
+            const q = query(collection(db, "user_subscriptions"), where("phone", "==", userPhone), where("package_id", "==", pkgId));
+            const subSnap = await getDocs(q);
+            
+            if (!subSnap.empty) {
+                const subDocId = subSnap.docs[0].id;
+                const subRef = doc(db, "user_subscriptions", subDocId);
+                
+                try {
+                    await runTransaction(db, async (transaction) => {
+                        const userDoc = await transaction.get(userRef);
+                        const subDoc = await transaction.get(subRef);
+                        const newBalance = (parseFloat(userDoc.data().balance) || 0) + totalToClaim;
+                        const newLastClaim = subDoc.data().timestamp + extraTime;
+                        transaction.update(userRef, { balance: newBalance });
+                        transaction.update(subRef, { timestamp: newLastClaim });
+                    });
+                    showToast(`৳${totalToClaim.toFixed(2)} সফলভাবে ক্লেম করা হয়েছে!`);
+                } catch (e) { showToast("ক্লেম ব্যর্থ হয়েছে।"); }
+            }
         };
     </script>
 </body>
 </html>
+
