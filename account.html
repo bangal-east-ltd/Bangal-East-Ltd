@@ -277,19 +277,26 @@
         window.onload = async function() {
             const loggedPhone = localStorage.getItem("loggedUser");
             if (loggedPhone) {
+                // রিয়েল-টাইম ব্যালেন্স আপডেট লিসেনার
+                const docRef = doc(db, "users", loggedPhone);
+                onSnapshot(docRef, (docSnap) => {
+                    if (docSnap.exists()) {
+                        const userData = docSnap.data();
+                        const balance = parseFloat(userData.balance || 0).toFixed(2);
+                        
+                        // নিজের পেজের ব্যালেন্স আপডেট
+                        document.getElementById("userBalanceDisplay").innerText = balance;
+                        document.getElementById("userPhoneDisplay").innerText = userData.userID || "N/A";
+                        currentUserID = userData.userID || "N/A";
+
+                        // গ্লোবাল স্টোরেজে ব্যালেন্স সেভ করা (অন্য সব পেজের জন্য)
+                        localStorage.setItem("userBalance", balance);
+                    }
+                });
+
                 const savedImg = localStorage.getItem("userProfilePic");
                 if(savedImg) {
                     document.getElementById("profileDisplay").innerHTML = `<img src="${savedImg}" style="width:100%;height:100%;object-fit:cover;">`;
-                }
-
-                const docRef = doc(db, "users", loggedPhone);
-                const docSnap = await getDoc(docRef);
-
-                if (docSnap.exists()) {
-                    const userData = docSnap.data();
-                    currentUserID = userData.userID || "N/A";
-                    document.getElementById("userPhoneDisplay").innerText = currentUserID;
-                    document.getElementById("userBalanceDisplay").innerText = parseFloat(userData.balance || 0).toFixed(2);
                 }
             } else {
                 window.location.replace("index.html");
@@ -297,21 +304,11 @@
         };
 
         window.fetchBalance = function() {
-            const loggedPhone = localStorage.getItem("loggedUser");
             const refreshBtn = document.querySelector('.refresh-icon');
-            if (loggedPhone) {
-                refreshBtn.classList.add('fa-spin');
-                const docRef = doc(db, "users", loggedPhone);
-                getDoc(docRef).then((docSnap) => {
-                    if (docSnap.exists()) {
-                        document.getElementById('userBalanceDisplay').innerText = parseFloat(docSnap.data().balance || 0).toFixed(2);
-                    }
-                    setTimeout(() => { refreshBtn.classList.remove('fa-spin'); }, 1000);
-                });
-            }
+            refreshBtn.classList.add('fa-spin');
+            setTimeout(() => { refreshBtn.classList.remove('fa-spin'); }, 1000);
         };
 
-        // পরিবর্তিত কপি ফাংশন
         window.copyUserID = function() {
             if (currentUserID && currentUserID !== "N/A") {
                 navigator.clipboard.writeText(currentUserID).then(() => {
@@ -341,5 +338,4 @@
         };
     </script>
 </body>
-    </html>
-    
+</html>
