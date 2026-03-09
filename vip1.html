@@ -3,238 +3,97 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VIP 1 Management - ai-signal</title>
+    <title>Admin - VIP 1 Management</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f0f2f5; margin: 0; padding: 20px; }
-        .admin-container { max-width: 1000px; margin: auto; }
-        .back-btn { margin-bottom: 20px; display: inline-block; text-decoration: none; color: #11998e; font-weight: bold; }
-        .card { background: white; padding: 25px; border-radius: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); margin-bottom: 25px; }
-        h2 { color: #333; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; border-bottom: 2px solid #eee; padding-bottom: 10px; }
-        
-        input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 15px; outline: none; }
-        input:focus { border-color: #11998e; }
-        
-        .btn { width: 100%; padding: 12px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 16px; transition: 0.3s; }
-        .btn-add { background: #11998e; color: white; }
-        .btn-add:hover { background: #0e867d; }
-        
-        table { width: 100%; border-collapse: collapse; margin-top: 15px; background: white; border-radius: 10px; overflow: hidden; }
-        th, td { padding: 15px; text-align: left; border-bottom: 1px solid #eee; vertical-align: middle; font-size: 14px; }
+        body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; padding: 20px; }
+        .admin-container { max-width: 900px; margin: auto; }
+        .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        input { width: 100%; padding: 10px; margin: 8px 0; border: 1px solid #ddd; border-radius: 6px; }
+        .btn-add { width: 100%; padding: 12px; background: #11998e; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #eee; }
         th { background: #11998e; color: white; }
-        
-        .delete-btn { color: #dc3545; cursor: pointer; font-size: 18px; border: none; background: none; }
-        .pkg-img-preview { width: 50px; height: 50px; border-radius: 8px; object-fit: cover; background: #eee; border: 1px solid #ddd; }
-        .user-tag { background: #e8f5e9; color: #2e7d32; padding: 3px 8px; border-radius: 5px; font-weight: bold; font-size: 12px; }
-
-        /* নতুন রিপোর্ট কার্ড স্টাইল */
-        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 25px; }
-        .stat-card { background: #fff; padding: 15px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); border-left: 5px solid #11998e; }
-        .stat-card h4 { margin: 0; font-size: 12px; color: #777; text-transform: uppercase; }
-        .stat-card p { margin: 5px 0 0; font-size: 20px; font-weight: bold; color: #333; }
+        .delete-btn { color: #e53935; cursor: pointer; border: none; background: none; font-size: 18px; }
+        .pkg-img { width: 40px; height: 40px; border-radius: 5px; object-fit: cover; }
     </style>
 </head>
 <body>
 
 <div class="admin-container">
-    <a href="admin-panel.html" class="back-btn"><i class="fas fa-arrow-left"></i> Back to Dashboard</a>
-
-    <div class="stats-grid">
-        <div class="stat-card"><h4>মোট প্যাকেজ ইউজার</h4><p id="stat-total-users">0</p></div>
-        <div class="stat-card"><h4>রি-পারচেজ ইউজার</h4><p id="stat-repurchase">0</p></div>
-        <div class="stat-card"><h4>আজকের একটিভ</h4><p id="stat-today-active">0</p></div>
-        <div class="stat-card"><h4>আজকের মেয়াদ শেষ</h4><p id="stat-today-expired">0</p></div>
-        <div class="stat-card"><h4>এই মাসের সেল</h4><p id="stat-monthly-count">0</p></div>
-        <div class="stat-card"><h4>মোট ইনভেস্টমেন্ট</h4><p id="stat-total-money">৳ 0</p></div>
-        <div class="stat-box" style="display:none;"></div> </div>
-
     <div class="card">
-        <h2><i class="fas fa-gem" style="color: #ff9800;"></i> VIP 1 - নতুন প্যাকেজ যোগ করুন</h2>
-        <input type="text" id="pName" placeholder="প্যাকেজের নাম (যেমন: VIP Gold)">
-        <input type="number" id="pPrice" placeholder="প্যাকেজের দাম (৳)">
-        <input type="number" id="pDaily" placeholder="প্রতিদিনের ইনকাম (৳)">
-        <input type="number" id="pValidity" placeholder="মেয়াদ (দিন)">
-        <input type="text" id="pImage" placeholder="ইমেজ লিঙ্ক (Image URL)">
-        
-        <button class="btn btn-add" onclick="addPackage()">প্যাকেজ সেভ করুন</button>
+        <h2><i class="fas fa-plus-circle"></i> Add New VIP 1 Package</h2>
+        <input type="text" id="pName" placeholder="Package Name (e.g. VIP 1 Silver)">
+        <input type="number" id="pPrice" placeholder="Price (৳)">
+        <input type="number" id="pDaily" placeholder="Daily Income (৳)">
+        <input type="number" id="pValidity" placeholder="Validity (Days)">
+        <input type="text" id="pImage" placeholder="Image URL (Optional)">
+        <button class="btn-add" onclick="addPackage()">Save Package</button>
     </div>
 
     <div class="card">
-        <h2><i class="fas fa-list"></i> VIP 1 মার্কেট প্যাকেজসমূহ</h2>
+        <h2><i class="fas fa-list"></i> Market Packages</h2>
         <table>
             <thead>
                 <tr>
-                    <th>ছবি</th>
-                    <th>নাম</th>
-                    <th>দাম</th>
-                    <th>ইনকাম</th>
-                    <th>পাবলিক সেল</th>
-                    <th>অ্যাকশন</th>
+                    <th>Image</th>
+                    <th>Name</th>
+                    <th>Price</th>
+                    <th>Daily</th>
+                    <th>Action</th>
                 </tr>
             </thead>
             <tbody id="pkgTableBody"></tbody>
         </table>
     </div>
-
-    <div class="card" style="border-top: 5px solid #ff9800;">
-        <h2><i class="fas fa-user-check"></i> VIP 1 - ইউজারদের একটিভ প্যাকেজ</h2>
-        <p style="font-size: 12px; color: #666; margin-bottom: 10px;">এখান থেকে ডিলিট করলে ইউজারের ইনকাম বন্ধ হয়ে যাবে।</p>
-        <table>
-            <thead>
-                <tr>
-                    <th>ইউজার ফোন</th>
-                    <th>প্যাকেজ নাম</th>
-                    <th>মেয়াদ শেষ</th>
-                    <th>অ্যাকশন</th>
-                </tr>
-            </thead>
-            <tbody id="activeUserTableBody"></tbody>
-        </table>
-    </div>
 </div>
 
 <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import { getFirestore, collection, addDoc, onSnapshot, doc, deleteDoc, query, where, getDocs, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getFirestore, collection, addDoc, onSnapshot, doc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
     const firebaseConfig = {
-        apiKey: "AIzaSyAoZ39EQR-Buy6QJT71P2R4wL0RyiOQaAc",
-        authDomain: "ai-signal-75e73.firebaseapp.com",
-        projectId: "ai-signal-75e73",
-        storageBucket: "ai-signal-75e73.appspot.com",
-        messagingSenderId: "753223286483",
-        appId: "1:753223286483:web:8e4ed0782ae807f8f02626"
+        apiKey: "AIzaSyCALYxA2M4BwIXq5KC3VMGsZpAFh8nL3fo",
+        authDomain: "bengal-east-company-limited.firebaseapp.com",
+        projectId: "bengal-east-company-limited",
+        storageBucket: "bengal-east-company-limited.firebasestorage.app",
+        messagingSenderId: "653223286483",
+        appId: "1:653223286483:web:8e4ed0782ae807f8f02626"
     };
 
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    // প্যাকেজ সেভ ফাংশন (Firestore)
     window.addPackage = async function() {
         const name = document.getElementById('pName').value;
-        const price = document.getElementById('pPrice').value;
-        const daily = document.getElementById('pDaily').value;
-        const validity = document.getElementById('pValidity').value;
+        const price = parseInt(document.getElementById('pPrice').value);
+        const daily = parseInt(document.getElementById('pDaily').value);
+        const validity = parseInt(document.getElementById('pValidity').value);
         const image = document.getElementById('pImage').value;
 
-        if (!name || !price || !daily || !validity) {
-            alert("সবগুলো ঘর পূরণ করুন!");
-            return;
-        }
+        if(!name || !price || !daily || !validity) return alert("সব তথ্য দিন!");
 
-        try {
-            await addDoc(collection(db, "packages_vip1"), {
-                name,
-                price: parseInt(price),
-                daily: parseInt(daily),
-                validity: parseInt(validity),
-                image: image || "",
-                createdAt: serverTimestamp()
-            });
-            alert("VIP 1 প্যাকেজ যোগ হয়েছে!");
-            location.reload();
-        } catch (e) { console.error(e); }
+        await addDoc(collection(db, "packages_vip1"), { name, price, daily, validity, image });
+        alert("প্যাকেজ যোগ হয়েছে!");
+        location.reload();
     }
 
-    // মার্কেট প্যাকেজ লিস্ট লোড ও সেলস কাউন্ট
-    onSnapshot(collection(db, "packages_vip1"), async (snapshot) => {
+    onSnapshot(collection(db, "packages_vip1"), (snapshot) => {
         const tableBody = document.getElementById('pkgTableBody');
         tableBody.innerHTML = "";
-        
-        snapshot.forEach(async (child) => {
-            const pkg = child.data();
-            const pkgId = child.id;
-            
-            // প্রতিটি প্যাকেজ কতজন কিনেছে তা বের করা (প্রতিটি প্যাকেজের সেলস কাউন্ট)
-            const q = query(collection(db, "user_subscriptions"), where("package_id", "==", pkgId));
-            const buyCountSnap = await getDocs(q);
-            const count = buyCountSnap.size;
-
-            const imgDisplay = pkg.image ? `<img src="${pkg.image}" class="pkg-img-preview">` : `<i class="fas fa-image" style="font-size:30px; color:#ccc;"></i>`;
+        snapshot.forEach(child => {
+            const p = child.data();
             tableBody.innerHTML += `<tr>
-                <td>${imgDisplay}</td>
-                <td>${pkg.name}</td>
-                <td>৳${pkg.price}</td>
-                <td>৳${pkg.daily}</td>
-                <td><b style="color:#11998e">${count} জন</b></td>
-                <td><button class="delete-btn" onclick="deletePackage('${pkgId}')"><i class="fas fa-trash"></i></button></td>
+                <td><img src="${p.image || ''}" class="pkg-img" onerror="this.src='https://via.placeholder.com/40'"></td>
+                <td>${p.name}</td>
+                <td>৳${p.price}</td>
+                <td>৳${p.daily}</td>
+                <td><button class="delete-btn" onclick="deletePackage('${child.id}')"><i class="fas fa-trash"></i></button></td>
             </tr>`;
         });
     });
 
-    window.deletePackage = async function(id) {
-        if (confirm("আপনি কি নিশ্চিতভাবে এই প্যাকেজটি মুছে ফেলতে চান?")) {
-            await deleteDoc(doc(db, "packages_vip1", id));
-        }
-    }
-
-    // ইউজার সাবস্ক্রিপশন ও রিপোর্ট লজিক
-    onSnapshot(collection(db, "user_subscriptions"), (snapshot) => {
-        const tableBody = document.getElementById('activeUserTableBody');
-        tableBody.innerHTML = "";
-        
-        let totalUsers = new Set();
-        let repurchaseCount = 0;
-        let todayActive = 0;
-        let todayExpired = 0;
-        let monthlyCount = 0;
-        let totalMoney = 0;
-        
-        const now = new Date();
-        const todayStr = now.toDateString();
-        const currentMonth = now.getMonth();
-
-        const userPurchaseMap = {};
-
-        snapshot.forEach((child) => {
-            const data = child.data();
-            const phone = data.phone;
-            const expireDate = data.expire_time ? new Date(data.expire_time) : new Date();
-            const purchaseDate = data.timestamp ? new Date(data.timestamp) : new Date();
-
-            // রিপোর্ট ক্যালকুলেশন
-            totalUsers.add(phone);
-            totalMoney += parseInt(data.price || 0);
-            
-            // রি-পারচেজ চেক
-            userPurchaseMap[phone] = (userPurchaseMap[phone] || 0) + 1;
-            
-            // আজকের একটিভ ও মেয়াদ শেষ চেক
-            if(purchaseDate.toDateString() === todayStr) todayActive++;
-            if(expireDate.toDateString() === todayStr) todayExpired++;
-            if(purchaseDate.getMonth() === currentMonth) monthlyCount++;
-
-            tableBody.innerHTML += `
-                <tr>
-                    <td><span class="user-tag">${phone}</span></td>
-                    <td>${data.name}</td>
-                    <td>${expireDate.toLocaleString()}</td>
-                    <td>
-                        <button class="delete-btn" onclick="deleteUserSub('${child.id}')">
-                            <i class="fas fa-user-minus"></i>
-                        </button>
-                    </td>
-                </tr>`;
-        });
-
-        // রি-পারচেজ ক্যালকুলেশন (যারা ১ বার এর বেশি কিনেছে)
-        Object.values(userPurchaseMap).forEach(val => { if(val > 1) repurchaseCount++; });
-
-        // ড্যাশবোর্ড আপডেট
-        document.getElementById('stat-total-users').innerText = totalUsers.size;
-        document.getElementById('stat-repurchase').innerText = repurchaseCount;
-        document.getElementById('stat-today-active').innerText = todayActive;
-        document.getElementById('stat-today-expired').innerText = todayExpired;
-        document.getElementById('stat-monthly-count').innerText = monthlyCount;
-        document.getElementById('stat-total-money').innerText = "৳ " + totalMoney;
-    });
-
-    window.deleteUserSub = async function(id) {
-        if (confirm("ইউজারের এই একটিভ প্যাকেজটি কি ডিলিট করতে চান?")) {
-            await deleteDoc(doc(db, "user_subscriptions", id));
-        }
-    }
+    window.deletePackage = async (id) => { if(confirm("মুছতে চান?")) await deleteDoc(doc(db, "packages_vip1", id)); };
 </script>
-
 </body>
 </html>
