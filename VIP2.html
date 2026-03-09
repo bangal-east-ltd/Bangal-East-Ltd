@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VIP 2 Admin Panel - Bangal East Ltd</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f0f2f5; margin: 0; padding: 20px; }
+        .admin-container { max-width: 1000px; margin: auto; }
+        .back-btn { margin-bottom: 20px; display: inline-block; text-decoration: none; color: #8c3494; font-weight: bold; }
+        .card { background: white; padding: 25px; border-radius: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); margin-bottom: 25px; }
+        h2 { color: #333; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; border-bottom: 2px solid #eee; padding-bottom: 10px; }
+        
+        input, select { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 15px; outline: none; }
+        
+        .btn { width: 100%; padding: 12px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 16px; transition: 0.3s; }
+        .btn-add { background: #8c3494; color: white; }
+        .btn-add:hover { background: #6a2670; }
+        
+        .payment-status { display: flex; justify-content: space-between; background: #f9f9f9; padding: 10px; border-radius: 8px; margin-bottom: 10px; border-left: 4px solid #8c3494; font-size: 14px; }
+
+        .table-container { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; background: white; border-radius: 10px; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #eee; font-size: 13px; }
+        th { background: #8c3494; color: white; }
+        
+        .status-pending { color: orange; font-weight: bold; }
+        .status-success { color: green; font-weight: bold; }
+        .badge { padding: 4px 8px; border-radius: 5px; font-size: 11px; color: white; }
+        .bg-deposit { background: #28a745; }
+        .bg-withdraw { background: #dc3545; }
+    </style>
+</head>
+<body>
+
+<div class="admin-container">
+    <a href="admin-panel.html" class="back-btn"><i class="fas fa-arrow-left"></i> Back to Dashboard</a>
+
+    <div class="card">
+        <h2><i class="fas fa-tools"></i> VIP 2 - Payment Settings (Firestore)</h2>
+        
+        <div id="currentSettings" style="margin-bottom: 20px;">
+            <div class="payment-status"><span>bKash:</span> <b id="view-bkash">Loading...</b></div>
+            <div class="payment-status"><span>Nagad:</span> <b id="view-nagad">Loading...</b></div>
+            <div class="payment-status"><span>Rocket:</span> <b id="view-rocket">Loading...</b></div>
+        </div>
+
+        <div style="display: flex; gap: 10px;">
+            <select id="setMethod">
+                <option value="bkash">bKash</option>
+                <option value="nagad">Nagad</option>
+                <option value="rocket">Rocket</option>
+            </select>
+            <select id="setType">
+                <option value="Cash Out">Cash Out</option>
+                <option value="Send Money">Send Money</option>
+            </select>
+        </div>
+        <input type="text" id="setNumber" placeholder="নতুন নম্বর দিন (যেমন: 018XXXXXXXX)">
+        <button class="btn btn-add" onclick="updatePaymentInfo()">পেমেন্ট তথ্য আপডেট করুন</button>
+    </div>
+
+    <div class="card">
+        <h2><i class="fas fa-arrow-down"></i> User Deposit History</h2>
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>User Email</th>
+                        <th>Method</th>
+                        <th>Amount</th>
+                        <th>TrxID</th>
+                        <th>Time & Date</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody id="depositTableBody"><tr><td colspan="6" style="text-align:center;">Loading...</td></tr></tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2><i class="fas fa-arrow-up"></i> User Withdraw History</h2>
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>User Email</th>
+                        <th>Method</th>
+                        <th>Amount</th>
+                        <th>Number</th>
+                        <th>Time & Date</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody id="withdrawTableBody"><tr><td colspan="6" style="text-align:center;">Loading...</td></tr></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+
+<script>
+    const firebaseConfig = {
+        apiKey: "AIzaSyAoZ39EQR-Buy6QJT71P2R4wL0RyiOQaAc",
+        projectId: "ai-signal-75e73",
+        authDomain: "ai-signal-75e73.firebaseapp.com"
+    };
+    
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    // ১. Firestore এ পেমেন্ট তথ্য আপডেট
+    async function updatePaymentInfo() {
+        const method = document.getElementById('setMethod').value;
+        const type = document.getElementById('setType').value;
+        const number = document.getElementById('setNumber').value;
+
+        if(!number) { alert("নম্বর দিন!"); return; }
+
+        try {
+            await db.collection('admin_settings').doc(method).set({
+                number: number,
+                type: type
+            });
+            alert(method + " তথ্য সফলভাবে আপডেট হয়েছে!");
+            document.getElementById('setNumber').value = "";
+            loadSettings();
+        } catch (e) {
+            console.error(e);
+            alert("Error updating settings");
+        }
+    }
+
+    // পেমেন্ট তথ্য লোড করা
+    function loadSettings() {
+        const methods = ['bkash', 'nagad', 'rocket'];
+        methods.forEach(method => {
+            db.collection('admin_settings').doc(method).onSnapshot((doc) => {
+                if(doc.exists) {
+                    const data = doc.data();
+                    document.getElementById(`view-${method}`).innerText = `${data.number} (${data.type})`;
+                }
+            });
+        });
+    }
+    loadSettings();
+
+    // ২. ডিপোজিট ডাটা লোড করা
+    function loadDeposits() {
+        db.collection("deposits").orderBy("created_at", "desc").onSnapshot((querySnapshot) => {
+            const tableBody = document.getElementById('depositTableBody');
+            tableBody.innerHTML = "";
+            querySnapshot.forEach((doc) => {
+                const data = doc.data();
+                const time = data.date_string || (data.created_at ? data.created_at.toDate().toLocaleString() : 'N/A');
+                tableBody.innerHTML += `
+                    <tr>
+                        <td>${data.user_email}</td>
+                        <td><span class="badge bg-deposit">${data.method}</span></td>
+                        <td>৳${data.amount}</td>
+                        <td><code>${data.trxID}</code></td>
+                        <td>${time}</td>
+                        <td class="${data.status === 'Pending' ? 'status-pending' : 'status-success'}">${data.status}</td>
+                    </tr>`;
+            });
+        });
+    }
+    loadDeposits();
+
+    // ৩. উইথড্র ডাটা লোড করা
+    function loadWithdrawals() {
+        db.collection("withdraws").orderBy("created_at", "desc").onSnapshot((querySnapshot) => {
+            const tableBody = document.getElementById('withdrawTableBody');
+            tableBody.innerHTML = "";
+            querySnapshot.forEach((doc) => {
+                const data = doc.data();
+                const time = data.created_at ? data.created_at.toDate().toLocaleString() : 'N/A';
+                tableBody.innerHTML += `
+                    <tr>
+                        <td>${data.user_email}</td>
+                        <td><span class="badge bg-withdraw">${data.method}</span></td>
+                        <td>৳${data.amount}</td>
+                        <td>${data.number || 'N/A'}</td>
+                        <td>${time}</td>
+                        <td class="${data.status === 'Pending' ? 'status-pending' : 'status-success'}">${data.status}</td>
+                    </tr>`;
+            });
+        });
+    }
+    loadWithdrawals();
+
+</script>
+
+</body>
+</html>
+
