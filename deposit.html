@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Deposit - AI Signal</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root { --primary: #FDB931; --bg: #0f172a; --card: #1e293b; --text: #f8fafc; }
+        * { margin:0; padding:0; box-sizing:border-box; font-family: 'Segoe UI', sans-serif; }
+        body { background: var(--bg); color: var(--text); padding-bottom: 100px; }
+
+        .header {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 20px; background: var(--card); border-bottom: 1px solid #334155;
+        }
+        .header a { color: var(--text); text-decoration: none; font-size: 20px; }
+
+        .container { padding: 0 20px; }
+        .section-title { font-size: 14px; font-weight: 600; margin: 25px 0 15px; color: var(--primary); display: flex; align-items: center; gap: 8px; text-transform: uppercase; letter-spacing: 1px; }
+
+        /* মেথড কার্ড ডিজাইন */
+        .methods { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+        .method-card {
+            background: var(--card); padding: 15px 5px; border-radius: 16px;
+            text-align: center; border: 2px solid transparent; cursor: pointer;
+            transition: 0.3s;
+        }
+        .method-card img { width: 40px; height: 40px; margin-bottom: 8px; border-radius: 8px; }
+        .method-card p { font-size: 11px; font-weight: bold; color: #94a3b8; }
+        .method-card.active { border-color: var(--primary); background: #fdb9311a; }
+        .method-card.active p { color: var(--primary); }
+
+        /* অ্যামাউন্ট চিপস */
+        .amount-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+        .amount-chip {
+            background: var(--card); padding: 14px; border-radius: 12px; text-align: center;
+            font-weight: 700; color: #94a3b8; border: 1px solid #334155; cursor: pointer; transition: 0.3s;
+        }
+        .amount-chip.active { background: var(--primary); border-color: var(--primary); color: #000; box-shadow: 0 4px 15px rgba(253, 185, 49, 0.3); }
+
+        /* ইনপুট বক্স */
+        .input-group { background: var(--card); padding: 25px; border-radius: 20px; margin-top: 20px; border: 1px solid #334155; }
+        .input-box { margin-bottom: 20px; }
+        .input-box label { display: block; font-size: 12px; color: #94a3b8; margin-bottom: 10px; font-weight: 600; }
+        .input-box input {
+            width: 100%; padding: 16px; border: 1px solid #334155; border-radius: 12px;
+            outline: none; font-size: 16px; background: #0f172a; color: #fff; transition: 0.3s;
+        }
+        .input-box input:focus { border-color: var(--primary); }
+
+        /* বোনাস ইনফো */
+        .bonus-info { background: #10b9811a; color: #10b981; padding: 12px; border-radius: 10px; font-size: 13px; margin-top: 10px; display: none; border: 1px dashed #10b981; }
+
+        .deposit-footer {
+            position: fixed; bottom: 0; left: 0; width: 100%;
+            background: var(--card); padding: 20px; border-top: 1px solid #334155;
+            display: flex; justify-content: space-between; align-items: center; z-index: 100;
+        }
+        .submit-btn {
+            background: #334155; color: #64748b; border: none; padding: 16px 45px;
+            border-radius: 12px; font-weight: 800; cursor: pointer; transition: 0.3s;
+        }
+        .submit-btn.active { background: var(--primary); color: #000; box-shadow: 0 4px 15px rgba(253, 185, 49, 0.4); }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <a href="account.html"><i class="fas fa-arrow-left"></i></a>
+        <h3 style="font-size: 18px;">Deposit Fund</h3>
+        <a href="history.html" style="font-size: 22px;"><i class="fas fa-history"></i></a>
+    </div>
+
+    <div class="container">
+        <p class="section-title">Select Method</p>
+        <div class="methods">
+            <div class="method-card active" onclick="selectMethod(this, 'Nagad')">
+                <img src="https://upload.wikimedia.org/wikipedia/en/thumb/8/8b/Nagad_Logo.svg/1200px-Nagad_Logo.svg.png">
+                <p>Nagad</p>
+            </div>
+            <div class="method-card" onclick="selectMethod(this, 'bKash')">
+                <img src="https://itshamsul.com/wp-content/uploads/2024/02/bkash-logo-circle.png">
+                <p>bKash</p>
+            </div>
+            <div class="method-card" onclick="selectMethod(this, 'Rocket')">
+                <img src="https://seeklogo.com/images/D/dutch-bangla-rocket-logo-B4D1CC458D-seeklogo.com.png">
+                <p>Rocket</p>
+            </div>
+            <div class="method-card" onclick="selectMethod(this, 'USDT')">
+                <img src="https://cryptologos.cc/logos/tether-usdt-logo.png">
+                <p>USDT</p>
+            </div>
+        </div>
+
+        <p class="section-title">Quick Amount</p>
+        <div class="amount-grid">
+            <div class="amount-chip" onclick="setAmount(this, 500)">৳500</div>
+            <div class="amount-chip" onclick="setAmount(this, 1000)">৳1000</div>
+            <div class="amount-chip" onclick="setAmount(this, 2000)">৳2000</div>
+            <div class="amount-chip" onclick="setAmount(this, 5000)">৳5000</div>
+            <div class="amount-chip" onclick="setAmount(this, 10000)">৳10000</div>
+            <div class="amount-chip" onclick="setAmount(this, 25000)">৳25000</div>
+        </div>
+
+        <div class="input-group">
+            <div class="input-box">
+                <label>Deposit Amount (৳500 - ৳25,000)</label>
+                <input type="number" id="amountInput" placeholder="0.00" oninput="calculateBonus()">
+            </div>
+            <div id="bonusBox" class="bonus-info">
+                <i class="fas fa-gift"></i> Bonus: <span id="bonusAmt">0</span> TK
+            </div>
+            <div class="input-box" style="margin-top: 15px;">
+                <label>Sender Number</label>
+                <input type="number" id="userNumber" placeholder="01XXXXXXXXX" oninput="validateForm()">
+            </div>
+        </div>
+    </div>
+
+    <div class="deposit-footer">
+        <div class="recharge-info">
+            <p style="font-size: 11px; color: #94a3b8;">Pay via:</p>
+            <b id="selectedMethodDisplay" style="color: var(--primary);">Nagad Fast</b>
+        </div>
+        <button id="depositBtn" class="submit-btn" onclick="saveAndProceed()" disabled>Next Step</button>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        // আপনার Firebase কনফিগ এখানে দিন
+        const firebaseConfig = {
+            apiKey: "AIzaSyAoZ39EQR-Buy6QJT71P2R4wL0RyiOQaAc",
+            projectId: "ai-signal-75e73",
+            authDomain: "ai-signal-75e73.firebaseapp.com",
+            storageBucket: "ai-signal-75e73.appspot.com",
+            messagingSenderId: "753223286483",
+            appId: "1:753223286483:web:8e4ed0782ae807f8f02626"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        let bonusPercent = 0;
+
+        // ৫ ও ৬: এডমিন প্যানেল থেকে বোনাস নির্ধারণ লোড করা
+        async function fetchBonusSettings() {
+            const docRef = doc(db, "settings", "deposit_bonus");
+            const docSnap = await getDoc(docRef);
+            if (docSnap.exists()) {
+                bonusPercent = docSnap.data().percentage || 0;
+            }
+        }
+        fetchBonusSettings();
+
+        window.calculateBonus = function() {
+            const amt = document.getElementById('amountInput').value;
+            const bonusBox = document.getElementById('bonusBox');
+            const bonusAmtDisplay = document.getElementById('bonusAmt');
+            
+            if(amt >= 500 && bonusPercent > 0) {
+                const bonus = (amt * bonusPercent) / 100;
+                bonusAmtDisplay.innerText = bonus.toFixed(0);
+                bonusBox.style.display = 'block';
+                localStorage.setItem("applied_bonus", bonus);
+            } else {
+                bonusBox.style.display = 'none';
+                localStorage.setItem("applied_bonus", 0);
+            }
+            validateForm();
+        }
+
+        window.saveAndProceed = function() {
+            localStorage.setItem("dep_amt", document.getElementById('amountInput').value);
+            localStorage.setItem("dep_method", selectedMethod);
+            localStorage.setItem("sender_num", document.getElementById('userNumber').value);
+            window.location.href = "payment_details.html"; 
+        }
+
+        window.validateForm = function() {
+            const amt = document.getElementById('amountInput').value;
+            const num = document.getElementById('userNumber').value;
+            const btn = document.getElementById('depositBtn');
+            if(amt >= 500 && num.length >= 11) {
+                btn.classList.add('active');
+                btn.disabled = false;
+            } else {
+                btn.classList.remove('active');
+                btn.disabled = true;
+            }
+        }
+    </script>
+
+    <script>
+        let selectedMethod = "Nagad";
+
+        function selectMethod(el, m) {
+            document.querySelectorAll('.method-card').forEach(c => c.classList.remove('active'));
+            el.classList.add('active');
+            selectedMethod = m;
+            document.getElementById('selectedMethodDisplay').innerText = m + " Fast";
+        }
+
+        function setAmount(el, val) {
+            document.querySelectorAll('.amount-chip').forEach(c => c.classList.remove('active'));
+            el.classList.add('active');
+            document.getElementById('amountInput').value = val;
+            calculateBonus();
+        }
+    </script>
+</body>
+</html>
+
