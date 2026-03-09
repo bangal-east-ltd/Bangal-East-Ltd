@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f0f2f5; margin: 0; padding: 20px; }
-        .admin-container { max-width: 1000px; margin: auto; }
+        .admin-container { max-width: 1200px; margin: auto; }
         .back-btn { margin-bottom: 20px; display: inline-block; text-decoration: none; color: #8c3494; font-weight: bold; }
         .card { background: white; padding: 25px; border-radius: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); margin-bottom: 25px; }
         h2 { color: #333; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; border-bottom: 2px solid #eee; padding-bottom: 10px; }
@@ -30,6 +30,9 @@
         .badge { padding: 4px 8px; border-radius: 5px; font-size: 11px; color: white; }
         .bg-deposit { background: #28a745; }
         .bg-withdraw { background: #dc3545; }
+        .action-btn { padding: 5px 10px; border-radius: 5px; border: none; cursor: pointer; font-size: 12px; font-weight: bold; }
+        .approve { background: #28a745; color: white; }
+        .reject { background: #dc3545; color: white; margin-left: 5px; }
     </style>
 </head>
 <body>
@@ -67,12 +70,12 @@
             <table>
                 <thead>
                     <tr>
-                        <th>User Email</th>
-                        <th>Method</th>
-                        <th>Amount</th>
-                        <th>TrxID</th>
+                        <th>Reg Number</th>
+                        <th>ID (5 Digit)</th>
+                        <th>Send Money Number</th>
+                        <th>Transaction</th>
                         <th>Time & Date</th>
-                        <th>Status</th>
+                        <th>Action</th>
                     </tr>
                 </thead>
                 <tbody id="depositTableBody"><tr><td colspan="6" style="text-align:center;">Loading...</td></tr></tbody>
@@ -86,12 +89,12 @@
             <table>
                 <thead>
                     <tr>
-                        <th>User Email</th>
-                        <th>Method</th>
+                        <th>Reg Number</th>
+                        <th>ID (5 Digit)</th>
+                        <th>Withdraw Number</th>
                         <th>Amount</th>
-                        <th>Number</th>
                         <th>Time & Date</th>
-                        <th>Status</th>
+                        <th>Action</th>
                     </tr>
                 </thead>
                 <tbody id="withdrawTableBody"><tr><td colspan="6" style="text-align:center;">Loading...</td></tr></tbody>
@@ -113,7 +116,6 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
-    // ১. Firestore এ পেমেন্ট তথ্য আপডেট
     async function updatePaymentInfo() {
         const method = document.getElementById('setMethod').value;
         const type = document.getElementById('setType').value;
@@ -135,7 +137,6 @@
         }
     }
 
-    // পেমেন্ট তথ্য লোড করা
     function loadSettings() {
         const methods = ['bkash', 'nagad', 'rocket'];
         methods.forEach(method => {
@@ -149,52 +150,72 @@
     }
     loadSettings();
 
-    // ২. ডিপোজিট ডাটা লোড করা
     function loadDeposits() {
         db.collection("deposits").orderBy("created_at", "desc").onSnapshot((querySnapshot) => {
             const tableBody = document.getElementById('depositTableBody');
             tableBody.innerHTML = "";
             querySnapshot.forEach((doc) => {
                 const data = doc.data();
+                const docId = doc.id;
                 const time = data.date_string || (data.created_at ? data.created_at.toDate().toLocaleString() : 'N/A');
+                
                 tableBody.innerHTML += `
                     <tr>
-                        <td>${data.user_email}</td>
-                        <td><span class="badge bg-deposit">${data.method}</span></td>
-                        <td>৳${data.amount}</td>
-                        <td><code>${data.trxID}</code></td>
+                        <td>${data.user_email || 'N/A'}</td>
+                        <td>${data.user_id || '-----'}</td>
+                        <td>${data.sender_number || 'N/A'}</td>
+                        <td><code>${data.trxID}</code> <br> <small>৳${data.amount}</small></td>
                         <td>${time}</td>
-                        <td class="${data.status === 'Pending' ? 'status-pending' : 'status-success'}">${data.status}</td>
+                        <td>
+                            <button class="action-btn approve" onclick="updateStatus('deposits', '${docId}', 'Success')">Approve</button>
+                            <button class="action-btn reject" onclick="updateStatus('deposits', '${docId}', 'Rejected')">Reject</button>
+                        </td>
                     </tr>`;
             });
         });
     }
     loadDeposits();
 
-    // ৩. উইথড্র ডাটা লোড করা
     function loadWithdrawals() {
         db.collection("withdraws").orderBy("created_at", "desc").onSnapshot((querySnapshot) => {
             const tableBody = document.getElementById('withdrawTableBody');
             tableBody.innerHTML = "";
             querySnapshot.forEach((doc) => {
                 const data = doc.data();
+                const docId = doc.id;
                 const time = data.created_at ? data.created_at.toDate().toLocaleString() : 'N/A';
+                
                 tableBody.innerHTML += `
                     <tr>
-                        <td>${data.user_email}</td>
-                        <td><span class="badge bg-withdraw">${data.method}</span></td>
-                        <td>৳${data.amount}</td>
+                        <td>${data.user_email || 'N/A'}</td>
+                        <td>${data.user_id || '-----'}</td>
                         <td>${data.number || 'N/A'}</td>
+                        <td>৳${data.amount}</td>
                         <td>${time}</td>
-                        <td class="${data.status === 'Pending' ? 'status-pending' : 'status-success'}">${data.status}</td>
+                        <td>
+                            <button class="action-btn approve" onclick="updateStatus('withdraws', '${docId}', 'Success')">Approve</button>
+                            <button class="action-btn reject" onclick="updateStatus('withdraws', '${docId}', 'Rejected')">Reject</button>
+                        </td>
                     </tr>`;
             });
         });
     }
     loadWithdrawals();
 
+    async function updateStatus(collectionName, docId, newStatus) {
+        if(confirm(`Are you sure you want to mark this as ${newStatus}?`)) {
+            try {
+                await db.collection(collectionName).doc(docId).update({
+                    status: newStatus
+                });
+                alert("Status updated successfully!");
+            } catch (e) {
+                alert("Error updating status");
+            }
+        }
+    }
+
 </script>
 
 </body>
 </html>
-
