@@ -78,6 +78,7 @@
             setTimeout(() => { alertBox.style.display = 'none'; }, 2000);
         }
 
+        // ব্যালেন্স শো করার জন্য স্ন্যাপশট লিসেনার
         onSnapshot(doc(db, "users", userPhone), (snapshot) => {
             if(snapshot.exists()) {
                 document.getElementById('userBalance').innerText = parseFloat(snapshot.data().balance || 0).toFixed(2);
@@ -241,4 +242,3 @@
     </script>
 </body>
 </html>
-
