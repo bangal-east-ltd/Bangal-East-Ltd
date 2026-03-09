@@ -110,7 +110,7 @@
                 <thead>
                     <tr>
                         <th>Status</th>
-                        <th>Phone/User</th>
+                        <th>User ID</th> <th>Phone/User</th>
                         <th>Balance</th>
                         <th>Password</th>
                         <th>Registered At</th>
@@ -189,7 +189,6 @@
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
     import { getFirestore, collection, onSnapshot, doc, updateDoc, getDoc, setDoc, query, where } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-    // আপনার নতুন কোম্পানি "Bengal East company limited" এর কনফিগ
     const firebaseConfig = {
         apiKey: "AIzaSyCALYxA2M4BwIXq5KC3VMGsZpAFh8nL3fo",
         authDomain: "bengal-east-company-limited.firebaseapp.com",
@@ -203,7 +202,6 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    // --- Authentication Logic ---
     window.checkAdminLogin = function() {
         const pass = document.getElementById('adminPassInput').value;
         if(pass === "123456") {
@@ -219,7 +217,6 @@
         location.reload();
     }
 
-    // --- UI Logic ---
     window.showSection = function(id) {
         document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
         document.getElementById(id).classList.add('active');
@@ -227,9 +224,6 @@
         if(event) event.currentTarget.classList.add('active');
     }
 
-    // --- Firestore Data Real-time Sync ---
-
-    // 1. Users Sync
     onSnapshot(collection(db, "users"), (snapshot) => {
         const userListBody = document.getElementById('userListBody');
         userListBody.innerHTML = "";
@@ -244,9 +238,12 @@
             const isOnline = (now - lastSeen < 60000);
             if(isOnline) onlineUsers++;
 
+            // User ID (5-digit) এখানে হ্যান্ডেল করা হচ্ছে
+            const displayID = u.userID || "N/A";
+
             userListBody.innerHTML += `<tr>
                 <td>${isOnline ? '<span class="online-dot"></span> Online' : '<span class="offline-dot"></span> Offline'}</td>
-                <td>${child.id}</td>
+                <td><b style="color:#11998e;">${displayID}</b></td> <td>${child.id}</td>
                 <td>৳ ${parseFloat(u.balance || 0).toFixed(2)}</td>
                 <td>${u.pass || '****'}</td>
                 <td>${u.createdAt ? new Date(u.createdAt).toLocaleString() : 'N/A'}</td>
@@ -256,7 +253,6 @@
         document.getElementById('statOnlineUsers').innerText = onlineUsers;
     });
 
-    // 2. Deposits & Withdraws Sync with Stats
     function setupTransactions() {
         onSnapshot(collection(db, "deposits"), (snapshot) => {
             const depBody = document.getElementById('depositBody');
@@ -323,7 +319,6 @@
         });
     }
 
-    // --- Action Functions ---
     window.approveDep = async function(id, userId, amt) {
         const userRef = doc(db, "users", userId);
         const userSnap = await getDoc(userRef);
@@ -383,5 +378,4 @@
 
 </script>
 </body>
-    </html>
-    
+</html>
