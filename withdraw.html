@@ -49,8 +49,7 @@
     <div class="modal-overlay" id="customModal">
         <div class="modal-card">
             <i id="modalIcon" class="fas"></i>
-            <h2 id="modalTitle"></h2>
-            <p id="modalMsg"></p>
+            <h2 id="modalTitle" style="display: none;"></h2> <p id="modalMsg"></p>
             <button class="modal-btn" onclick="closeModal()">OK</button>
         </div>
     </div>
@@ -199,8 +198,8 @@
             const check2 = n2 ? await isNumberInUse(n2) : false;
 
             if(check1 || check2) {
-                // নম্বর ডুপ্লিকেট হলে এখন পপ-আপ ভেসে উঠবে
-                showModal('limit', 'bangal-east-ltd.github.io says', 'Already account extra');
+                // পপ-আপের শিরোনাম বাদ দিয়ে শুধু মেসেজ দেখানো হচ্ছে
+                showModal('limit', '', 'Already account extra');
                 return;
             }
 
@@ -226,8 +225,8 @@
             const userSnap = await getDoc(userRef);
 
             if (userSnap.data().lastWithdrawDate === today) {
-                // আজকের লিমিট শেষ হলে পপ-আপ
-                showModal('limit', 'bangal-east-ltd.github.io says', 'আজকে একবার উইথড্র করেছেন। আগামীকাল চেষ্টা করুন।');
+                // পপ-আপের শিরোনাম বাদ দিয়ে শুধু মেসেজ দেখানো হচ্ছে
+                showModal('limit', '', 'আজকে একবার উইথড্র করেছেন। আগামীকাল চেষ্টা করুন।');
                 return;
             }
 
