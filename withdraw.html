@@ -20,30 +20,39 @@
         .input-group label { display: block; font-size: 13px; color: #666; margin-bottom: 5px; font-weight: 600; }
         .input-field { width: 100%; padding: 12px; border: 1.5px solid #eee; border-radius: 10px; font-size: 15px; outline: none; background: #fafafa; }
         .action-btn { width: 100%; padding: 14px; border: none; background: #ff8c00; color: white; border-radius: 10px; font-size: 16px; font-weight: bold; cursor: pointer; }
-        .action-btn:disabled { background: #ccc; }
-        .history-item { background: white; padding: 15px; border-radius: 15px; display: flex; justify-content: space-between; align-items: center; border-left: 5px solid #ff8c00; margin-bottom: 10px; }
+        .action-btn:disabled { background: #ccc; cursor: not-allowed; }
+        
+        /* উন্নত হিস্টোরি ডিজাইন */
+        .history-item { background: white; padding: 15px; border-radius: 15px; border-left: 5px solid #ff8c00; margin-bottom: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+        .hist-row { display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 13px; }
+        .label-text { font-weight: bold; color: #555; }
+        .value-text { font-weight: 800; color: #ff8c00; } /* কমলা এবং বোল্ড টেক্সট */
         .status { padding: 4px 10px; border-radius: 20px; font-size: 10px; font-weight: bold; }
         .status.Pending { background: #fff3cd; color: #856404; }
         .status.Approved { background: #d4edda; color: #155724; }
         .status.Rejected { background: #f8d7da; color: #721c24; }
-        #timeNotice { color: red; font-size: 12px; text-align: center; margin-top: 5px; display: none; font-weight: bold; }
+        
+        #timeNotice { color: #d9534f; font-size: 13px; text-align: center; margin-top: 10px; font-weight: bold; display: block; padding: 10px; background: #f9ebeb; border-radius: 8px; }
 
-        /* পপ-আপ ডিজাইন */
-        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center; }
-        .modal-card { background: white; padding: 30px; border-radius: 20px; text-align: center; max-width: 90%; width: 350px; }
-        .modal-card i { font-size: 50px; color: #28a745; margin-bottom: 15px; }
-        .modal-card h2 { color: #333; margin-bottom: 10px; }
-        .modal-card p { color: #666; line-height: 1.5; font-size: 14px; }
+        /* কাস্টম পপ-আপ ডিজাইন */
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1000; align-items: center; justify-content: center; backdrop-filter: blur(3px); }
+        .modal-card { background: white; padding: 30px; border-radius: 20px; text-align: center; max-width: 90%; width: 350px; animation: slideUp 0.3s ease-out; }
+        @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        .modal-card i { font-size: 50px; margin-bottom: 15px; }
+        .success-icon { color: #28a745; }
+        .limit-icon { color: #d9534f; }
+        .modal-card h2 { color: #333; margin-bottom: 10px; font-size: 22px; }
+        .modal-card p { color: #666; line-height: 1.5; font-size: 15px; font-weight: 600; }
         .modal-btn { margin-top: 20px; width: 100%; padding: 12px; background: #ff8c00; color: white; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; }
     </style>
 </head>
 <body>
 
-    <div class="modal-overlay" id="successModal">
+    <div class="modal-overlay" id="customModal">
         <div class="modal-card">
-            <i class="fas fa-check-circle"></i>
-            <h2>Withdrawal Success</h2>
-            <p>২৪ ঘন্টার মধ্যে আপনার ওয়ালেটে টাকা পৌঁছে যাবে ইনশাল্লাহ।</p>
+            <i id="modalIcon" class="fas"></i>
+            <h2 id="modalTitle"></h2>
+            <p id="modalMsg"></p>
             <button class="modal-btn" onclick="closeModal()">OK</button>
         </div>
     </div>
@@ -58,6 +67,8 @@
             <p>Your Current Balance</p>
             <h2>৳ <span id="userBalance">0.00</span></h2>
         </div>
+
+        <div id="timeNotice">লোড হচ্ছে...</div>
 
         <div class="card" id="numberSetupCard">
             <div class="card-title"><i class="fas fa-id-card"></i> Setup Withdraw Numbers</div>
@@ -89,10 +100,10 @@
                 </select>
             </div>
             <div class="input-group">
-                <label>Amount (৳300 - ৳50000)</label> <input type="number" id="amount" class="input-field" placeholder="Enter amount">
+                <label>Amount (৳300 - ৳50000)</label>
+                <input type="number" id="amount" class="input-field" placeholder="Enter amount">
             </div>
             <button class="action-btn" id="withdrawBtn" onclick="requestWithdraw()">Confirm Withdrawal</button>
-            <p id="timeNotice">উইথড্র সময়: সকাল ০৮:০০ থেকে রাত ০৮:০০ পর্যন্ত।</p>
         </div>
 
         <div style="font-weight: bold; margin-bottom: 10px;"><i class="fas fa-history"></i> Recent Withdrawals</div>
@@ -117,6 +128,41 @@
         const loggedUser = localStorage.getItem("loggedUser");
 
         if (!loggedUser) window.location.replace("index.html");
+
+        // অটো উইথড্র টাইম সিষ্টেম (08:00 AM - 08:00 PM)
+        function checkWithdrawTime() {
+            const now = new Date();
+            const hour = now.getHours();
+            const btn = document.getElementById("withdrawBtn");
+            const notice = document.getElementById("timeNotice");
+
+            if (hour >= 8 && hour < 20) {
+                btn.disabled = false;
+                notice.style.color = "green";
+                notice.style.background = "#e8f5e9";
+                notice.innerHTML = "<i class='fas fa-clock'></i> উইথড্র এখন চালু আছে (রাত ০৮:০০ পর্যন্ত)";
+            } else {
+                btn.disabled = true;
+                notice.style.color = "#d9534f";
+                notice.style.background = "#f9ebeb";
+                notice.innerHTML = "<i class='fas fa-lock'></i> উইথড্র এখন বন্ধ। সকাল ০৮:০০ টায় আবার চালু হবে।";
+            }
+        }
+        setInterval(checkWithdrawTime, 1000);
+
+        // পপ-আপ ফাংশন
+        window.showModal = function(type, title, msg) {
+            const modal = document.getElementById("customModal");
+            const icon = document.getElementById("modalIcon");
+            icon.className = type === 'success' ? 'fas fa-check-circle success-icon' : 'fas fa-exclamation-triangle limit-icon';
+            document.getElementById("modalTitle").innerText = title;
+            document.getElementById("modalMsg").innerText = msg;
+            modal.style.display = "flex";
+        };
+
+        window.closeModal = function() {
+            document.getElementById("customModal").style.display = "none";
+        };
 
         onSnapshot(doc(db, "users", loggedUser), (snapshot) => {
             if (snapshot.exists()) {
@@ -143,19 +189,17 @@
             const n2 = document.getElementById("savedNo2").value;
             if (n1.length < 11) { alert("সঠিক নম্বর দিন!"); return; }
             await updateDoc(doc(db, "users", loggedUser), { withdrawNo1: n1, withdrawNo2: n2 || "" });
-            alert("নম্বর সেভ হয়েছে।");
+            showModal('success', 'Save Success', 'আপনার নম্বরগুলো সফলভাবে সেভ করা হয়েছে।');
         };
 
-        // উইথড্র ফাংশন আপডেট করা হয়েছে
         window.requestWithdraw = async function() {
             const amount = parseFloat(document.getElementById("amount").value);
             const method = document.getElementById("method").value;
             const receiverNo = document.getElementById("selectedNo").value;
             const currentBal = parseFloat(document.getElementById("userBalance").innerText);
 
-            // লিমিট চেক (৩০০ - ৫০,০০০)
             if (!receiverNo || isNaN(amount) || amount < 300 || amount > 50000) {
-                alert("ভুল তথ্য! সর্বনিম্ন ৩০০ থেকে সর্বোচ্চ ৫০,০০০ টাকা উইথড্র করা যাবে।"); return;
+                alert("ভুল তথ্য! সর্বনিম্ন ৩০০ থেকে সর্বোচ্চ ৫০,০০০ টাকা।"); return;
             }
             if (amount > currentBal) {
                 alert("আপনার পর্যাপ্ত ব্যালেন্স নেই!"); return;
@@ -166,51 +210,56 @@
             const userSnap = await getDoc(userRef);
 
             if (userSnap.data().lastWithdrawDate === today) {
-                alert("আজকে একবার উইথড্র করেছেন। আগামীকাল চেষ্টা করুন।"); return;
+                showModal('limit', 'লিমিট শেষ', 'আজকে আপনার উইথড্র লিমিট শেষ, আগামীকাল আবার চেষ্টা করুন।');
+                return;
             }
-
-            document.getElementById("withdrawBtn").disabled = true;
 
             try {
                 await updateDoc(userRef, { balance: currentBal - amount, lastWithdrawDate: today });
-                await addDoc(collection(db, "withdraws"), {
+                const newDoc = await addDoc(collection(db, "withdraws"), {
                     user: loggedUser,
                     amount: amount,
                     method: method,
                     receiver_no: receiverNo,
                     status: "Pending",
                     timestamp: Date.now(),
-                    time: new Date().toLocaleString()
+                    date: new Date().toLocaleDateString(),
+                    time: new Date().toLocaleTimeString()
                 });
                 
-                // পপ-আপ দেখানো
-                document.getElementById("successModal").style.display = "flex";
+                showModal('success', 'Withdrawal Success', 'রিকোয়েস্ট সফল হয়েছে। ২৪ ঘন্টার মধ্যে আপনার ওয়ালেটে টাকা পৌঁছে যাবে ইনশাল্লাহ।');
                 document.getElementById("amount").value = "";
             } catch (e) {
-                alert("কিছু সমস্যা হয়েছে, আবার চেষ্টা করুন।");
-            } finally {
-                document.getElementById("withdrawBtn").disabled = false;
+                alert("Error: " + e.message);
             }
         };
 
-        window.closeModal = function() {
-            document.getElementById("successModal").style.display = "none";
-        };
-
+        // হিস্টোরি লোড ও ডিজাইন
         const q = query(collection(db, "withdraws"), where("user", "==", loggedUser));
         onSnapshot(q, (snapshot) => {
             const hist = document.getElementById("withdrawHistory");
             hist.innerHTML = "";
             let items = [];
-            snapshot.forEach(doc => items.push(doc.data()));
+            snapshot.forEach(doc => {
+                let d = doc.data();
+                d.id = doc.id.substring(0, 8); // শর্ট আইডি
+                items.push(d);
+            });
             items.sort((a,b) => b.timestamp - a.timestamp).forEach(data => {
                 hist.innerHTML += `
                     <div class="history-item">
-                        <div>
-                            <p style="font-size:14px; font-weight:bold;">৳ ${data.amount} (${data.receiver_no})</p>
-                            <span style="font-size:10px; color:#888;">${data.time}</span>
+                        <div class="hist-row">
+                            <span class="label-text">ID: <span class="value-text">${data.id}</span></span>
+                            <div class="status ${data.status}">${data.status}</div>
                         </div>
-                        <div class="status ${data.status}">${data.status}</div>
+                        <div class="hist-row">
+                            <span class="label-text">Method: <span class="value-text" style="color:#007bff;">${data.method}</span></span>
+                            <span class="label-text">Amount: <span class="value-text">৳ ${data.amount}</span></span>
+                        </div>
+                        <div class="hist-row" style="margin-top:8px; border-top:1px solid #eee; padding-top:5px;">
+                            <span style="font-size:11px; color:#888;"><i class="fas fa-calendar-alt"></i> ${data.date || ''}</span>
+                            <span style="font-size:11px; color:#888;"><i class="fas fa-clock"></i> ${data.time || ''}</span>
+                        </div>
                     </div>`;
             });
         });
