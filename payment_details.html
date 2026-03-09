@@ -53,9 +53,39 @@
         .instruction { margin-top: 30px; }
         .instruction h3 { font-size: 16px; color: #333; margin-bottom: 15px; border-left: 4px solid #333; padding-left: 10px; }
         .instruction li { font-size: 13px; color: #555; margin-bottom: 12px; line-height: 1.5; }
+
+        /* Custom Popup Styles */
+        #customPopup {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.6);
+            z-index: 9999;
+            align-items: center; justify-content: center;
+        }
+        .popup-content {
+            background: white; padding: 30px; border-radius: 20px;
+            text-align: center; width: 85%; max-width: 350px;
+            box-shadow: 0 15px 30px rgba(0,0,0,0.3);
+            animation: popIn 0.3s ease-out;
+        }
+        @keyframes popIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        .popup-icon { font-size: 50px; color: #28a745; margin-bottom: 15px; }
+        .popup-title { font-size: 20px; font-weight: bold; color: #333; margin-bottom: 10px; }
+        .popup-msg { font-size: 14px; color: #666; line-height: 1.5; }
+        .popup-btn { margin-top: 20px; padding: 10px 30px; background: #11998e; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; }
     </style>
 </head>
 <body>
+
+    <div id="customPopup">
+        <div class="popup-content">
+            <div id="popIcon" class="popup-icon"><i class="fas fa-check-circle"></i></div>
+            <div id="popTitle" class="popup-title">Success</div>
+            <div id="popMsg" class="popup-msg">Your request is successful.</div>
+            <button class="popup-btn" id="popBtn" onclick="closePopup()">OK</button>
+        </div>
+    </div>
 
     <div class="top-header">
         <h1>Payment Details</h1>
@@ -115,13 +145,31 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
+        // Custom Show Popup Function
+        window.showPopup = function(title, msg, iconClass, color, redirect = false) {
+            document.getElementById("popTitle").innerText = title;
+            document.getElementById("popMsg").innerText = msg;
+            document.getElementById("popIcon").innerHTML = `<i class="${iconClass}"></i>`;
+            document.getElementById("popIcon").style.color = color;
+            document.getElementById("customPopup").style.display = "flex";
+            
+            if(redirect) {
+                document.getElementById("popBtn").onclick = () => window.location.href = "account.html";
+            } else {
+                document.getElementById("popBtn").onclick = closePopup;
+            }
+        }
+
+        window.closePopup = function() {
+            document.getElementById("customPopup").style.display = "none";
+        }
+
         window.onload = function() {
             const method = localStorage.getItem("dep_method") || "bKash";
             const adminNum = localStorage.getItem("admin_number") || "01XXXXXXXXX";
             const amount = localStorage.getItem("dep_amt") || "0";
             const payType = localStorage.getItem("payment_type") || "ক্যাশ আউট";
 
-            // UI আপডেট
             document.getElementById("displayMethod").innerText = method;
             document.getElementById("displayMethod2").innerText = method;
             document.getElementById("adminNumber").innerText = adminNum;
@@ -129,7 +177,6 @@
             document.getElementById("paymentTypeDisplay").innerText = payType;
             document.getElementById("currentTime").innerText = new Date().toLocaleString();
 
-            // কার্ড কালার আপডেট
             const card = document.getElementById("mainCard");
             if(method.toLowerCase() === "bkash") card.classList.add("bg-bkash");
             else if(method.toLowerCase() === "nagad") card.classList.add("bg-nagad");
@@ -139,16 +186,16 @@
         window.copyText = function(id) {
             const text = document.getElementById(id).innerText;
             navigator.clipboard.writeText(text);
-            alert("কপি করা হয়েছে!");
+            showPopup("Copied", "আপনার তথ্যটি সফলভাবে কপি করা হয়েছে!", "fas fa-copy", "#11998e");
         }
 
         window.saveToFirebase = async function() {
             const trx = document.getElementById("trxID").value.trim();
-            if(trx.length < 5) return alert("সঠিক Transaction ID দিন");
+            if(trx.length < 5) return showPopup("Error", "সঠিক Transaction ID দিন", "fas fa-exclamation-circle", "#dc3545");
 
             const btn = document.getElementById("submitBtn");
             btn.disabled = true;
-            btn.innerText = "Processing...";
+            btn.innerText = "যাচাই করা হচ্ছে...";
 
             try {
                 await addDoc(collection(db, "deposits"), {
@@ -161,10 +208,17 @@
                     time: new Date().toLocaleString(),
                     timestamp: Date.now()
                 });
-                alert("সফল হয়েছে! এডমিন ৫-৩০ মিনিটের মধ্যে চেক করে ব্যালেন্স দিয়ে দিবে।");
-                window.location.href = "account.html";
+                
+                showPopup(
+                    "Success", 
+                    "প্রিয় গ্রাহক চিন্তা করবেন না 6 ঘন্টার মধ্যে টাকা যোগ হবে।", 
+                    "fas fa-check-circle", 
+                    "#28a745", 
+                    true
+                );
+
             } catch (e) {
-                alert("Error: " + e.message);
+                showPopup("Error", e.message, "fas fa-times-circle", "#dc3545");
                 btn.disabled = false;
                 btn.innerText = "জমা দিন";
             }
