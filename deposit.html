@@ -179,6 +179,27 @@
 
         let bonusPercent = 0;
 
+        // --- অ্যাডমিন সেটিংস থেকে নম্বর ও টাইপ লোড করার লজিক ---
+        async function loadAdminPaymentDetails(method) {
+            try {
+                // মেথডটিকে ছোট হাতের অক্ষরে রূপান্তর করে Firestore থেকে ডাটা আনা হচ্ছে
+                const docRef = doc(db, "admin_settings", method.toLowerCase());
+                const docSnap = await getDoc(docRef);
+                
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    // পরবর্তী পেজে ব্যবহারের জন্য লোকাল স্টোরেজে সেভ
+                    localStorage.setItem("admin_number", data.number);
+                    localStorage.setItem("payment_type", data.type);
+                }
+            } catch (e) {
+                console.error("Settings load error:", e);
+            }
+        }
+
+        // ডিফল্ট হিসেবে শুরুতে নগদ লোড হবে
+        loadAdminPaymentDetails('Nagad');
+
         async function fetchBonusSettings() {
             try {
                 const docRef = doc(db, "settings", "deposit_bonus");
@@ -226,17 +247,21 @@
                 btn.disabled = true;
             }
         }
-    </script>
 
-    <script>
-        let selectedMethod = "Nagad";
-
-        function selectMethod(el, m) {
+        // গ্লোবাল ফাংশন হিসেবে মেথড সিলেক্ট সেট করা
+        window.selectMethod = function(el, m) {
             document.querySelectorAll('.method-card').forEach(c => c.classList.remove('active'));
             el.classList.add('active');
             selectedMethod = m;
             document.getElementById('selectedMethodDisplay').innerText = m + " Fast";
+            
+            // নতুন মেথড সিলেক্ট করলে অ্যাডমিন নম্বর আপডেট হবে
+            loadAdminPaymentDetails(m);
         }
+    </script>
+
+    <script>
+        let selectedMethod = "Nagad";
 
         function setAmount(el, val) {
             document.querySelectorAll('.amount-chip').forEach(c => c.classList.remove('active'));
