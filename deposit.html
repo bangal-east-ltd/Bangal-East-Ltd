@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Deposit - AI Signal</title>
+    <title>Deposit - Bangal East Ltd</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         :root { 
@@ -40,11 +40,10 @@
         .method-card img { width: 42px; height: 42px; margin-bottom: 8px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
         .method-card p { font-size: 12px; font-weight: bold; color: var(--text-light); }
         
-        /* মেথড সিলেকশন কালার */
         .method-card.active { border-color: var(--primary); background: #e0f2f1; transform: translateY(-3px); }
         .method-card.active p { color: var(--primary); }
 
-        /* অ্যামাউন্ট চিপস - সুন্দর কালার */
+        /* অ্যামাউন্ট চিপস */
         .amount-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
         .amount-chip {
             background: white; padding: 15px; border-radius: 12px; text-align: center;
@@ -58,7 +57,7 @@
             box-shadow: 0 5px 15px rgba(17, 153, 142, 0.4); 
         }
 
-        /* ইনপুট বক্স ডিজাইন */
+        /* ইনপুট বক্স */
         .input-group { 
             background: var(--card-bg); padding: 25px; border-radius: 20px; 
             margin-top: 25px; border: 1px solid #e2e8f0; 
@@ -81,15 +80,13 @@
             text-align: center;
         }
 
-        /* ফুটার এবং সাবমিট বাটন */
+        /* ফুটার */
         .deposit-footer {
             position: fixed; bottom: 0; left: 0; width: 100%;
             background: white; padding: 20px; border-top: 1px solid #e2e8f0;
             display: flex; justify-content: space-between; align-items: center; 
             z-index: 100; box-shadow: 0 -5px 20px rgba(0,0,0,0.05);
         }
-        .recharge-info b { font-size: 16px; }
-        
         .submit-btn {
             background: #cbd5e1; color: white; border: none; padding: 16px 45px;
             border-radius: 15px; font-weight: 800; cursor: pointer; transition: 0.4s;
