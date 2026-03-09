@@ -144,11 +144,18 @@
         document.getElementById("pageTitle").innerText = "Reset Password";
     }
 
+    // ৫ সংখ্যার র্যান্ডম আইডি তৈরি করার ফাংশন
+    function generateRandomID() {
+        return Math.floor(10000 + Math.random() * 90000);
+    }
+
     async function saveToFirestore(phone, pass, refID) {
+        const randomID = generateRandomID(); // আইডি জেনারেট করা হলো
         try {
             await setDoc(doc(firestore, "users", phone), {
                 phone: phone,
                 pass: pass,
+                userID: randomID, // ৫ সংখ্যার আইডি সেভ হলো
                 balance: 0,
                 referrerID: refID || "none",
                 createdAt: new Date().toISOString()
@@ -158,7 +165,6 @@
         }
     }
 
-    // Login Function Fixed
     window.loginUser = async function() {
         let phone = document.getElementById("loginPhone").value.trim();
         let pass = document.getElementById("loginPass").value;
@@ -166,17 +172,17 @@
         if(!phone || !pass) { showToast("Please enter phone and password"); return; }
 
         try {
-            // Firestore থেকে চেক করা (আপনার Firestone রিকোয়ারমেন্ট অনুযায়ী)
             const docRef = doc(firestore, "users", phone);
             const docSnap = await getDoc(docRef);
 
             if (docSnap.exists() && docSnap.data().pass === pass) {
+                const userData = docSnap.data();
                 localStorage.setItem("isLoggedIn", "true");
                 localStorage.setItem("userPhone", phone);
                 localStorage.setItem("loggedUser", phone);
+                localStorage.setItem("userID", userData.userID); // আইডি লোকাল স্টোরেজে রাখা হলো
 
                 showToast("Login Successful!");
-                // ১.৫ সেকেন্ড পর হোম পেজে পাঠানো
                 setTimeout(() => { 
                     window.location.assign("home.html"); 
                 }, 1500);
@@ -259,3 +265,4 @@
 
 </body>
 </html>
+
