@@ -3,36 +3,42 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VIP 2 Admin Panel - Bangal East Ltd</title>
+    <title>VIP 2 Admin Dashboard - Bangal East Ltd</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f0f2f5; margin: 0; padding: 20px; }
         .admin-container { max-width: 1200px; margin: auto; }
         .back-btn { margin-bottom: 20px; display: inline-block; text-decoration: none; color: #8c3494; font-weight: bold; }
+        
+        /* Dashboard Summary Styles */
+        .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 30px; }
+        .stat-card { background: white; padding: 20px; border-radius: 12px; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.05); border-bottom: 4px solid #8c3494; }
+        .stat-card i { font-size: 25px; color: #8c3494; margin-bottom: 10px; }
+        .stat-card h3 { margin: 5px 0; font-size: 14px; color: #666; }
+        .stat-card p { font-size: 20px; font-weight: bold; color: #333; margin: 0; }
+
         .card { background: white; padding: 25px; border-radius: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); margin-bottom: 25px; }
         h2 { color: #333; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; border-bottom: 2px solid #eee; padding-bottom: 10px; }
         
         input, select { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 15px; outline: none; }
-        
         .btn { width: 100%; padding: 12px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 16px; transition: 0.3s; }
         .btn-add { background: #8c3494; color: white; }
         .btn-add:hover { background: #6a2670; }
         
         .payment-status { display: flex; justify-content: space-between; background: #f9f9f9; padding: 10px; border-radius: 8px; margin-bottom: 10px; border-left: 4px solid #8c3494; font-size: 14px; }
-
         .table-container { overflow-x: auto; }
         table { width: 100%; border-collapse: collapse; margin-top: 15px; background: white; border-radius: 10px; }
         th, td { padding: 12px; text-align: left; border-bottom: 1px solid #eee; font-size: 13px; }
         th { background: #8c3494; color: white; }
         
-        .status-pending { color: orange; font-weight: bold; }
-        .status-success { color: green; font-weight: bold; }
-        .badge { padding: 4px 8px; border-radius: 5px; font-size: 11px; color: white; }
-        .bg-deposit { background: #28a745; }
-        .bg-withdraw { background: #dc3545; }
-        .action-btn { padding: 5px 10px; border-radius: 5px; border: none; cursor: pointer; font-size: 12px; font-weight: bold; }
+        .status-success { color: #28a745; font-weight: bold; }
+        .status-rejected { color: #dc3545; font-weight: bold; }
+        .status-pending { color: #ff9800; font-weight: bold; }
+
+        .action-btn { padding: 6px 12px; border-radius: 5px; border: none; cursor: pointer; font-size: 12px; font-weight: bold; transition: 0.2s; }
         .approve { background: #28a745; color: white; }
         .reject { background: #dc3545; color: white; margin-left: 5px; }
+        .action-btn:disabled { background: #ccc; cursor: not-allowed; }
     </style>
 </head>
 <body>
@@ -40,15 +46,31 @@
 <div class="admin-container">
     <a href="admin-panel.html" class="back-btn"><i class="fas fa-arrow-left"></i> Back to Dashboard</a>
 
+    <div class="summary-grid">
+        <div class="stat-card">
+            <i class="fas fa-users"></i>
+            <h3>Total Users</h3>
+            <p id="totalUsers">0</p>
+        </div>
+        <div class="stat-card">
+            <i class="fas fa-wallet"></i>
+            <h3>Total Deposits</h3>
+            <p>৳ <span id="totalDepositAmount">0</span></p>
+        </div>
+        <div class="stat-card">
+            <i class="fas fa-hand-holding-usd"></i>
+            <h3>Total Withdraws</h3>
+            <p>৳ <span id="totalWithdrawAmount">0</span></p>
+        </div>
+    </div>
+
     <div class="card">
-        <h2><i class="fas fa-tools"></i> VIP 2 - Payment Settings (Firestore)</h2>
-        
+        <h2><i class="fas fa-tools"></i> VIP 2 - Payment Settings</h2>
         <div id="currentSettings" style="margin-bottom: 20px;">
             <div class="payment-status"><span>bKash:</span> <b id="view-bkash">Loading...</b></div>
             <div class="payment-status"><span>Nagad:</span> <b id="view-nagad">Loading...</b></div>
             <div class="payment-status"><span>Rocket:</span> <b id="view-rocket">Loading...</b></div>
         </div>
-
         <div style="display: flex; gap: 10px;">
             <select id="setMethod">
                 <option value="bkash">bKash</option>
@@ -60,7 +82,7 @@
                 <option value="Send Money">Send Money</option>
             </select>
         </div>
-        <input type="text" id="setNumber" placeholder="নতুন নম্বর দিন (যেমন: 018XXXXXXXX)">
+        <input type="text" id="setNumber" placeholder="নতুন নম্বর দিন">
         <button class="btn btn-add" onclick="updatePaymentInfo()">পেমেন্ট তথ্য আপডেট করুন</button>
     </div>
 
@@ -70,15 +92,15 @@
             <table>
                 <thead>
                     <tr>
-                        <th>Reg Number</th>
+                        <th>User Email</th>
                         <th>ID (5 Digit)</th>
-                        <th>Send Money Number</th>
-                        <th>Transaction</th>
+                        <th>Sender Number</th>
+                        <th>Amount & TrxID</th>
                         <th>Time & Date</th>
                         <th>Action</th>
                     </tr>
                 </thead>
-                <tbody id="depositTableBody"><tr><td colspan="6" style="text-align:center;">Loading...</td></tr></tbody>
+                <tbody id="depositTableBody"></tbody>
             </table>
         </div>
     </div>
@@ -89,7 +111,7 @@
             <table>
                 <thead>
                     <tr>
-                        <th>Reg Number</th>
+                        <th>User Email</th>
                         <th>ID (5 Digit)</th>
                         <th>Withdraw Number</th>
                         <th>Amount</th>
@@ -97,7 +119,7 @@
                         <th>Action</th>
                     </tr>
                 </thead>
-                <tbody id="withdrawTableBody"><tr><td colspan="6" style="text-align:center;">Loading...</td></tr></tbody>
+                <tbody id="withdrawTableBody"></tbody>
             </table>
         </div>
     </div>
@@ -116,105 +138,110 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
+    // --- Dashboard Stats Logic ---
+    function loadDashboardStats() {
+        // Users Count
+        db.collection("users").onSnapshot(snap => { document.getElementById('totalUsers').innerText = snap.size; });
+        
+        // Deposits Sum
+        db.collection("deposits").where("status", "==", "Success").onSnapshot(snap => {
+            let total = 0;
+            snap.forEach(doc => total += Number(doc.data().amount));
+            document.getElementById('totalDepositAmount').innerText = total;
+        });
+
+        // Withdraws Sum
+        db.collection("withdraws").where("status", "==", "Success").onSnapshot(snap => {
+            let total = 0;
+            snap.forEach(doc => total += Number(doc.data().amount));
+            document.getElementById('totalWithdrawAmount').innerText = total;
+        });
+    }
+    loadDashboardStats();
+
+    // --- Payment Info Update ---
     async function updatePaymentInfo() {
         const method = document.getElementById('setMethod').value;
         const type = document.getElementById('setType').value;
         const number = document.getElementById('setNumber').value;
-
         if(!number) { alert("নম্বর দিন!"); return; }
-
-        try {
-            await db.collection('admin_settings').doc(method).set({
-                number: number,
-                type: type
-            });
-            alert(method + " তথ্য সফলভাবে আপডেট হয়েছে!");
-            document.getElementById('setNumber').value = "";
-            loadSettings();
-        } catch (e) {
-            console.error(e);
-            alert("Error updating settings");
-        }
+        await db.collection('admin_settings').doc(method).set({ number, type });
+        alert("আপডেট হয়েছে!");
     }
 
     function loadSettings() {
-        const methods = ['bkash', 'nagad', 'rocket'];
-        methods.forEach(method => {
-            db.collection('admin_settings').doc(method).onSnapshot((doc) => {
-                if(doc.exists) {
-                    const data = doc.data();
-                    document.getElementById(`view-${method}`).innerText = `${data.number} (${data.type})`;
-                }
+        ['bkash', 'nagad', 'rocket'].forEach(m => {
+            db.collection('admin_settings').doc(m).onSnapshot(doc => {
+                if(doc.exists) document.getElementById(`view-${m}`).innerText = `${doc.data().number} (${doc.data().type})`;
             });
         });
     }
     loadSettings();
 
-    function loadDeposits() {
-        db.collection("deposits").orderBy("created_at", "desc").onSnapshot((querySnapshot) => {
-            const tableBody = document.getElementById('depositTableBody');
-            tableBody.innerHTML = "";
-            querySnapshot.forEach((doc) => {
-                const data = doc.data();
-                const docId = doc.id;
-                const time = data.date_string || (data.created_at ? data.created_at.toDate().toLocaleString() : 'N/A');
-                
-                tableBody.innerHTML += `
-                    <tr>
-                        <td>${data.user_email || 'N/A'}</td>
-                        <td>${data.user_id || '-----'}</td>
-                        <td>${data.sender_number || 'N/A'}</td>
-                        <td><code>${data.trxID}</code> <br> <small>৳${data.amount}</small></td>
-                        <td>${time}</td>
-                        <td>
-                            <button class="action-btn approve" onclick="updateStatus('deposits', '${docId}', 'Success')">Approve</button>
-                            <button class="action-btn reject" onclick="updateStatus('deposits', '${docId}', 'Rejected')">Reject</button>
-                        </td>
-                    </tr>`;
+    // --- Deposit Approve Logic ---
+    async function approveDeposit(docId, email, amount) {
+        if(!confirm("Approve this deposit? Amount will be added to user balance.")) return;
+        try {
+            const userRef = db.collection("users").doc(email);
+            await db.runTransaction(async (transaction) => {
+                const userDoc = await transaction.get(userRef);
+                if (!userDoc.exists) throw "User not found!";
+                let newBalance = (userDoc.data().balance || 0) + Number(amount);
+                transaction.update(userRef, { balance: newBalance });
+                transaction.update(db.collection("deposits").doc(docId), { status: "Success" });
             });
-        });
+            alert("Approved & Balance Updated!");
+        } catch (e) { alert("Error: " + e); }
     }
-    loadDeposits();
 
-    function loadWithdrawals() {
-        db.collection("withdraws").orderBy("created_at", "desc").onSnapshot((querySnapshot) => {
-            const tableBody = document.getElementById('withdrawTableBody');
-            tableBody.innerHTML = "";
-            querySnapshot.forEach((doc) => {
-                const data = doc.data();
-                const docId = doc.id;
-                const time = data.created_at ? data.created_at.toDate().toLocaleString() : 'N/A';
-                
-                tableBody.innerHTML += `
-                    <tr>
-                        <td>${data.user_email || 'N/A'}</td>
-                        <td>${data.user_id || '-----'}</td>
-                        <td>${data.number || 'N/A'}</td>
-                        <td>৳${data.amount}</td>
-                        <td>${time}</td>
-                        <td>
-                            <button class="action-btn approve" onclick="updateStatus('withdraws', '${docId}', 'Success')">Approve</button>
-                            <button class="action-btn reject" onclick="updateStatus('withdraws', '${docId}', 'Rejected')">Reject</button>
-                        </td>
-                    </tr>`;
-            });
-        });
-    }
-    loadWithdrawals();
-
-    async function updateStatus(collectionName, docId, newStatus) {
-        if(confirm(`Are you sure you want to mark this as ${newStatus}?`)) {
-            try {
-                await db.collection(collectionName).doc(docId).update({
-                    status: newStatus
-                });
-                alert("Status updated successfully!");
-            } catch (e) {
-                alert("Error updating status");
-            }
+    // --- General Status Update (Reject/Withdraw) ---
+    async function updateStatus(collection, docId, status) {
+        if(confirm(`Mark as ${status}?`)) {
+            await db.collection(collection).doc(docId).update({ status });
         }
     }
 
+    // --- Load Tables ---
+    function loadDeposits() {
+        db.collection("deposits").orderBy("created_at", "desc").onSnapshot(snap => {
+            const tbody = document.getElementById('depositTableBody');
+            tbody.innerHTML = "";
+            snap.forEach(doc => {
+                const d = doc.data();
+                const time = d.date_string || (d.created_at ? d.created_at.toDate().toLocaleString() : 'N/A');
+                let actions = `<span class="status-${d.status.toLowerCase()}">${d.status}</span>`;
+                if(d.status === "Pending") {
+                    actions = `
+                        <button class="action-btn approve" onclick="approveDeposit('${doc.id}', '${d.user_email}', ${d.amount})">Approve</button>
+                        <button class="action-btn reject" onclick="updateStatus('deposits', '${doc.id}', 'Rejected')">Reject</button>
+                    `;
+                }
+                tbody.innerHTML += `<tr><td>${d.user_email}</td><td>${d.user_id || '---'}</td><td>${d.sender_number || '---'}</td><td>৳${d.amount}<br><small>${d.trxID}</small></td><td>${time}</td><td>${actions}</td></tr>`;
+            });
+        });
+    }
+
+    function loadWithdrawals() {
+        db.collection("withdraws").orderBy("created_at", "desc").onSnapshot(snap => {
+            const tbody = document.getElementById('withdrawTableBody');
+            tbody.innerHTML = "";
+            snap.forEach(doc => {
+                const d = doc.data();
+                const time = d.created_at ? d.created_at.toDate().toLocaleString() : 'N/A';
+                let actions = `<span class="status-${d.status.toLowerCase()}">${d.status}</span>`;
+                if(d.status === "Pending") {
+                    actions = `
+                        <button class="action-btn approve" onclick="updateStatus('withdraws', '${doc.id}', 'Success')">Approve</button>
+                        <button class="action-btn reject" onclick="updateStatus('withdraws', '${doc.id}', 'Rejected')">Reject</button>
+                    `;
+                }
+                tbody.innerHTML += `<tr><td>${d.user_email}</td><td>${d.user_id || '---'}</td><td>${d.number}</td><td>৳${d.amount}</td><td>${time}</td><td>${actions}</td></tr>`;
+            });
+        });
+    }
+
+    loadDeposits();
+    loadWithdrawals();
 </script>
 
 </body>
