@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VIP Package - VIP 1 Plans</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; }
+        body { background-color: #121212; color: white; padding-bottom: 80px; }
+        .header-card { background: linear-gradient(135deg, #11998e, #38ef7d); padding: 40px 20px; text-align: center; border-bottom-left-radius: 30px; border-bottom-right-radius: 30px; margin-bottom: 20px; box-shadow: 0 10px 20px rgba(0,0,0,0.3); }
+        .container { padding: 0 15px; }
+        
+        .section-title { margin: 20px 0 10px; color: #38ef7d; font-size: 18px; border-left: 4px solid #38ef7d; padding-left: 10px; }
+        
+        .package-card { background: #1e1e1e; border-radius: 15px; padding: 15px; margin-bottom: 15px; display: flex; align-items: center; gap: 15px; border: 1px solid #333; position: relative; }
+        .package-img { width: 80px; height: 80px; border-radius: 12px; overflow: hidden; background: #333; display: flex; align-items: center; justify-content: center; }
+        .package-img img { width: 100%; height: 100%; object-fit: cover; }
+        .package-info h2 { font-size: 17px; color: #38ef7d; }
+        .price-tag { position: absolute; top: 15px; right: 15px; background: #38ef7d; color: #121212; padding: 2px 10px; border-radius: 10px; font-weight: bold; font-size: 12px; }
+        
+        .btn { border: none; padding: 10px; border-radius: 10px; width: 100%; margin-top: 10px; font-weight: bold; cursor: pointer; transition: 0.3s; }
+        .activate-btn { background: #11998e; color: white; }
+        .bought-btn { background: #444; color: #888; cursor: not-allowed; }
+        .claim-btn { background: #ff9800; color: white; box-shadow: 0 4px 10px rgba(255,152,0,0.3); }
+        
+        .my-plan-card { background: #252525; border: 1px dashed #38ef7d; border-radius: 15px; padding: 15px; margin-bottom: 15px; }
+        .back-btn { position: absolute; top: 15px; left: 15px; color: white; font-size: 20px; }
+
+        .custom-alert { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(30, 30, 30, 0.95); border: 1px solid #38ef7d; color: white; padding: 20px 30px; border-radius: 15px; z-index: 1000; text-align: center; box-shadow: 0 0 20px rgba(0,0,0,0.5); display: none; min-width: 250px; }
+        .timer-text { font-size: 12px; color: #ff9800; margin-top: 5px; font-weight: normal; }
+    </style>
+</head>
+<body>
+
+    <div id="customAlert" class="custom-alert"></div>
+
+    <div class="header-card">
+        <a href="home.html" class="back-btn"><i class="fas fa-arrow-left"></i></a>
+        <h3>Current Balance</h3>
+        <h1>৳ <span id="userBalance">0.00</span></h1>
+    </div>
+
+    <div class="container">
+        <h3 class="section-title">My Active VIP 1 Equipment</h3>
+        <div id="myPlansDisplay">
+            <p style="color: #666; font-size: 14px;">No active equipment found.</p>
+        </div>
+
+        <h3 class="section-title">VIP 1 Investment Plans</h3>
+        <div id="packageDisplay">
+            <p style="text-align: center; color: #888;">Fetching VIP 1 packages...</p>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getFirestore, doc, getDoc, updateDoc, onSnapshot, collection, setDoc, deleteDoc, runTransaction } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+        // আপনার Bengal East কোম্পানির Firebase Config
+        const firebaseConfig = {
+            apiKey: "AIzaSyCALYxA2M4BwIXq5KC3VMGsZpAFh8nL3fo",
+            authDomain: "bengal-east-company-limited.firebaseapp.com",
+            projectId: "bengal-east-company-limited",
+            storageBucket: "bengal-east-company-limited.firebasestorage.app",
+            messagingSenderId: "653223286483",
+            appId: "1:653223286483:web:8e4ed0782ae807f8f02626",
+            measurementId: "G-R7S444H8KT"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const userPhone = localStorage.getItem("loggedUser") || "guest_user";
+
+        function showToast(message) {
+            const alertBox = document.getElementById('customAlert');
+            alertBox.innerText = message;
+            alertBox.style.display = 'block';
+            setTimeout(() => { alertBox.style.display = 'none'; }, 2000);
+        }
+
+        // রিয়েল-টাইম ব্যালেন্স চেক
+        onSnapshot(doc(db, "users", userPhone), (snapshot) => {
+            if(snapshot.exists()) {
+                document.getElementById('userBalance').innerText = parseFloat(snapshot.data().balance || 0).toFixed(2);
+            }
+        });
+
+        // রিয়েল-টাইম প্যাকেজ এবং সাবস্ক্রিপশন চেক
+        onSnapshot(collection(db, "user_subscriptions", userPhone, "active_plans"), (subSnapshot) => {
+            const mySubs = {};
+            const now = Date.now();
+
+            subSnapshot.forEach(child => {
+                const data = child.data();
+                mySubs[child.id] = data;
+                
+                // মেয়াদ শেষ হলে ডিলিট করার লজিক
+                if (now >= data.expire_time) {
+                    deleteDoc(doc(db, "user_subscriptions", userPhone, "active_plans", child.id));
+                }
+            });
+
+            // মার্কেট প্যাকেজ লোড (অ্যাডমিন প্যানেল থেকে যা সেট করবেন)
+            onSnapshot(collection(db, "packages_vip1"), (pkgSnapshot) => {
+                const pkgDisplay = document.getElementById('packageDisplay');
+                pkgDisplay.innerHTML = "";
+                
+                pkgSnapshot.forEach(child => {
+                    const p = child.data();
+                    const pkgKey = child.id;
+                    const isBought = mySubs[pkgKey] ? true : false;
+                    
+                    pkgDisplay.innerHTML += `
+                        <div class="package-card">
+                            <span class="price-tag">৳ ${p.price}</span>
+                            <div class="package-img">${p.image ? `<img src="${p.image}">` : `<i class="fas fa-gem" style="font-size:30px; color:#38ef7d;"></i>`}</div>
+                            <div class="package-info">
+                                <h2>${p.name}</h2>
+                                <p style="font-size:12px; color:#bbb;">Daily: ৳${p.daily} | Validity: ${p.validity} Days</p>
+                                ${isBought ? `<button class="btn bought-btn">Already Active</button>` : `<button class="btn activate-btn" onclick="buyPackage('${pkgKey}', ${p.price}, ${p.daily}, ${p.validity}, '${p.name}')">Activate Now</button>`}
+                            </div>
+                        </div>`;
+                });
+            });
+
+            updateMyEquipment(subSnapshot);
+        });
+
+        function updateMyEquipment(subSnapshot) {
+            const myDisplay = document.getElementById('myPlansDisplay');
+            myDisplay.innerHTML = "";
+            let activeCount = 0;
+
+            subSnapshot.forEach(child => {
+                const data = child.data();
+                activeCount++;
+                const pkgId = child.id;
+                
+                myDisplay.innerHTML += `
+                    <div class="my-plan-card">
+                        <h3 style="color:#38ef7d;">${data.name}</h3>
+                        <p style="font-size:13px; color:#ddd;">Daily Income: <b>৳ ${data.daily_income}</b></p>
+                        <div id="timer_${pkgId}" class="timer-text">Checking timer...</div>
+                        <button id="btn_${pkgId}" class="btn bought-btn">Please Wait...</button>
+                    </div>`;
+                
+                startTimer(pkgId, data.last_claim, data.daily_income);
+            });
+
+            if(activeCount === 0) myDisplay.innerHTML = "<p style='color: #666; font-size: 14px;'>No active equipment found.</p>";
+        }
+
+        function startTimer(pkgId, lastClaim, dailyIncome) {
+            const interval = setInterval(() => {
+                const timerElement = document.getElementById(`timer_${pkgId}`);
+                const btnElement = document.getElementById(`btn_${pkgId}`);
+                if(!timerElement || !btnElement) { clearInterval(interval); return; }
+
+                const now = Date.now();
+                const oneDay = 24 * 60 * 60 * 1000;
+                const timePassed = now - lastClaim;
+                const daysEarned = Math.floor(timePassed / oneDay);
+
+                if (daysEarned >= 1) {
+                    clearInterval(interval);
+                    timerElement.innerHTML = `<i class="fas fa-check-circle"></i> ${daysEarned} Day(s) income ready!`;
+                    btnElement.className = "btn claim-btn";
+                    btnElement.innerHTML = `<i class="fas fa-coins"></i> Claim ৳${(daysEarned * dailyIncome).toFixed(2)}`;
+                    btnElement.onclick = () => claimIncome(pkgId, dailyIncome, daysEarned);
+                } else {
+                    const timeLeft = oneDay - timePassed;
+                    const hours = Math.floor((timeLeft / (1000 * 60 * 60)) % 24);
+                    const minutes = Math.floor((timeLeft / (1000 * 60)) % 60);
+                    const seconds = Math.floor((timeLeft / 1000) % 60);
+                    timerElement.innerText = `Next claim in: ${hours}h ${minutes}m ${seconds}s`;
+                    btnElement.className = "btn bought-btn";
+                    btnElement.innerHTML = "Income Claimed (Wait)";
+                    btnElement.onclick = null;
+                }
+            }, 1000);
+        }
+
+        window.buyPackage = async function(pkgId, price, daily, validity, name) {
+            const userRef = doc(db, "users", userPhone);
+            const userSnap = await getDoc(userRef);
+            
+            if(userSnap.exists()) {
+                const balance = parseFloat(userSnap.data().balance || 0);
+                if(balance >= price) {
+                    const startTime = Date.now();
+                    await updateDoc(userRef, { balance: balance - price });
+                    
+                    await setDoc(doc(db, "user_subscriptions", userPhone, "active_plans", pkgId), {
+                        name: name, 
+                        daily_income: daily, 
+                        last_claim: startTime,
+                        expire_time: startTime + (validity * 24 * 60 * 60 * 1000),
+                        status: "active", 
+                        bought_at: startTime
+                    });
+                    showToast("প্যাকেজটি সফলভাবে সক্রিয় হয়েছে!");
+                } else { showToast("ব্যালেন্স পর্যাপ্ত নয়!"); }
+            }
+        };
+
+        window.claimIncome = async function(pkgId, dailyAmount, days) {
+            const totalToClaim = dailyAmount * days;
+            const extraTime = days * 24 * 60 * 60 * 1000;
+            const userRef = doc(db, "users", userPhone);
+            const subRef = doc(db, "user_subscriptions", userPhone, "active_plans", pkgId);
+
+            try {
+                await runTransaction(db, async (transaction) => {
+                    const userDoc = await transaction.get(userRef);
+                    const subDoc = await transaction.get(subRef);
+                    
+                    if (!userDoc.exists() || !subDoc.exists()) return;
+
+                    const newBalance = (parseFloat(userDoc.data().balance) || 0) + totalToClaim;
+                    const newLastClaim = subDoc.data().last_claim + extraTime;
+
+                    transaction.update(userRef, { balance: newBalance });
+                    transaction.update(subRef, { last_claim: newLastClaim });
+                });
+                showToast(`৳${totalToClaim.toFixed(2)} সফলভাবে ক্লেম করা হয়েছে!`);
+            } catch (e) {
+                showToast("ক্লেম ব্যর্থ হয়েছে। আবার চেষ্টা করুন।");
+            }
+        };
+
+    </script>
+</body>
+</html>
