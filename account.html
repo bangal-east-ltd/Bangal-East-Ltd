@@ -257,7 +257,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        import { getFirestore, doc, getDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+        import { getFirestore, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
         const firebaseConfig = {
           apiKey: "AIzaSyCALYxA2M4BwIXq5KC3VMGsZpAFh8nL3fo",
@@ -274,30 +274,32 @@
 
         let currentUserID = "";
 
-        window.onload = async function() {
+        // রিয়েল-টাইম সিঙ্কিং লজিক
+        window.onload = function() {
             const loggedPhone = localStorage.getItem("loggedUser");
             if (loggedPhone) {
-                // রিয়েল-টাইম ব্যালেন্স আপডেট লিসেনার
-                const docRef = doc(db, "users", loggedPhone);
-                onSnapshot(docRef, (docSnap) => {
-                    if (docSnap.exists()) {
-                        const userData = docSnap.data();
-                        const balance = parseFloat(userData.balance || 0).toFixed(2);
-                        
-                        // নিজের পেজের ব্যালেন্স আপডেট
-                        document.getElementById("userBalanceDisplay").innerText = balance;
-                        document.getElementById("userPhoneDisplay").innerText = userData.userID || "N/A";
-                        currentUserID = userData.userID || "N/A";
-
-                        // গ্লোবাল স্টোরেজে ব্যালেন্স সেভ করা (অন্য সব পেজের জন্য)
-                        localStorage.setItem("userBalance", balance);
-                    }
-                });
-
                 const savedImg = localStorage.getItem("userProfilePic");
                 if(savedImg) {
                     document.getElementById("profileDisplay").innerHTML = `<img src="${savedImg}" style="width:100%;height:100%;object-fit:cover;">`;
                 }
+
+                // onSnapshot ব্যবহার করা হয়েছে যাতে ডাটাবেসে টাকা বাড়লে সাথে সাথে সব পেজে আপডেট হয়
+                const docRef = doc(db, "users", loggedPhone);
+                onSnapshot(docRef, (snapshot) => {
+                    if (snapshot.exists()) {
+                        const userData = snapshot.data();
+                        const balance = parseFloat(userData.balance || 0).toFixed(2);
+                        currentUserID = userData.userID || "N/A";
+
+                        // বর্তমান পেজের ব্যালেন্স আপডেট
+                        document.getElementById("userPhoneDisplay").innerText = currentUserID;
+                        document.getElementById("userBalanceDisplay").innerText = balance;
+
+                        // গ্লোবাল মেমরিতে সেভ (অন্যান্য পেজের জন্য)
+                        localStorage.setItem("userBalance", balance);
+                        localStorage.setItem("userID", currentUserID);
+                    }
+                });
             } else {
                 window.location.replace("index.html");
             }
@@ -306,6 +308,7 @@
         window.fetchBalance = function() {
             const refreshBtn = document.querySelector('.refresh-icon');
             refreshBtn.classList.add('fa-spin');
+            // onSnapshot থাকার কারণে আলাদা করে Fetch করার প্রয়োজন নেই, তাও এনিমেশন দেখানোর জন্য রাখা হয়েছে
             setTimeout(() => { refreshBtn.classList.remove('fa-spin'); }, 1000);
         };
 
@@ -339,3 +342,4 @@
     </script>
 </body>
 </html>
+
