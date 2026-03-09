@@ -55,16 +55,16 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        import { getFirestore, doc, getDoc, updateDoc, onSnapshot, collection, setDoc, deleteDoc, runTransaction, increment } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+        import { getFirestore, doc, getDoc, updateDoc, onSnapshot, collection, setDoc, deleteDoc, runTransaction, increment, addDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
+        // অ্যাডমিন প্যানেলের কনফিগ অনুযায়ী ডাটাবেজ কানেকশন
         const firebaseConfig = {
-            apiKey: "AIzaSyCALYxA2M4BwIXq5KC3VMGsZpAFh8nL3fo",
-            authDomain: "bengal-east-company-limited.firebaseapp.com",
-            projectId: "bengal-east-company-limited",
-            storageBucket: "bengal-east-company-limited.firebasestorage.app",
-            messagingSenderId: "653223286483",
-            appId: "1:653223286483:web:8e4ed0782ae807f8f02626",
-            measurementId: "G-R7S444H8KT"
+            apiKey: "AIzaSyAoZ39EQR-Buy6QJT71P2R4wL0RyiOQaAc",
+            authDomain: "ai-signal-75e73.firebaseapp.com",
+            projectId: "ai-signal-75e73",
+            storageBucket: "ai-signal-75e73.appspot.com",
+            messagingSenderId: "753223286483",
+            appId: "1:753223286483:web:8e4ed0782ae807f8f02626"
         };
 
         const app = initializeApp(firebaseConfig);
@@ -84,17 +84,22 @@
             }
         });
 
-        onSnapshot(collection(db, "user_subscriptions", userPhone, "active_plans"), (subSnapshot) => {
+        // অ্যাডমিন প্যানেলের user_subscriptions কালেকশন চেক করা
+        onSnapshot(collection(db, "user_subscriptions"), (subSnapshot) => {
             const mySubs = {};
             const now = Date.now();
+            
             subSnapshot.forEach(child => {
                 const data = child.data();
-                mySubs[child.id] = data;
-                if (now >= data.expire_time) {
-                    deleteDoc(doc(db, "user_subscriptions", userPhone, "active_plans", child.id));
+                if (data.phone === userPhone) {
+                    mySubs[data.package_id] = data;
+                    if (now >= data.expire_time) {
+                        deleteDoc(doc(db, "user_subscriptions", child.id));
+                    }
                 }
             });
 
+            // অ্যাডমিন প্যানেলের packages_vip1 থেকে প্যাকেজ লোড
             onSnapshot(collection(db, "packages_vip1"), (pkgSnapshot) => {
                 const pkgDisplay = document.getElementById('packageDisplay');
                 pkgDisplay.innerHTML = "";
@@ -102,6 +107,7 @@
                     const p = child.data();
                     const pkgKey = child.id;
                     const isBought = mySubs[pkgKey] ? true : false;
+                    
                     pkgDisplay.innerHTML += `
                         <div class="package-card">
                             <span class="price-tag">৳ ${p.price}</span>
@@ -114,26 +120,26 @@
                         </div>`;
                 });
             });
-            updateMyEquipment(subSnapshot);
+            renderActivePlans(mySubs);
         });
 
-        function updateMyEquipment(subSnapshot) {
+        function renderActivePlans(mySubs) {
             const myDisplay = document.getElementById('myPlansDisplay');
             myDisplay.innerHTML = "";
             let activeCount = 0;
-            subSnapshot.forEach(child => {
-                const data = child.data();
+            
+            for (let pkgId in mySubs) {
+                const data = mySubs[pkgId];
                 activeCount++;
-                const pkgId = child.id;
                 myDisplay.innerHTML += `
                     <div class="my-plan-card">
                         <h3 style="color:#38ef7d;">${data.name}</h3>
-                        <p style="font-size:13px; color:#ddd;">Daily Income: <b>৳ ${data.daily_income}</b></p>
+                        <p style="font-size:13px; color:#ddd;">Daily Income: <b>৳ ${data.daily}</b></p>
                         <div id="timer_${pkgId}" class="timer-text">Checking timer...</div>
                         <button id="btn_${pkgId}" class="btn bought-btn">Please Wait...</button>
                     </div>`;
-                startTimer(pkgId, data.last_claim, data.daily_income);
-            });
+                startTimer(pkgId, data.timestamp, data.daily);
+            }
             if(activeCount === 0) myDisplay.innerHTML = "<p style='color: #666; font-size: 14px;'>No active equipment found.</p>";
         }
 
@@ -146,6 +152,7 @@
                 const oneDay = 24 * 60 * 60 * 1000;
                 const timePassed = now - lastClaim;
                 const daysEarned = Math.floor(timePassed / oneDay);
+                
                 if (daysEarned >= 1) {
                     clearInterval(interval);
                     timerElement.innerHTML = `<i class="fas fa-check-circle"></i> ${daysEarned} Day(s) income ready!`;
@@ -175,12 +182,20 @@
                 
                 if(balance >= price) {
                     const startTime = Date.now();
+                    const expireTime = startTime + (validity * 24 * 60 * 60 * 1000);
+                    
                     await updateDoc(userRef, { balance: balance - price });
                     
-                    await setDoc(doc(db, "user_subscriptions", userPhone, "active_plans", pkgId), {
-                        name: name, daily_income: daily, last_claim: startTime,
-                        expire_time: startTime + (validity * 24 * 60 * 60 * 1000),
-                        status: "active", bought_at: startTime
+                    // অ্যাডমিন প্যানেলের user_subscriptions কালেকশনে ডাটা সেভ
+                    await addDoc(collection(db, "user_subscriptions"), {
+                        phone: userPhone,
+                        package_id: pkgId,
+                        name: name,
+                        price: price,
+                        daily: daily,
+                        timestamp: startTime,
+                        expire_time: expireTime,
+                        status: "active"
                     });
 
                     const referrer = userData.referredBy; 
@@ -201,19 +216,27 @@
             const totalToClaim = dailyAmount * days;
             const extraTime = days * 24 * 60 * 60 * 1000;
             const userRef = doc(db, "users", userPhone);
-            const subRef = doc(db, "user_subscriptions", userPhone, "active_plans", pkgId);
-            try {
-                await runTransaction(db, async (transaction) => {
-                    const userDoc = await transaction.get(userRef);
-                    const subDoc = await transaction.get(subRef);
-                    if (!userDoc.exists() || !subDoc.exists()) return;
-                    const newBalance = (parseFloat(userDoc.data().balance) || 0) + totalToClaim;
-                    const newLastClaim = subDoc.data().last_claim + extraTime;
-                    transaction.update(userRef, { balance: newBalance });
-                    transaction.update(subRef, { last_claim: newLastClaim });
-                });
-                showToast(`৳${totalToClaim.toFixed(2)} সফলভাবে ক্লেম করা হয়েছে!`);
-            } catch (e) { showToast("ক্লেম ব্যর্থ হয়েছে।"); }
+            
+            // সাবস্ক্রিপশন আইডি খুঁজে বের করা
+            const q = query(collection(db, "user_subscriptions"), where("phone", "==", userPhone), where("package_id", "==", pkgId));
+            const subSnap = await getDocs(q);
+            
+            if (!subSnap.empty) {
+                const subDocId = subSnap.docs[0].id;
+                const subRef = doc(db, "user_subscriptions", subDocId);
+                
+                try {
+                    await runTransaction(db, async (transaction) => {
+                        const userDoc = await transaction.get(userRef);
+                        const subDoc = await transaction.get(subRef);
+                        const newBalance = (parseFloat(userDoc.data().balance) || 0) + totalToClaim;
+                        const newLastClaim = subDoc.data().timestamp + extraTime;
+                        transaction.update(userRef, { balance: newBalance });
+                        transaction.update(subRef, { timestamp: newLastClaim });
+                    });
+                    showToast(`৳${totalToClaim.toFixed(2)} সফলভাবে ক্লেম করা হয়েছে!`);
+                } catch (e) { showToast("ক্লেম ব্যর্থ হয়েছে।"); }
+            }
         };
     </script>
 </body>
