@@ -10,7 +10,6 @@
         .admin-container { max-width: 1200px; margin: auto; }
         .back-btn { margin-bottom: 20px; display: inline-block; text-decoration: none; color: #8c3494; font-weight: bold; }
         
-        /* Dashboard Summary Styles */
         .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 30px; }
         .stat-card { background: white; padding: 20px; border-radius: 12px; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.05); border-bottom: 4px solid #8c3494; }
         .stat-card i { font-size: 25px; color: #8c3494; margin-bottom: 10px; }
@@ -23,22 +22,20 @@
         input, select { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 15px; outline: none; }
         .btn { width: 100%; padding: 12px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 16px; transition: 0.3s; }
         .btn-add { background: #8c3494; color: white; }
-        .btn-add:hover { background: #6a2670; }
         
         .payment-status { display: flex; justify-content: space-between; background: #f9f9f9; padding: 10px; border-radius: 8px; margin-bottom: 10px; border-left: 4px solid #8c3494; font-size: 14px; }
         .table-container { overflow-x: auto; }
         table { width: 100%; border-collapse: collapse; margin-top: 15px; background: white; border-radius: 10px; }
-        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #eee; font-size: 13px; }
-        th { background: #8c3494; color: white; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #eee; font-size: 12px; }
+        th { background: #8c3494; color: white; white-space: nowrap; }
         
         .status-success { color: #28a745; font-weight: bold; }
         .status-rejected { color: #dc3545; font-weight: bold; }
         .status-pending { color: #ff9800; font-weight: bold; }
 
-        .action-btn { padding: 6px 12px; border-radius: 5px; border: none; cursor: pointer; font-size: 12px; font-weight: bold; transition: 0.2s; }
+        .action-btn { padding: 6px 12px; border-radius: 5px; border: none; cursor: pointer; font-size: 11px; font-weight: bold; }
         .approve { background: #28a745; color: white; }
         .reject { background: #dc3545; color: white; margin-left: 5px; }
-        .action-btn:disabled { background: #ccc; cursor: not-allowed; }
     </style>
 </head>
 <body>
@@ -92,10 +89,11 @@
             <table>
                 <thead>
                     <tr>
-                        <th>User Email</th>
+                        <th>Reg Number</th>
                         <th>ID (5 Digit)</th>
                         <th>Sender Number</th>
-                        <th>Amount & TrxID</th>
+                        <th>Amount</th>
+                        <th>TrxID</th>
                         <th>Time & Date</th>
                         <th>Action</th>
                     </tr>
@@ -111,7 +109,7 @@
             <table>
                 <thead>
                     <tr>
-                        <th>User Email</th>
+                        <th>Reg Number</th>
                         <th>ID (5 Digit)</th>
                         <th>Withdraw Number</th>
                         <th>Amount</th>
@@ -138,70 +136,70 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
-    // --- Dashboard Stats Logic ---
-    function loadDashboardStats() {
-        // Users Count
-        db.collection("users").onSnapshot(snap => { document.getElementById('totalUsers').innerText = snap.size; });
-        
-        // Deposits Sum
-        db.collection("deposits").where("status", "==", "Success").onSnapshot(snap => {
-            let total = 0;
-            snap.forEach(doc => total += Number(doc.data().amount));
-            document.getElementById('totalDepositAmount').innerText = total;
-        });
-
-        // Withdraws Sum
-        db.collection("withdraws").where("status", "==", "Success").onSnapshot(snap => {
-            let total = 0;
-            snap.forEach(doc => total += Number(doc.data().amount));
-            document.getElementById('totalWithdrawAmount').innerText = total;
-        });
-    }
-    loadDashboardStats();
-
-    // --- Payment Info Update ---
+    // অ্যাডমিন পেমেন্ট তথ্য আপডেট
     async function updatePaymentInfo() {
         const method = document.getElementById('setMethod').value;
         const type = document.getElementById('setType').value;
         const number = document.getElementById('setNumber').value;
         if(!number) { alert("নম্বর দিন!"); return; }
-        await db.collection('admin_settings').doc(method).set({ number, type });
-        alert("আপডেট হয়েছে!");
+        
+        try {
+            await db.collection('admin_settings').doc(method).set({ 
+                number: number, 
+                type: type
+            });
+            alert("তথ্য সফলভাবে আপডেট হয়েছে!");
+            document.getElementById('setNumber').value = "";
+        } catch (e) { alert("Error: " + e.message); }
     }
 
     function loadSettings() {
         ['bkash', 'nagad', 'rocket'].forEach(m => {
             db.collection('admin_settings').doc(m).onSnapshot(doc => {
-                if(doc.exists) document.getElementById(`view-${m}`).innerText = `${doc.data().number} (${doc.data().type})`;
+                if(doc.exists) {
+                    const data = doc.data();
+                    document.getElementById(`view-${m}`).innerText = `${data.number} (${data.type})`;
+                }
             });
         });
     }
     loadSettings();
 
-    // --- Deposit Approve Logic ---
-    async function approveDeposit(docId, email, amount) {
-        if(!confirm("Approve this deposit? Amount will be added to user balance.")) return;
+    // ব্যালেন্স আপডেট লজিক (ফোন নম্বরকে ডকুমেন্ট আইডি হিসেবে ব্যবহার করে)
+    async function approveDeposit(docId, phone, amount) {
+        if(!confirm("Approve করবেন? ইউজারের ব্যালেন্সে " + amount + " টাকা যোগ হবে।")) return;
+        
+        // এখানে phone হলো ইউজারের রেজিস্ট্রেশন ফোন নম্বর যা 'users' কালেকশনের ডকুমেন্ট আইডি
+        const userRef = db.collection("users").doc(phone);
+        const depositRef = db.collection("deposits").doc(docId);
+
         try {
-            const userRef = db.collection("users").doc(email);
             await db.runTransaction(async (transaction) => {
                 const userDoc = await transaction.get(userRef);
-                if (!userDoc.exists) throw "User not found!";
-                let newBalance = (userDoc.data().balance || 0) + Number(amount);
-                transaction.update(userRef, { balance: newBalance });
-                transaction.update(db.collection("deposits").doc(docId), { status: "Success" });
-            });
-            alert("Approved & Balance Updated!");
-        } catch (e) { alert("Error: " + e); }
-    }
+                
+                if (!userDoc.exists) {
+                    throw "ইউজার ডাটাবেজে পাওয়া যায়নি! ফোন নম্বরটি চেক করুন।";
+                }
 
-    // --- General Status Update (Reject/Withdraw) ---
-    async function updateStatus(collection, docId, status) {
-        if(confirm(`Mark as ${status}?`)) {
-            await db.collection(collection).doc(docId).update({ status });
+                let currentBalance = Number(userDoc.data().balance || 0);
+                let newBalance = currentBalance + Number(amount);
+
+                transaction.update(userRef, { balance: newBalance });
+                transaction.update(depositRef, { status: "Success" });
+            });
+            alert("সফলভাবে ব্যালেন্স যোগ হয়েছে।");
+        } catch (e) {
+            console.error(e);
+            alert("ব্যর্থ: " + e);
         }
     }
 
-    // --- Load Tables ---
+    async function updateStatus(collection, docId, status) {
+        if(confirm(`Mark as ${status}?`)) {
+            await db.collection(collection).doc(docId).update({ status: status });
+        }
+    }
+
     function loadDeposits() {
         db.collection("deposits").orderBy("created_at", "desc").onSnapshot(snap => {
             const tbody = document.getElementById('depositTableBody');
@@ -210,13 +208,23 @@
                 const d = doc.data();
                 const time = d.date_string || (d.created_at ? d.created_at.toDate().toLocaleString() : 'N/A');
                 let actions = `<span class="status-${d.status.toLowerCase()}">${d.status}</span>`;
+                
                 if(d.status === "Pending") {
                     actions = `
                         <button class="action-btn approve" onclick="approveDeposit('${doc.id}', '${d.user_email}', ${d.amount})">Approve</button>
                         <button class="action-btn reject" onclick="updateStatus('deposits', '${doc.id}', 'Rejected')">Reject</button>
                     `;
                 }
-                tbody.innerHTML += `<tr><td>${d.user_email}</td><td>${d.user_id || '---'}</td><td>${d.sender_number || '---'}</td><td>৳${d.amount}<br><small>${d.trxID}</small></td><td>${time}</td><td>${actions}</td></tr>`;
+                tbody.innerHTML += `
+                    <tr>
+                        <td>${d.user_email}</td>
+                        <td>${d.user_id || '---'}</td>
+                        <td>${d.sender_number || '---'}</td>
+                        <td style="font-weight:bold; color:#28a745">৳${d.amount}</td>
+                        <td style="color:#666"><code>${d.trxID}</code></td>
+                        <td>${time}</td>
+                        <td>${actions}</td>
+                    </tr>`;
             });
         });
     }
@@ -240,9 +248,23 @@
         });
     }
 
+    function loadStats() {
+        db.collection("users").onSnapshot(s => document.getElementById('totalUsers').innerText = s.size);
+        db.collection("deposits").where("status","==","Success").onSnapshot(s => {
+            let t = 0; s.forEach(doc => t += Number(doc.data().amount));
+            document.getElementById('totalDepositAmount').innerText = t;
+        });
+        db.collection("withdraws").where("status","==","Success").onSnapshot(s => {
+            let t = 0; s.forEach(doc => t += Number(doc.data().amount));
+            document.getElementById('totalWithdrawAmount').innerText = t;
+        });
+    }
+
     loadDeposits();
     loadWithdrawals();
+    loadStats();
 </script>
 
 </body>
 </html>
+
