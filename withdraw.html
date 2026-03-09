@@ -180,7 +180,6 @@
             }
         });
 
-        // ডুপ্লিকেট নম্বর চেক করার ফাংশন
         async function isNumberInUse(num) {
             if(!num) return false;
             const q1 = query(collection(db, "users"), where("withdrawNo1", "==", num));
@@ -196,12 +195,12 @@
             
             if (n1.length < 11) { alert("সঠিক নম্বর দিন!"); return; }
             
-            // ইউনিক নম্বর চেক
             const check1 = await isNumberInUse(n1);
             const check2 = n2 ? await isNumberInUse(n2) : false;
 
             if(check1 || check2) {
-                alert("এই নম্বরটি ইতিমধ্যে অন্য একটি একাউন্টে ব্যবহার করা হয়েছে। দয়া করে অন্য নম্বর দিন।");
+                // নম্বর ডুপ্লিকেট হলে এখন পপ-আপ ভেসে উঠবে
+                showModal('limit', 'bangal-east-ltd.github.io says', 'Already account extra');
                 return;
             }
 
@@ -227,7 +226,8 @@
             const userSnap = await getDoc(userRef);
 
             if (userSnap.data().lastWithdrawDate === today) {
-                showModal('limit', 'লিমিট শেষ', 'আজকে আপনার উইথড্র লিমিট শেষ, আগামীকাল আবার চেষ্টা করুন।');
+                // আজকের লিমিট শেষ হলে পপ-আপ
+                showModal('limit', 'bangal-east-ltd.github.io says', 'আজকে একবার উইথড্র করেছেন। আগামীকাল চেষ্টা করুন।');
                 return;
             }
 
@@ -251,7 +251,6 @@
             }
         };
 
-        // হিস্টোরি সব সময় দেখানোর জন্য স্ন্যাপশট
         const q = query(collection(db, "withdraws"), where("user", "==", loggedUser));
         onSnapshot(q, (snapshot) => {
             const hist = document.getElementById("withdrawHistory");
