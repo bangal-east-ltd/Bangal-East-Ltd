@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pro Gaming Dashboard</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+<style>
+    /* CSS অপরিবর্তিত রাখা হয়েছে */
+    * { margin:0; padding:0; box-sizing:border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    body { background: #00ff6a; min-height: 100vh; overflow-x: hidden; }
+    
+    .header { display: flex; justify-content: space-between; align-items: center; padding: 15px 20px; background: rgba(0, 0, 0, 0.1); backdrop-filter: blur(5px); }
+    .header-btn { color: white; text-decoration: none; font-size: 18px; display: flex; align-items: center; gap: 8px; font-weight: bold; }
+
+    .container { width: 100%; padding: 0 20px 100px 20px; }
+
+    .slider-container { width: 100%; height: 180px; background: white; border-radius: 15px; overflow: hidden; box-shadow: 0 5px 15px rgba(0,0,0,0.2); margin: 15px 0; }
+    .slider { display: flex; width: 300%; height: 100%; animation: slide 10s infinite; }
+    .slider img { width: 33.33%; height: 100%; object-fit: cover; }
+    @keyframes slide { 0% { transform: translateX(0); } 30% { transform: translateX(0); } 33% { transform: translateX(-33.33%); } 63% { transform: translateX(-33.33%); } 66% { transform: translateX(-66.66%); } 96% { transform: translateX(-66.66%); } 100% { transform: translateX(0); } }
+
+    .notice-board { background: rgba(0, 0, 0, 0.4); color: white; padding: 10px; border-radius: 10px; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; font-size: 14px; }
+    .notice-board marquee { flex: 1; font-weight: 500; }
+
+    .grid { display:grid; grid-template-columns:1fr 1fr; gap:15px; }
+    .game-btn { height:110px; border-radius:20px; display:flex; flex-direction: column; align-items:center; justify-content:center; font-size:18px; font-weight:bold; color:white; text-decoration: none; box-shadow:0 8px 15px rgba(0,0,0,0.2); text-align: center; transition: 0.2s; border: 2px solid rgba(255,255,255,0.2); }
+    .game-btn i { font-size: 30px; margin-bottom: 8px; }
+    .lottery { background: linear-gradient(135deg, #ff416c, #ff4b2b); }
+    .head { background: linear-gradient(135deg, #fce38a, #f38181); color: #333; }
+    .big { background: linear-gradient(135deg, #f09819, #edde5d); }
+    .redgreen { background: linear-gradient(135deg, #38ef7d, #11998e); }
+
+    .mlm-container { margin-top: 25px; }
+    .mlm-btn { width: 100%; height: 80px; background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%); border-radius: 20px; display: flex; align-items: center; justify-content: center; font-size: 22px; font-weight: bold; color: white; text-decoration: none; box-shadow: 0 10px 25px rgba(37, 117, 252, 0.4); border: 2px solid rgba(255,255,255,0.3); transition: 0.3s; }
+    .mlm-btn:active { transform: scale(0.95); }
+
+    .bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; display: flex; justify-content: space-around; background: white; padding: 12px 0; border-top-left-radius: 25px; border-top-right-radius: 25px; box-shadow: 0 -5px 15px rgba(0,0,0,0.1); z-index: 1000; }
+    .nav-item { text-align: center; color: #888; text-decoration: none; flex: 1; }
+    .nav-item i { font-size: 20px; display: block; margin-bottom: 4px; }
+    .nav-item span { font-size: 12px; font-weight: 600; }
+    .nav-item.active { color: #00c853; }
+</style>
+</head>
+
+<body>
+
+    <div class="header">
+        <a href="alarm.html" class="header-btn"><i class="fas fa-bell"></i> Alarm</a>
+        <a href="download.html" class="header-btn"><i class="fas fa-download"></i> Download</a>
+    </div>
+
+    <div class="container">
+        <div class="slider-container">
+            <div class="slider">
+                <img src="https://images.livemint.com/img/2022/07/20/1600x900/ipl_games_1658309590673_1658309590827_1658309590827.jpg" alt="Slide 1">
+                <img src="https://img.freepik.com/premium-photo/mythical-dragon-is-swimming-deep-sea_908344-7772.jpg" alt="Slide 2">
+                <img src="https://img.freepik.com/free-photo/view-gaming-controllers_23-2150821931.jpg" alt="Slide 3">
+            </div>
+        </div>
+
+        <div class="notice-board">
+            <i class="fas fa-volume-up"></i>
+            <marquee id="dynamicNotice">Loading user info...</marquee>
+        </div>
+
+        <div class="grid">
+            <a href="lottery.html" class="game-btn lottery"><i class="fas fa-ticket-alt"></i> Lottery</a>
+            <a href="head-tell.html" class="game-btn head"><i class="fas fa-coins"></i> Head Tell</a>
+            <a href="big-small.html" class="game-btn big"><i class="fas fa-chart-line"></i> Big Small</a>
+            <a href="red-green.html" class="game-btn redgreen"><i class="fas fa-palette"></i> Red Green</a>
+        </div>
+
+        <div class="mlm-container">
+            <a href="mlm-system.html" class="mlm-btn">
+                <i class="fas fa-users-gear" style="margin-right: 12px;"></i> MLM SYSTEM
+            </a>
+        </div>
+    </div>
+
+    <div class="bottom-nav">
+        <a href="home.html" class="nav-item active"><i class="fas fa-house"></i><span>Home</span></a>
+        <a href="activity.html" class="nav-item"><i class="fas fa-bolt"></i><span>Activity</span></a>
+        <a href="promotion.html" class="nav-item"><i class="fas fa-bullhorn"></i><span>Promotion</span></a>
+        <a href="account.html" class="nav-item"><i class="fas fa-user-gear"></i><span>Account</span></a>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getFirestore, doc, onSnapshot, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+        // আপনার Bengal East company limited এর কনফিগ
+        const firebaseConfig = {
+            apiKey: "AIzaSyCALYxA2M4BwIXq5KC3VMGsZpAFh8nL3fo",
+            authDomain: "bengal-east-company-limited.firebaseapp.com",
+            projectId: "bengal-east-company-limited",
+            storageBucket: "bengal-east-company-limited.firebasestorage.app",
+            messagingSenderId: "653223286483",
+            appId: "1:653223286483:web:8e4ed0782ae807f8f02626"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        window.onload = function() {
+            const userPhone = localStorage.getItem("userPhone");
+            const isLoggedIn = localStorage.getItem("isLoggedIn");
+
+            if (isLoggedIn !== "true" || !userPhone) {
+                alert("Security Alert: Please login first!");
+                window.location.replace("index.html");
+            } else {
+                // ১. Firestore থেকে রিয়েল-টাইম ব্যালেন্স চেক এবং অনলাইন স্ট্যাটাস
+                const userRef = doc(db, "users", userPhone);
+                onSnapshot(userRef, (snapshot) => {
+                    if (snapshot.exists()) {
+                        const userData = snapshot.data();
+                        const balance = userData.balance || 0;
+                        document.getElementById("dynamicNotice").innerText = 
+                            "স্বাগতম " + userPhone + "! আপনার বর্তমান ব্যালেন্স: ৳" + parseFloat(balance).toFixed(2);
+                        
+                        // এডমিন প্যানেলের জন্য অনলাইন স্ট্যাটাস আপডেট
+                        updateDoc(userRef, { lastSeen: new Date().toISOString() });
+                    }
+                });
+
+                // ২. এডমিন প্যানেল থেকে পাঠানো নোটিশ (admin_settings/notice)
+                const noticeRef = doc(db, "admin_settings", "notice");
+                onSnapshot(noticeRef, (snapshot) => {
+                    if (snapshot.exists()) {
+                        const adminNotice = snapshot.data().text;
+                        if (adminNotice) {
+                            document.getElementById("dynamicNotice").innerText = adminNotice;
+                        }
+                    }
+                });
+            }
+        };
+
+        // গ্লোবাল ফাংশন হিসেবে সেট করা
+        window.logout = function() {
+            localStorage.clear();
+            window.location.replace("index.html");
+        }
+    </script>
+
+</body>
+</html>
+                      
