@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment - Bangal East Ltd</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        * { margin:0; padding:0; box-sizing:border-box; font-family: 'Segoe UI', sans-serif; }
+        body { background: #f0f2f5; padding-bottom: 50px; transition: 0.3s; }
+
+        .top-header { text-align: center; padding: 30px 0; background: #fff; margin-bottom: 20px; border-bottom: 1px solid #ddd; }
+        .top-header h1 { font-size: 26px; color: #333; margin-bottom: 5px; font-weight: 800; }
+        .top-header p { font-size: 13px; color: #888; }
+
+        .container { width: 92%; max-width: 500px; margin: 0 auto; }
+
+        /* ডাইনামিক পেমেন্ট কার্ড */
+        .payment-card {
+            background: #ff8c00; 
+            border-radius: 20px;
+            padding: 25px;
+            color: white;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            transition: 0.5s;
+        }
+
+        /* ব্র্যান্ড কালারসমূহ */
+        .bg-bkash { background: #d12053 !important; }
+        .bg-nagad { background: #ff8c00 !important; }
+        .bg-rocket { background: #8c3494 !important; }
+        .bg-usdt { background: #26a17b !important; }
+
+        .payment-card h4 { font-size: 14px; line-height: 1.6; margin-bottom: 20px; text-align: center; font-weight: 500; }
+        .payment-card .sub-text { display: block; margin-top: 10px; font-weight: bold; background: rgba(0,0,0,0.2); padding: 8px; border-radius: 10px; text-align: center; }
+
+        .info-box { background: white; border-radius: 15px; padding: 20px; color: #333; margin-top: 15px; }
+        .info-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #f0f0f0; }
+        .info-row:last-child { border-bottom: none; }
+
+        .label { color: #666; font-size: 14px; font-weight: 600; }
+        .value { font-weight: 800; font-size: 17px; color: #1e293b; display: flex; align-items: center; gap: 10px; }
+        
+        .method-tag { font-weight: bold; font-size: 15px; text-transform: uppercase; color: #11998e; }
+        .copy-icon { color: #cbd5e1; cursor: pointer; transition: 0.3s; font-size: 18px; }
+        .copy-icon:active { color: #11998e; transform: scale(1.2); }
+
+        .trx-section { margin-top: 25px; }
+        .trx-section label { display: block; color: white; margin-bottom: 10px; font-size: 14px; font-weight: 600; }
+        
+        .trx-input { width: 100%; padding: 16px; border-radius: 12px; border: none; outline: none; font-size: 16px; margin-bottom: 20px; color: #333; font-weight: 600; }
+
+        .submit-btn { width: 100%; padding: 16px; border: none; background: rgba(0,0,0,0.3); color: white; border-radius: 12px; font-size: 18px; font-weight: 800; cursor: pointer; border: 1px solid rgba(255,255,255,0.4); transition: 0.3s; }
+        .submit-btn:not(:disabled):hover { background: rgba(0,0,0,0.5); }
+        .submit-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+        .instruction { margin-top: 30px; padding: 0 5px; }
+        .instruction h3 { font-size: 16px; color: #333; margin-bottom: 15px; border-left: 4px solid #11998e; padding-left: 10px; }
+        .instruction li { font-size: 13px; color: #64748b; margin-bottom: 12px; line-height: 1.6; }
+    </style>
+</head>
+<body>
+
+    <div class="top-header">
+        <h1>Payment Details</h1>
+        <p id="currentTime">Loading time...</p>
+    </div>
+
+    <div class="container">
+        <div id="mainCard" class="payment-card">
+            <h4>অনুগ্রহ করে সঠিক পরিমাণ টাকা পাঠান এবং পেমেন্ট শেষে Transaction ID সংগ্রহ করুন।</h4>
+            <h4 class="sub-text">এই <span id="displayMethod2">...</span> ওয়ালেটে <span id="paymentType">...</span> করুন</h4>
+            
+            <div class="info-box">
+                <div class="info-row">
+                    <span class="label">পেমেন্ট মেথড</span>
+                    <span id="displayMethod" class="method-tag">...</span>
+                </div>
+                <div class="info-row">
+                    <span class="label">অ্যাডমিন নম্বর</span>
+                    <span class="value"><span id="adminNumber">Loading...</span> <i class="far fa-copy copy-icon" onclick="copyText('adminNumber')"></i></span>
+                </div>
+                <div class="info-row">
+                    <span class="label">পাঠানোর পরিমাণ</span>
+                    <span class="value" style="color: #10b981;">৳ <span id="displayAmount">00</span> <i class="far fa-copy copy-icon" onclick="copyText('displayAmount')"></i></span>
+                </div>
+            </div>
+
+            <div class="trx-section">
+                <label>আপনার পেমেন্ট Transaction ID দিন</label>
+                <input type="text" id="trxID" class="trx-input" placeholder="যেমন: 8N349XKP">
+                <button class="submit-btn" id="submitBtn" onclick="saveToFirestore()">রিকোয়েস্ট জমা দিন</button>
+            </div>
+        </div>
+
+        <div class="instruction">
+            <h3>কিভাবে পেমেন্ট করবেন?</h3>
+            <ol>
+                <li>উপরে দেওয়া অ্যাডমিন নম্বরটি কপি করুন এবং আপনার ব্যাকিং অ্যাপ (বিকাশ/নগদ/রকেট) এ যান।</li>
+                <li>নির্ধারিত পরিমাণ টাকা <b><span id="paymentTypeInst">...</span></b> করুন।</li>
+                <li>পেমেন্ট সফল হওয়ার পর অ্যাপ থেকে <b>Transaction ID (TrxID)</b> কপি করে এখানে ইনপুট বক্সে দিন।</li>
+                <li>সঠিক তথ্য দিয়ে "রিকোয়েস্ট জমা দিন" বাটনে ক্লিক করলে ৫-৬০ মিনিটের মধ্যে ব্যালেন্স যোগ হবে।</li>
+            </ol>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, doc, getDoc, collection, addDoc, query, where, getDocs, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyAoZ39EQR-Buy6QJT71P2R4wL0RyiOQaAc",
+            projectId: "ai-signal-75e73",
+            authDomain: "ai-signal-75e73.firebaseapp.com",
+            storageBucket: "ai-signal-75e73.appspot.com",
+            messagingSenderId: "753223286483",
+            appId: "1:753223286483:web:8e4ed0782ae807f8f02626"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // Load Data on Window Load
+        window.addEventListener('load', async () => {
+            const method = localStorage.getItem("dep_method") || "Nagad";
+            const amount = localStorage.getItem("dep_amt") || "0";
+            
+            document.getElementById("displayMethod").innerText = method;
+            document.getElementById("displayMethod2").innerText = method;
+            document.getElementById("displayAmount").innerText = amount;
+            document.getElementById("currentTime").innerText = new Date().toLocaleString('bn-BD');
+
+            const card = document.getElementById("mainCard");
+            const methodLower = method.toLowerCase();
+            if(methodLower === "bkash") card.classList.add("bg-bkash");
+            else if(methodLower === "nagad") card.classList.add("bg-nagad");
+            else if(methodLower === "rocket") card.classList.add("bg-rocket");
+            else if(methodLower === "usdt") card.classList.add("bg-usdt");
+
+            // Fetch Admin Number from Firestore (Admin Panel Link)
+            try {
+                const adminDoc = await getDoc(doc(db, "admin_settings", methodLower));
+                if(adminDoc.exists()){
+                    const data = adminDoc.data();
+                    document.getElementById("adminNumber").innerText = data.number;
+                    document.getElementById("paymentType").innerText = data.type || "Cash Out";
+                    document.getElementById("paymentTypeInst").innerText = data.type || "Cash Out";
+                } else {
+                    document.getElementById("adminNumber").innerText = "01XXXXXXXXX";
+                    document.getElementById("paymentType").innerText = "Cash Out";
+                }
+            } catch(e) {
+                console.error("Error fetching admin number:", e);
+            }
+        });
+
+        // Save Deposit to Firestore
+        window.saveToFirestore = async function() {
+            const trx = document.getElementById("trxID").value.trim();
+            const btn = document.getElementById("submitBtn");
+            const loggedUser = localStorage.getItem("loggedUser") || "Guest";
+            const senderNo = localStorage.getItem("sender_num") || "N/A";
+            const amount = localStorage.getItem("dep_amt");
+            const method = localStorage.getItem("dep_method");
+            const bonus = localStorage.getItem("applied_bonus") || 0;
+
+            if(trx.length < 5) {
+                alert("দয়া করে সঠিক Transaction ID দিন!");
+                return;
+            }
+
+            btn.disabled = true;
+            btn.innerText = "যাচাই করা হচ্ছে...";
+
+            try {
+                // Check if TrxID already exists
+                const q = query(collection(db, "deposits"), where("trxID", "==", trx));
+                const querySnapshot = await getDocs(q);
+
+                if (!querySnapshot.empty) {
+                    alert("এই Transaction ID টি ইতিমধ্যে ব্যবহার করা হয়েছে!");
+                    btn.disabled = false;
+                    btn.innerText = "রিকোয়েস্ট জমা দিন";
+                    return;
+                }
+
+                // Add to Deposits Collection
+                await addDoc(collection(db, "deposits"), {
+                    user_email: loggedUser,
+                    sender_number: senderNo,
+                    amount: Number(amount),
+                    bonus: Number(bonus),
+                    method: method,
+                    trxID: trx,
+                    status: "Pending",
+                    created_at: serverTimestamp(),
+                    date_string: new Date().toLocaleString()
+                });
+
+                alert("আপনার রিকোয়েস্ট সফলভাবে জমা হয়েছে! অ্যাডমিন যাচাই করার জন্য অপেক্ষা করুন।");
+                window.location.href = "account.html";
+
+            } catch (error) {
+                console.error("Deposit Error:", error);
+                alert("দুঃখিত, পুনরায় চেষ্টা করুন।");
+                btn.disabled = false;
+                btn.innerText = "রিকোয়েস্ট জমা দিন";
+            }
+        };
+
+        window.copyText = function(id) {
+            const text = document.getElementById(id).innerText;
+            navigator.clipboard.writeText(text).then(() => {
+                alert("কপি করা হয়েছে: " + text);
+            });
+        };
+    </script>
+</body>
+</html>
+
