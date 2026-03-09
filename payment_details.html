@@ -147,7 +147,6 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        // Load Data on Window Load
         window.addEventListener('load', async () => {
             const method = localStorage.getItem("dep_method") || "Nagad";
             const amount = localStorage.getItem("dep_amt") || "0";
@@ -162,25 +161,21 @@
             if(methodLower === "bkash") card.classList.add("bg-bkash");
             else if(methodLower === "nagad") card.classList.add("bg-nagad");
             else if(methodLower === "rocket") card.classList.add("bg-rocket");
-            else if(methodLower === "usdt") card.classList.add("bg-usdt");
 
             try {
-                const adminDoc = await getDoc(doc(db, "admin_settings", methodLower));
+                // Correct path for VIP2 Admin Panel
+                const adminDoc = await getDoc(doc(db, "admin_settings", "vip2", methodLower, "config"));
                 if(adminDoc.exists()){
                     const data = adminDoc.data();
                     document.getElementById("adminNumber").innerText = data.number;
                     document.getElementById("paymentType").innerText = data.type || "Cash Out";
                     document.getElementById("paymentTypeInst").innerText = data.type || "Cash Out";
-                } else {
-                    document.getElementById("adminNumber").innerText = "01XXXXXXXXX";
-                    document.getElementById("paymentType").innerText = "Cash Out";
                 }
             } catch(e) {
-                console.error("Error fetching admin number:", e);
+                console.error(e);
             }
         });
 
-        // Save Deposit to Firestore
         window.saveToFirestore = async function() {
             const trx = document.getElementById("trxID").value.trim();
             const btn = document.getElementById("submitBtn");
@@ -188,45 +183,39 @@
             const senderNo = localStorage.getItem("sender_num") || "N/A";
             const amount = localStorage.getItem("dep_amt");
             const method = localStorage.getItem("dep_method");
-            const bonus = localStorage.getItem("applied_bonus") || 0;
 
             if(trx.length < 5) {
-                alert("দয়া করে সঠিক Transaction ID দিন!");
+                alert("সঠিক Transaction ID দিন");
                 return;
             }
 
             btn.disabled = true;
-            btn.innerText = "যাচাই করা হচ্ছে...";
+            btn.innerText = "যাচাই হচ্ছে...";
 
             try {
                 const q = query(collection(db, "deposits"), where("trxID", "==", trx));
-                const querySnapshot = await getDocs(q);
+                const snap = await getDocs(q);
 
-                if (!querySnapshot.empty) {
-                    alert("এই Transaction ID টি ইতিমধ্যে ব্যবহার করা হয়েছে!");
+                if (!snap.empty) {
+                    alert("ID টি আগে ব্যবহার হয়েছে!");
                     btn.disabled = false;
                     btn.innerText = "রিকোয়েস্ট জমা দিন";
                     return;
                 }
 
                 await addDoc(collection(db, "deposits"), {
-                    user_email: loggedUser,
+                    user: loggedUser,
                     sender_number: senderNo,
                     amount: Number(amount),
-                    bonus: Number(bonus),
                     method: method,
                     trxID: trx,
                     status: "Pending",
-                    created_at: serverTimestamp(),
-                    date_string: new Date().toLocaleString()
+                    timestamp: serverTimestamp()
                 });
 
-                // Show Custom Popup instead of Alert
                 document.getElementById("successPopup").style.display = "flex";
 
             } catch (error) {
-                console.error("Deposit Error:", error);
-                alert("দুঃখিত, পুনরায় চেষ্টা করুন।");
                 btn.disabled = false;
                 btn.innerText = "রিকোয়েস্ট জমা দিন";
             }
@@ -239,7 +228,7 @@
         window.copyText = function(id) {
             const text = document.getElementById(id).innerText;
             navigator.clipboard.writeText(text).then(() => {
-                alert("কপি করা হয়েছে: " + text);
+                alert("কপি হয়েছে!");
             });
         };
     </script>
