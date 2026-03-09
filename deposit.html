@@ -141,7 +141,7 @@
         <div class="input-group">
             <div class="input-box">
                 <label>Deposit Amount (৳100 - ৳25,000)</label>
-                <input type="number" id="amountInput" placeholder="Enter amount" oninput="calculateBonus()">
+                <input type="number" id="amountInput" placeholder="Enter amount" oninput="validateForm()">
             </div>
             <div id="bonusBox" class="bonus-info">
                 <i class="fas fa-gift"></i> Congratulations! Bonus: ৳<span id="bonusAmt">0</span>
@@ -162,84 +162,62 @@
     </div>
 
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
         const firebaseConfig = {
-            apiKey: "AIzaSyAoZ39EQR-Buy6QJT71P2R4wL0RyiOQaAc",
-            projectId: "ai-signal-75e73",
-            authDomain: "ai-signal-75e73.firebaseapp.com",
-            storageBucket: "ai-signal-75e73.appspot.com",
-            messagingSenderId: "753223286483",
-            appId: "1:753223286483:web:8e4ed0782ae807f8f02626"
+            apiKey: "AIzaSyCALYxA2M4BwIXq5KC3VMGsZpAFh8nL3fo",
+            authDomain: "bengal-east-company-limited.firebaseapp.com",
+            projectId: "bengal-east-company-limited",
+            storageBucket: "bengal-east-company-limited.firebasestorage.app",
+            messagingSenderId: "653223286483",
+            appId: "1:653223286483:web:8e4ed0782ae807f8f02626"
         };
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        let bonusPercent = 0;
+        // গ্লোবাল ভেরিয়েবল
+        let selectedMethod = "Nagad";
 
-        // --- অ্যাডমিন সেটিংস থেকে নম্বর ও টাইপ লোড করার লজিক ---
-        async function loadAdminPaymentDetails(method) {
-            try {
-                // মেথডটিকে ছোট হাতের অক্ষরে রূপান্তর করে Firestore থেকে ডাটা আনা হচ্ছে
-                const docRef = doc(db, "admin_settings", method.toLowerCase());
-                const docSnap = await getDoc(docRef);
-                
-                if (docSnap.exists()) {
-                    const data = docSnap.data();
-                    // পরবর্তী পেজে ব্যবহারের জন্য লোকাল স্টোরেজে সেভ
-                    localStorage.setItem("admin_number", data.number);
-                    localStorage.setItem("payment_type", data.type);
-                }
-            } catch (e) {
-                console.error("Settings load error:", e);
-            }
-        }
-
-        // ডিফল্ট হিসেবে শুরুতে নগদ লোড হবে
-        loadAdminPaymentDetails('Nagad');
-
-        async function fetchBonusSettings() {
-            try {
-                const docRef = doc(db, "settings", "deposit_bonus");
-                const docSnap = await getDoc(docRef);
-                if (docSnap.exists()) {
-                    bonusPercent = docSnap.data().percentage || 0;
-                }
-            } catch (e) { console.log("Bonus not found"); }
-        }
-        fetchBonusSettings();
-
-        window.calculateBonus = function() {
-            const amt = document.getElementById('amountInput').value;
-            const bonusBox = document.getElementById('bonusBox');
-            const bonusAmtDisplay = document.getElementById('bonusAmt');
+        // মেথড সিলেক্ট করার সময় এডমিন নম্বর লোড করা
+        window.selectMethod = async function(el, m) {
+            document.querySelectorAll('.method-card').forEach(c => c.classList.remove('active'));
+            el.classList.add('active');
+            selectedMethod = m;
+            localStorage.setItem("dep_method", m);
             
-            if(amt >= 100 && bonusPercent > 0) {
-                const bonus = (amt * bonusPercent) / 100;
-                bonusAmtDisplay.innerText = bonus.toFixed(0);
-                bonusBox.style.display = 'block';
-                localStorage.setItem("applied_bonus", bonus);
-            } else {
-                bonusBox.style.display = 'none';
-                localStorage.setItem("applied_bonus", 0);
+            // এডমিন সেটিংস থেকে নম্বর আনা
+            const docRef = doc(db, "admin_settings", "numbers");
+            const docSnap = await getDoc(docRef);
+            if (docSnap.exists()) {
+                const data = docSnap.data();
+                // Firestore এ ফিল্ডের নাম ছোট হাতের হতে পারে (যেমন: bkash, nagad)
+                localStorage.setItem("admin_number", data[m.toLowerCase()] || "01XXXXXXXXX");
             }
-            validateForm();
+            document.getElementById('selectedMethodDisplay').innerText = m + " Fast";
         }
 
         window.saveAndProceed = function() {
-            localStorage.setItem("dep_amt", document.getElementById('amountInput').value);
+            const amt = document.getElementById('amountInput').value;
+            const userNo = document.getElementById('userNumber').value;
+            if(amt < 100 || userNo.length < 11) {
+                alert("সঠিক তথ্য দিন");
+                return;
+            }
+            
+            localStorage.setItem("dep_amt", amt);
             localStorage.setItem("dep_method", selectedMethod);
-            localStorage.setItem("sender_num", document.getElementById('userNumber').value);
+            localStorage.setItem("sender_num", userNo);
             window.location.href = "payment_details.html"; 
         }
 
+        // ফর্ম ভ্যালিডেশন
         window.validateForm = function() {
             const amt = document.getElementById('amountInput').value;
             const num = document.getElementById('userNumber').value;
             const btn = document.getElementById('depositBtn');
-            if(amt >= 100 && amt <= 25000 && num.length >= 11) {
+            if(amt >= 100 && num.length >= 11) {
                 btn.classList.add('active');
                 btn.disabled = false;
             } else {
@@ -248,27 +226,20 @@
             }
         }
 
-        // গ্লোবাল ফাংশন হিসেবে মেথড সিলেক্ট সেট করা
-        window.selectMethod = function(el, m) {
-            document.querySelectorAll('.method-card').forEach(c => c.classList.remove('active'));
-            el.classList.add('active');
-            selectedMethod = m;
-            document.getElementById('selectedMethodDisplay').innerText = m + " Fast";
-            
-            // নতুন মেথড সিলেক্ট করলে অ্যাডমিন নম্বর আপডেট হবে
-            loadAdminPaymentDetails(m);
-        }
-    </script>
-
-    <script>
-        let selectedMethod = "Nagad";
-
-        function setAmount(el, val) {
+        // কুইক অ্যামাউন্ট সেট করার ফাংশন
+        window.setAmount = function(el, val) {
             document.querySelectorAll('.amount-chip').forEach(c => c.classList.remove('active'));
             el.classList.add('active');
             document.getElementById('amountInput').value = val;
-            calculateBonus();
+            window.validateForm();
         }
+
+        // ডিফল্ট কল (শুরুতে নগদ লোড হবে)
+        window.onload = () => {
+             // চেক যদি আগে থেকে মেথড সিলেক্ট না থাকে
+             const nagadCard = document.querySelector('.method-card.active');
+             if(nagadCard) window.selectMethod(nagadCard, 'Nagad');
+        };
     </script>
 </body>
 </html>
