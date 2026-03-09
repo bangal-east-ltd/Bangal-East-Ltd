@@ -21,7 +21,6 @@
         p { cursor: pointer; color: #ff8a00; margin-top: 15px; font-size: 14px; }
         #recaptcha-container { margin: 10px 0; }
 
-        /* কাস্টম টোস্ট মেসেজ স্টাইল */
         #toast {
             visibility: hidden; min-width: 250px; background-color: #333; color: #fff;
             text-align: center; border-radius: 8px; padding: 16px; position: fixed;
@@ -89,11 +88,8 @@
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
     import { getAuth, RecaptchaVerifier, signInWithPhoneNumber } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
     import { getDatabase, ref, set, get, update } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
-    
-    // Firestore ইমপোর্ট যোগ করা হয়েছে
     import { getFirestore, doc, setDoc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-    // আপনার নতুন কোম্পানি "Bengal East company limited" এর Firebase Configuration
     const firebaseConfig = {
       apiKey: "AIzaSyCALYxA2M4BwIXq5KC3VMGsZpAFh8nL3fo",
       authDomain: "bengal-east-company-limited.firebaseapp.com",
@@ -107,13 +103,10 @@
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db = getDatabase(app);
-    
-    // ফায়ারস্টোর ইনিশিয়ালাইজ করা হয়েছে
     const firestore = getFirestore(app);
 
     let confirmationResult;
 
-    // কাস্টম টোস্ট ফাংশন
     window.showToast = function(msg) {
         const x = document.getElementById("toast");
         x.innerText = msg;
@@ -121,7 +114,6 @@
         setTimeout(function(){ x.className = x.className.replace("show", ""); }, 3000);
     }
 
-    // UI Toggle functions
     window.togglePass = function(id) {
         const input = document.getElementById(id);
         input.type = input.type === "password" ? "text" : "password";
@@ -152,7 +144,6 @@
         document.getElementById("pageTitle").innerText = "Reset Password";
     }
 
-    // Firestore-এ ডাটা সেভ করার পদ্ধতি
     async function saveToFirestore(phone, pass, refID) {
         try {
             await setDoc(doc(firestore, "users", phone), {
@@ -162,13 +153,12 @@
                 referrerID: refID || "none",
                 createdAt: new Date().toISOString()
             });
-            console.log("Firestore-এ ডাটা সেভ হয়েছে।");
         } catch (e) {
             console.error("Firestore Error: ", e);
         }
     }
 
-    // Login Function
+    // Login Function Fixed
     window.loginUser = async function() {
         let phone = document.getElementById("loginPhone").value.trim();
         let pass = document.getElementById("loginPass").value;
@@ -176,26 +166,29 @@
         if(!phone || !pass) { showToast("Please enter phone and password"); return; }
 
         try {
-            const userRef = ref(db, "users/" + phone);
-            const snapshot = await get(userRef);
+            // Firestore থেকে চেক করা (আপনার Firestone রিকোয়ারমেন্ট অনুযায়ী)
+            const docRef = doc(firestore, "users", phone);
+            const docSnap = await getDoc(docRef);
 
-            if (snapshot.exists() && snapshot.val().pass === pass) {
+            if (docSnap.exists() && docSnap.data().pass === pass) {
                 localStorage.setItem("isLoggedIn", "true");
-                localStorage.setItem("loggedUser", phone); 
-                localStorage.setItem("userPhone", phone); 
+                localStorage.setItem("userPhone", phone);
+                localStorage.setItem("loggedUser", phone);
 
                 showToast("Login Successful!");
-                setTimeout(() => { window.location.href = "home.html"; }, 1500);
+                // ১.৫ সেকেন্ড পর হোম পেজে পাঠানো
+                setTimeout(() => { 
+                    window.location.assign("home.html"); 
+                }, 1500);
             } else { 
                 showToast("Incorrect Phone or Password"); 
             }
         } catch (e) { 
             console.error(e);
-            showToast("Database Error: " + e.message); 
+            showToast("Error: " + e.message); 
         }
     }
 
-    // Register Function
     window.registerUser = async function() {
         let phone = document.getElementById("regPhone").value.trim();
         let pass = document.getElementById("regPass").value;
@@ -212,20 +205,10 @@
         if(!agree) { showToast("Please agree to privacy policy"); return; }
 
         try {
-            const userRef = ref(db, "users/" + phone);
-            const checkUser = await get(userRef);
-            if(checkUser.exists()) { showToast("User already registered!"); return; }
+            const docRef = doc(firestore, "users", phone);
+            const docSnap = await getDoc(docRef);
+            if(docSnap.exists()) { showToast("User already registered!"); return; }
 
-            // Realtime Database-এ সেভ হচ্ছে
-            await set(userRef, { 
-                phone: phone, 
-                pass: pass, 
-                balance: 0, 
-                referrerID: refID || "none",
-                createdAt: new Date().toISOString() 
-            });
-
-            // Firestore-এও ডাটা সেভ হচ্ছে
             await saveToFirestore(phone, pass, refID);
 
             showToast("Registration Successful! Now Login.");
@@ -233,7 +216,6 @@
         } catch (e) { showToast("Error: " + e.message); }
     }
 
-    // OTP and Password Reset
     window.sendOTP = function() {
         let phoneField = document.getElementById("resetPhone").value.trim();
         if(!phoneField) { showToast("Enter phone number first"); return; }
@@ -250,13 +232,8 @@
         if(!confirmationResult) { showToast("Send OTP first"); return; }
         
         confirmationResult.confirm(code).then(async () => {
-            const userRef = ref(db, "users/" + phone);
-            await update(userRef, { pass: newPass });
-            
-            // Firestore-এও পাসওয়ার্ড আপডেট করা হচ্ছে
             const fsUserRef = doc(firestore, "users", phone);
             await updateDoc(fsUserRef, { pass: newPass });
-
             showToast("Password Updated!");
             setTimeout(() => { showLogin(); }, 1500);
         }).catch(() => showToast("Invalid OTP"));
@@ -266,10 +243,8 @@
         window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
             'size': 'normal'
         });
-
         const urlParams = new URLSearchParams(window.location.search);
         const refCode = urlParams.get('ref');
-
         if (refCode) {
             showRegister();
             const refField = document.getElementById('referrerInput');
