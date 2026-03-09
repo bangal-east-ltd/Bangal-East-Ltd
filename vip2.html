@@ -3,39 +3,30 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VIP 2 Admin Dashboard - Bangal East Ltd</title>
+    <title>VIP 2 Admin Panel - Manage Payment & Packages</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f0f2f5; margin: 0; padding: 20px; }
-        .admin-container { max-width: 1200px; margin: auto; }
+        .admin-container { max-width: 900px; margin: auto; }
         .back-btn { margin-bottom: 20px; display: inline-block; text-decoration: none; color: #8c3494; font-weight: bold; }
-        
-        .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 30px; }
-        .stat-card { background: white; padding: 20px; border-radius: 12px; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.05); border-bottom: 4px solid #8c3494; }
-        .stat-card i { font-size: 25px; color: #8c3494; margin-bottom: 10px; }
-        .stat-card h3 { margin: 5px 0; font-size: 14px; color: #666; }
-        .stat-card p { font-size: 20px; font-weight: bold; color: #333; margin: 0; }
-
         .card { background: white; padding: 25px; border-radius: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); margin-bottom: 25px; }
-        h2 { color: #333; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; border-bottom: 2px solid #eee; padding-bottom: 10px; }
+        h2 { color: #333; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
         
         input, select { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 15px; outline: none; }
+        input:focus { border-color: #8c3494; }
+        
         .btn { width: 100%; padding: 12px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 16px; transition: 0.3s; }
         .btn-add { background: #8c3494; color: white; }
+        .btn-add:hover { background: #6a2670; }
         
         .payment-status { display: flex; justify-content: space-between; background: #f9f9f9; padding: 10px; border-radius: 8px; margin-bottom: 10px; border-left: 4px solid #8c3494; font-size: 14px; }
-        .table-container { overflow-x: auto; }
-        table { width: 100%; border-collapse: collapse; margin-top: 15px; background: white; border-radius: 10px; }
-        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #eee; font-size: 12px; }
-        th { background: #8c3494; color: white; white-space: nowrap; }
-        
-        .status-success { color: #28a745; font-weight: bold; }
-        .status-rejected { color: #dc3545; font-weight: bold; }
-        .status-pending { color: #ff9800; font-weight: bold; }
 
-        .action-btn { padding: 6px 12px; border-radius: 5px; border: none; cursor: pointer; font-size: 11px; font-weight: bold; }
-        .approve { background: #28a745; color: white; }
-        .reject { background: #dc3545; color: white; margin-left: 5px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; background: white; border-radius: 10px; overflow: hidden; }
+        th, td { padding: 15px; text-align: left; border-bottom: 1px solid #eee; vertical-align: middle; }
+        th { background: #8c3494; color: white; }
+        
+        .delete-btn { color: #dc3545; cursor: pointer; font-size: 18px; border: none; background: none; }
+        .pkg-img-preview { width: 50px; height: 50px; border-radius: 8px; object-fit: cover; background: #eee; }
     </style>
 </head>
 <body>
@@ -43,31 +34,15 @@
 <div class="admin-container">
     <a href="admin-panel.html" class="back-btn"><i class="fas fa-arrow-left"></i> Back to Dashboard</a>
 
-    <div class="summary-grid">
-        <div class="stat-card">
-            <i class="fas fa-users"></i>
-            <h3>Total Users</h3>
-            <p id="totalUsers">0</p>
-        </div>
-        <div class="stat-card">
-            <i class="fas fa-wallet"></i>
-            <h3>Total Deposits</h3>
-            <p>৳ <span id="totalDepositAmount">0</span></p>
-        </div>
-        <div class="stat-card">
-            <i class="fas fa-hand-holding-usd"></i>
-            <h3>Total Withdraws</h3>
-            <p>৳ <span id="totalWithdrawAmount">0</span></p>
-        </div>
-    </div>
-
     <div class="card">
         <h2><i class="fas fa-tools"></i> VIP 2 - Payment Settings</h2>
+        
         <div id="currentSettings" style="margin-bottom: 20px;">
             <div class="payment-status"><span>bKash:</span> <b id="view-bkash">Loading...</b></div>
             <div class="payment-status"><span>Nagad:</span> <b id="view-nagad">Loading...</b></div>
             <div class="payment-status"><span>Rocket:</span> <b id="view-rocket">Loading...</b></div>
         </div>
+
         <div style="display: flex; gap: 10px;">
             <select id="setMethod">
                 <option value="bkash">bKash</option>
@@ -75,194 +50,175 @@
                 <option value="rocket">Rocket</option>
             </select>
             <select id="setType">
-                <option value="Cash Out">Cash Out</option>
-                <option value="Send Money">Send Money</option>
+                <option value="ক্যাশ আউট">Cash Out</option>
+                <option value="সেন্ড মানি">Send Money</option>
             </select>
         </div>
-        <input type="text" id="setNumber" placeholder="নতুন নম্বর দিন">
+        <input type="text" id="setNumber" placeholder="নতুন নম্বর দিন (যেমন: 018XXXXXXXX)">
         <button class="btn btn-add" onclick="updatePaymentInfo()">পেমেন্ট তথ্য আপডেট করুন</button>
     </div>
 
     <div class="card">
-        <h2><i class="fas fa-arrow-down"></i> User Deposit History</h2>
-        <div class="table-container">
-            <table>
-                <thead>
-                    <tr>
-                        <th>Reg Number</th>
-                        <th>ID (5 Digit)</th>
-                        <th>Sender Number</th>
-                        <th>Amount</th>
-                        <th>TrxID</th>
-                        <th>Time & Date</th>
-                        <th>Action</th>
-                    </tr>
-                </thead>
-                <tbody id="depositTableBody"></tbody>
-            </table>
-        </div>
+        <h2><i class="fas fa-plus-circle"></i> VIP 2 - নতুন প্যাকেজ যোগ করুন</h2>
+        <input type="text" id="pName" placeholder="প্যাকেজের নাম">
+        <input type="number" id="pPrice" placeholder="প্যাকেজের দাম (৳)">
+        <input type="number" id="pDaily" placeholder="প্রতিদিনের ইনকাম (৳)">
+        <input type="number" id="pValidity" placeholder="মেয়াদ (দিন)">
+        <input type="text" id="pImage" placeholder="ইমেজ লিঙ্ক (Image URL)">
+        
+        <button class="btn btn-add" onclick="addPackage()">প্যাকেজ সেভ করুন</button>
     </div>
 
     <div class="card">
-        <h2><i class="fas fa-arrow-up"></i> User Withdraw History</h2>
-        <div class="table-container">
-            <table>
-                <thead>
-                    <tr>
-                        <th>Reg Number</th>
-                        <th>ID (5 Digit)</th>
-                        <th>Withdraw Number</th>
-                        <th>Amount</th>
-                        <th>Time & Date</th>
-                        <th>Action</th>
-                    </tr>
-                </thead>
-                <tbody id="withdrawTableBody"></tbody>
-            </table>
-        </div>
+        <h2><i class="fas fa-boxes"></i> VIP 2 বর্তমান প্যাকেজসমূহ</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>ছবি</th>
+                    <th>নাম</th>
+                    <th>দাম</th>
+                    <th>ইনকাম</th>
+                    <th>মেয়াদ</th>
+                    <th>অ্যাকশন</th>
+                </tr>
+            </thead>
+            <tbody id="pkgTableBody"></tbody>
+        </table>
     </div>
 </div>
 
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getFirestore, doc, setDoc, onSnapshot, addDoc, collection, deleteDoc, query, orderBy } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-<script>
+    // আপনার দেওয়া নতুন ডাটাবেজ কনফিগ (Bengal East)
     const firebaseConfig = {
-        apiKey: "AIzaSyAoZ39EQR-Buy6QJT71P2R4wL0RyiOQaAc",
-        projectId: "ai-signal-75e73",
-        authDomain: "ai-signal-75e73.firebaseapp.com"
+        apiKey: "AIzaSyCALYxA2M4BwIXq5KC3VMGsZpAFh8nL3fo",
+        authDomain: "bengal-east-company-limited.firebaseapp.com",
+        projectId: "bengal-east-company-limited",
+        storageBucket: "bengal-east-company-limited.firebasestorage.app",
+        messagingSenderId: "653223286483",
+        appId: "1:653223286483:web:8e4ed0782ae807f8f02626",
+        measurementId: "G-R7S444H8KT"
     };
-    
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.firestore();
 
-    // অ্যাডমিন পেমেন্ট তথ্য আপডেট
-    async function updatePaymentInfo() {
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    // ১. পেমেন্ট তথ্য আপডেট করা (Firestore এ)
+    window.updatePaymentInfo = async function() {
         const method = document.getElementById('setMethod').value;
         const type = document.getElementById('setType').value;
         const number = document.getElementById('setNumber').value;
+
         if(!number) { alert("নম্বর দিন!"); return; }
-        
+
         try {
-            await db.collection('admin_settings').doc(method).set({ 
-                number: number, 
-                type: type
-            });
-            alert("তথ্য সফলভাবে আপডেট হয়েছে!");
+            // admin_settings কালেকশনের numbers ডকুমেন্টে তথ্য সেভ করা হচ্ছে
+            // যাতে আপনার পেমেন্ট পেজ সরাসরি এই তথ্য পেতে পারে
+            await setDoc(doc(db, "admin_settings", "numbers"), {
+                [method]: number
+            }, { merge: true });
+
+            // বিশেষ VIP 2 টাইপ ট্র্যাকিংয়ের জন্য (ঐচ্ছিক)
+            await setDoc(doc(db, "admin_settings", "vip2_details"), {
+                [method + "_type"]: type
+            }, { merge: true });
+
+            alert(method + " তথ্য সফলভাবে আপডেট হয়েছে!");
             document.getElementById('setNumber').value = "";
-        } catch (e) { alert("Error: " + e.message); }
-    }
-
-    function loadSettings() {
-        ['bkash', 'nagad', 'rocket'].forEach(m => {
-            db.collection('admin_settings').doc(m).onSnapshot(doc => {
-                if(doc.exists) {
-                    const data = doc.data();
-                    document.getElementById(`view-${m}`).innerText = `${data.number} (${data.type})`;
-                }
-            });
-        });
-    }
-    loadSettings();
-
-    // ব্যালেন্স আপডেট লজিক (ফোন নম্বরকে ডকুমেন্ট আইডি হিসেবে ব্যবহার করে)
-    async function approveDeposit(docId, phone, amount) {
-        if(!confirm("Approve করবেন? ইউজারের ব্যালেন্সে " + amount + " টাকা যোগ হবে।")) return;
-        
-        // এখানে phone হলো ইউজারের রেজিস্ট্রেশন ফোন নম্বর যা 'users' কালেকশনের ডকুমেন্ট আইডি
-        const userRef = db.collection("users").doc(phone);
-        const depositRef = db.collection("deposits").doc(docId);
-
-        try {
-            await db.runTransaction(async (transaction) => {
-                const userDoc = await transaction.get(userRef);
-                
-                if (!userDoc.exists) {
-                    throw "ইউজার ডাটাবেজে পাওয়া যায়নি! ফোন নম্বরটি চেক করুন।";
-                }
-
-                let currentBalance = Number(userDoc.data().balance || 0);
-                let newBalance = currentBalance + Number(amount);
-
-                transaction.update(userRef, { balance: newBalance });
-                transaction.update(depositRef, { status: "Success" });
-            });
-            alert("সফলভাবে ব্যালেন্স যোগ হয়েছে।");
         } catch (e) {
             console.error(e);
-            alert("ব্যর্থ: " + e);
+            alert("আপডেট করতে ব্যর্থ হয়েছে!");
         }
     }
 
-    async function updateStatus(collection, docId, status) {
-        if(confirm(`Mark as ${status}?`)) {
-            await db.collection(collection).doc(docId).update({ status: status });
-        }
-    }
-
-    function loadDeposits() {
-        db.collection("deposits").orderBy("created_at", "desc").onSnapshot(snap => {
-            const tbody = document.getElementById('depositTableBody');
-            tbody.innerHTML = "";
-            snap.forEach(doc => {
-                const d = doc.data();
-                const time = d.date_string || (d.created_at ? d.created_at.toDate().toLocaleString() : 'N/A');
-                let actions = `<span class="status-${d.status.toLowerCase()}">${d.status}</span>`;
+    // পেমেন্ট তথ্য রিয়েল-টাইম ভিউ
+    onSnapshot(doc(db, "admin_settings", "numbers"), (snapshot) => {
+        if (snapshot.exists()) {
+            const data = snapshot.data();
+            onSnapshot(doc(db, "admin_settings", "vip2_details"), (typeSnap) => {
+                const types = typeSnap.exists() ? typeSnap.data() : {};
                 
-                if(d.status === "Pending") {
-                    actions = `
-                        <button class="action-btn approve" onclick="approveDeposit('${doc.id}', '${d.user_email}', ${d.amount})">Approve</button>
-                        <button class="action-btn reject" onclick="updateStatus('deposits', '${doc.id}', 'Rejected')">Reject</button>
-                    `;
-                }
-                tbody.innerHTML += `
-                    <tr>
-                        <td>${d.user_email}</td>
-                        <td>${d.user_id || '---'}</td>
-                        <td>${d.sender_number || '---'}</td>
-                        <td style="font-weight:bold; color:#28a745">৳${d.amount}</td>
-                        <td style="color:#666"><code>${d.trxID}</code></td>
-                        <td>${time}</td>
-                        <td>${actions}</td>
-                    </tr>`;
+                if(data.bkash) document.getElementById('view-bkash').innerText = `${data.bkash} (${types.bkash_type || 'Cash Out'})`;
+                if(data.nagad) document.getElementById('view-nagad').innerText = `${data.nagad} (${types.nagad_type || 'Cash Out'})`;
+                if(data.rocket) document.getElementById('view-rocket').innerText = `${data.rocket} (${types.rocket_type || 'Cash Out'})`;
             });
-        });
-    }
+        }
+    });
 
-    function loadWithdrawals() {
-        db.collection("withdraws").orderBy("created_at", "desc").onSnapshot(snap => {
-            const tbody = document.getElementById('withdrawTableBody');
-            tbody.innerHTML = "";
-            snap.forEach(doc => {
-                const d = doc.data();
-                const time = d.created_at ? d.created_at.toDate().toLocaleString() : 'N/A';
-                let actions = `<span class="status-${d.status.toLowerCase()}">${d.status}</span>`;
-                if(d.status === "Pending") {
-                    actions = `
-                        <button class="action-btn approve" onclick="updateStatus('withdraws', '${doc.id}', 'Success')">Approve</button>
-                        <button class="action-btn reject" onclick="updateStatus('withdraws', '${doc.id}', 'Rejected')">Reject</button>
-                    `;
-                }
-                tbody.innerHTML += `<tr><td>${d.user_email}</td><td>${d.user_id || '---'}</td><td>${d.number}</td><td>৳${d.amount}</td><td>${time}</td><td>${actions}</td></tr>`;
+    // ২. VIP 2 প্যাকেজ যোগ করা (Firestore কালেকশনে)
+    window.addPackage = async function() {
+        const name = document.getElementById('pName').value;
+        const price = document.getElementById('pPrice').value;
+        const daily = document.getElementById('pDaily').value;
+        const validity = document.getElementById('pValidity').value;
+        const image = document.getElementById('pImage').value;
+
+        if (!name || !price || !daily || !validity) {
+            alert("সবগুলো ঘর পূরণ করুন!");
+            return;
+        }
+
+        try {
+            await addDoc(collection(db, "packages_vip2"), {
+                name: name,
+                price: parseInt(price),
+                daily: parseInt(daily),
+                validity: parseInt(validity),
+                image: image || "",
+                createdAt: Date.now()
             });
-        });
+            alert("VIP 2 প্যাকেজটি যোগ হয়েছে!");
+            clearFields();
+        } catch (e) {
+            alert("প্যাকেজ যোগ করতে সমস্যা হয়েছে!");
+        }
     }
 
-    function loadStats() {
-        db.collection("users").onSnapshot(s => document.getElementById('totalUsers').innerText = s.size);
-        db.collection("deposits").where("status","==","Success").onSnapshot(s => {
-            let t = 0; s.forEach(doc => t += Number(doc.data().amount));
-            document.getElementById('totalDepositAmount').innerText = t;
-        });
-        db.collection("withdraws").where("status","==","Success").onSnapshot(s => {
-            let t = 0; s.forEach(doc => t += Number(doc.data().amount));
-            document.getElementById('totalWithdrawAmount').innerText = t;
-        });
+    function clearFields() {
+        document.getElementById('pName').value = '';
+        document.getElementById('pPrice').value = '';
+        document.getElementById('pDaily').value = '';
+        document.getElementById('pValidity').value = '';
+        document.getElementById('pImage').value = '';
     }
 
-    loadDeposits();
-    loadWithdrawals();
-    loadStats();
+    // প্যাকেজ লিস্ট রিয়েল-টাইম দেখানো
+    const q = query(collection(db, "packages_vip2"), orderBy("price", "asc"));
+    onSnapshot(q, (snapshot) => {
+        const tableBody = document.getElementById('pkgTableBody');
+        tableBody.innerHTML = "";
+        
+        snapshot.forEach((child) => {
+            const pkg = child.data();
+            const id = child.id;
+            const imgDisplay = pkg.image 
+                ? `<img src="${pkg.image}" class="pkg-img-preview" onerror="this.src='https://via.placeholder.com/50'">` 
+                : `<i class="fas fa-image" style="font-size:30px; color:#ccc;"></i>`;
+
+            tableBody.innerHTML += `
+                <tr>
+                    <td>${imgDisplay}</td>
+                    <td>${pkg.name}</td>
+                    <td>৳${pkg.price}</td>
+                    <td>৳${pkg.daily}</td>
+                    <td>${pkg.validity} দিন</td>
+                    <td><button class="delete-btn" onclick="deletePackage('${id}')"><i class="fas fa-trash"></i></button></td>
+                </tr>`;
+        });
+    });
+
+    window.deletePackage = async function(id) {
+        if (confirm("প্যাকেজটি মুছে ফেলতে চান?")) {
+            try {
+                await deleteDoc(doc(db, "packages_vip2", id));
+                alert("প্যাকেজ মুছে ফেলা হয়েছে।");
+            } catch (e) {
+                alert("মুছতে সমস্যা হয়েছে।");
+            }
+        }
+    }
 </script>
 
 </body>
