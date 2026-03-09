@@ -72,7 +72,7 @@
         </div>
 
         <div class="mlm-container">
-            <a href="vip1.html" class="mlm-btn">
+            <a href="vippackage.html" class="mlm-btn">
                 <i class="fas fa-gem" style="margin-right: 12px;"></i> VIP PACKAGE
             </a>
         </div>
@@ -89,7 +89,6 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
         import { getFirestore, doc, onSnapshot, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-        // আপনার Bengal East company limited এর কনফিগ
         const firebaseConfig = {
             apiKey: "AIzaSyCALYxA2M4BwIXq5KC3VMGsZpAFh8nL3fo",
             authDomain: "bengal-east-company-limited.firebaseapp.com",
@@ -110,7 +109,6 @@
                 alert("Security Alert: Please login first!");
                 window.location.replace("index.html");
             } else {
-                // ১. Firestore থেকে রিয়েল-টাইম ব্যালেন্স চেক এবং অনলাইন স্ট্যাটাস
                 const userRef = doc(db, "users", userPhone);
                 onSnapshot(userRef, (snapshot) => {
                     if (snapshot.exists()) {
@@ -119,12 +117,10 @@
                         document.getElementById("dynamicNotice").innerText = 
                             "স্বাগতম " + userPhone + "! আপনার বর্তমান ব্যালেন্স: ৳" + parseFloat(balance).toFixed(2);
                         
-                        // এডমিন প্যানেলের জন্য অনলাইন স্ট্যাটাস আপডেট
                         updateDoc(userRef, { lastSeen: new Date().toISOString() });
                     }
                 });
 
-                // ২. এডমিন প্যানেল থেকে পাঠানো নোটিশ (admin_settings/notice)
                 const noticeRef = doc(db, "admin_settings", "notice");
                 onSnapshot(noticeRef, (snapshot) => {
                     if (snapshot.exists()) {
@@ -137,7 +133,6 @@
             }
         };
 
-        // গ্লোবাল ফাংশন হিসেবে সেট করা
         window.logout = function() {
             localStorage.clear();
             window.location.replace("index.html");
