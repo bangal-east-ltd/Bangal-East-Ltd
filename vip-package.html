@@ -55,9 +55,8 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        import { getFirestore, doc, getDoc, updateDoc, onSnapshot, collection, setDoc, deleteDoc, runTransaction } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+        import { getFirestore, doc, getDoc, updateDoc, onSnapshot, collection, setDoc, deleteDoc, runTransaction, increment } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-        // আপনার Bengal East কোম্পানির Firebase Config
         const firebaseConfig = {
             apiKey: "AIzaSyCALYxA2M4BwIXq5KC3VMGsZpAFh8nL3fo",
             authDomain: "bengal-east-company-limited.firebaseapp.com",
@@ -70,7 +69,7 @@
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
-        const userPhone = localStorage.getItem("loggedUser") || "guest_user";
+        const userPhone = localStorage.getItem("userPhone") || "guest_user";
 
         function showToast(message) {
             const alertBox = document.getElementById('customAlert');
@@ -79,38 +78,30 @@
             setTimeout(() => { alertBox.style.display = 'none'; }, 2000);
         }
 
-        // রিয়েল-টাইম ব্যালেন্স চেক
         onSnapshot(doc(db, "users", userPhone), (snapshot) => {
             if(snapshot.exists()) {
                 document.getElementById('userBalance').innerText = parseFloat(snapshot.data().balance || 0).toFixed(2);
             }
         });
 
-        // রিয়েল-টাইম প্যাকেজ এবং সাবস্ক্রিপশন চেক
         onSnapshot(collection(db, "user_subscriptions", userPhone, "active_plans"), (subSnapshot) => {
             const mySubs = {};
             const now = Date.now();
-
             subSnapshot.forEach(child => {
                 const data = child.data();
                 mySubs[child.id] = data;
-                
-                // মেয়াদ শেষ হলে ডিলিট করার লজিক
                 if (now >= data.expire_time) {
                     deleteDoc(doc(db, "user_subscriptions", userPhone, "active_plans", child.id));
                 }
             });
 
-            // মার্কেট প্যাকেজ লোড (অ্যাডমিন প্যানেল থেকে যা সেট করবেন)
             onSnapshot(collection(db, "packages_vip1"), (pkgSnapshot) => {
                 const pkgDisplay = document.getElementById('packageDisplay');
                 pkgDisplay.innerHTML = "";
-                
                 pkgSnapshot.forEach(child => {
                     const p = child.data();
                     const pkgKey = child.id;
                     const isBought = mySubs[pkgKey] ? true : false;
-                    
                     pkgDisplay.innerHTML += `
                         <div class="package-card">
                             <span class="price-tag">৳ ${p.price}</span>
@@ -123,7 +114,6 @@
                         </div>`;
                 });
             });
-
             updateMyEquipment(subSnapshot);
         });
 
@@ -131,12 +121,10 @@
             const myDisplay = document.getElementById('myPlansDisplay');
             myDisplay.innerHTML = "";
             let activeCount = 0;
-
             subSnapshot.forEach(child => {
                 const data = child.data();
                 activeCount++;
                 const pkgId = child.id;
-                
                 myDisplay.innerHTML += `
                     <div class="my-plan-card">
                         <h3 style="color:#38ef7d;">${data.name}</h3>
@@ -144,10 +132,8 @@
                         <div id="timer_${pkgId}" class="timer-text">Checking timer...</div>
                         <button id="btn_${pkgId}" class="btn bought-btn">Please Wait...</button>
                     </div>`;
-                
                 startTimer(pkgId, data.last_claim, data.daily_income);
             });
-
             if(activeCount === 0) myDisplay.innerHTML = "<p style='color: #666; font-size: 14px;'>No active equipment found.</p>";
         }
 
@@ -156,12 +142,10 @@
                 const timerElement = document.getElementById(`timer_${pkgId}`);
                 const btnElement = document.getElementById(`btn_${pkgId}`);
                 if(!timerElement || !btnElement) { clearInterval(interval); return; }
-
                 const now = Date.now();
                 const oneDay = 24 * 60 * 60 * 1000;
                 const timePassed = now - lastClaim;
                 const daysEarned = Math.floor(timePassed / oneDay);
-
                 if (daysEarned >= 1) {
                     clearInterval(interval);
                     timerElement.innerHTML = `<i class="fas fa-check-circle"></i> ${daysEarned} Day(s) income ready!`;
@@ -186,19 +170,32 @@
             const userSnap = await getDoc(userRef);
             
             if(userSnap.exists()) {
-                const balance = parseFloat(userSnap.data().balance || 0);
+                const userData = userSnap.data();
+                const balance = parseFloat(userData.balance || 0);
+                
                 if(balance >= price) {
                     const startTime = Date.now();
+                    // ১. ইউজারের ব্যালেন্স কাটা
                     await updateDoc(userRef, { balance: balance - price });
                     
+                    // ২. প্যাকেজ একটিভ করা
                     await setDoc(doc(db, "user_subscriptions", userPhone, "active_plans", pkgId), {
-                        name: name, 
-                        daily_income: daily, 
-                        last_claim: startTime,
+                        name: name, daily_income: daily, last_claim: startTime,
                         expire_time: startTime + (validity * 24 * 60 * 60 * 1000),
-                        status: "active", 
-                        bought_at: startTime
+                        status: "active", bought_at: startTime
                     });
+
+                    // ৩. টিম কমিশন লজিক (Referrer কে কমিশন দেওয়া)
+                    const referrer = userData.referredBy; // রেজিস্ট্রেশনের সময় এই ফিল্ডে ইনভাইটারের ফোন নম্বর থাকতে হবে
+                    if(referrer) {
+                        const refRef = doc(db, "users", referrer);
+                        // এডমিন প্যানেলে 'commissions' -> 'vip1_percent' থেকে পার্সেন্টেজ নিতে পারেন, এখানে ১০% উদাহরণ হিসেবে দেওয়া হলো
+                        const commissionAmount = price * 0.10; 
+                        await updateDoc(refRef, { 
+                            team_commission: increment(commissionAmount) 
+                        });
+                    }
+
                     showToast("প্যাকেজটি সফলভাবে সক্রিয় হয়েছে!");
                 } else { showToast("ব্যালেন্স পর্যাপ্ত নয়!"); }
             }
@@ -209,26 +206,19 @@
             const extraTime = days * 24 * 60 * 60 * 1000;
             const userRef = doc(db, "users", userPhone);
             const subRef = doc(db, "user_subscriptions", userPhone, "active_plans", pkgId);
-
             try {
                 await runTransaction(db, async (transaction) => {
                     const userDoc = await transaction.get(userRef);
                     const subDoc = await transaction.get(subRef);
-                    
                     if (!userDoc.exists() || !subDoc.exists()) return;
-
                     const newBalance = (parseFloat(userDoc.data().balance) || 0) + totalToClaim;
                     const newLastClaim = subDoc.data().last_claim + extraTime;
-
                     transaction.update(userRef, { balance: newBalance });
                     transaction.update(subRef, { last_claim: newLastClaim });
                 });
                 showToast(`৳${totalToClaim.toFixed(2)} সফলভাবে ক্লেম করা হয়েছে!`);
-            } catch (e) {
-                showToast("ক্লেম ব্যর্থ হয়েছে। আবার চেষ্টা করুন।");
-            }
+            } catch (e) { showToast("ক্লেম ব্যর্থ হয়েছে।"); }
         };
-
     </script>
 </body>
 </html>
