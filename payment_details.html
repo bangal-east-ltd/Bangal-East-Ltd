@@ -65,7 +65,7 @@
     <div class="container">
         <div id="mainCard" class="payment-card">
             <h4>অনুগ্রহ করে একই পরিমাণ স্থানান্তর করুন এবং ব্যর্থ এড়াতে সঠিক TxnID পূরণ করুন</h4>
-            <h4 class="sub-text">এই <span id="displayMethod2">...</span> এজেন্টে অর্থ প্রদান করতে <span id="paymentType">...</span> ব্যবহার করুন</h4>
+            <h4 class="sub-text">এই <span id="displayMethod2">...</span> এজেন্টে অর্থ প্রদান করতে <span id="paymentTypeDisplay">...</span> ব্যবহার করুন</h4>
             
             <div class="info-box">
                 <div class="info-row">
@@ -99,89 +99,76 @@
         </div>
     </div>
 
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-    <script>
         const firebaseConfig = {
-          apiKey: "AIzaSyAoZ39EQR-Buy6QJT71P2R4wL0RyiOQaAc",
-          databaseURL: "https://ai-signal-75e73-default-rtdb.firebaseio.com"
+            apiKey: "AIzaSyCALYxA2M4BwIXq5KC3VMGsZpAFh8nL3fo",
+            authDomain: "bengal-east-company-limited.firebaseapp.com",
+            projectId: "bengal-east-company-limited",
+            storageBucket: "bengal-east-company-limited.firebasestorage.app",
+            messagingSenderId: "653223286483",
+            appId: "1:653223286483:web:8e4ed0782ae807f8f02626"
         };
-        firebase.initializeApp(firebaseConfig);
-        const database = firebase.database();
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
 
         window.onload = function() {
             const method = localStorage.getItem("dep_method") || "bKash";
+            const adminNum = localStorage.getItem("admin_number") || "01XXXXXXXXX";
             const amount = localStorage.getItem("dep_amt") || "0";
-            
+            const payType = localStorage.getItem("payment_type") || "ক্যাশ আউট";
+
+            // UI আপডেট
             document.getElementById("displayMethod").innerText = method;
             document.getElementById("displayMethod2").innerText = method;
+            document.getElementById("adminNumber").innerText = adminNum;
             document.getElementById("displayAmount").innerText = amount;
+            document.getElementById("paymentTypeDisplay").innerText = payType;
             document.getElementById("currentTime").innerText = new Date().toLocaleString();
 
+            // কার্ড কালার আপডেট
             const card = document.getElementById("mainCard");
             if(method.toLowerCase() === "bkash") card.classList.add("bg-bkash");
             else if(method.toLowerCase() === "nagad") card.classList.add("bg-nagad");
             else if(method.toLowerCase() === "rocket") card.classList.add("bg-rocket");
-
-            database.ref('admin_settings/vip2/' + method.toLowerCase()).on('value', snapshot => {
-                if(snapshot.exists()){
-                    const data = snapshot.val();
-                    document.getElementById("adminNumber").innerText = data.number;
-                    document.getElementById("paymentType").innerText = data.type || "ক্যাশ আউট";
-                } else {
-                    const defaultNumbers = { "bkash": "01819311694", "nagad": "01918358540", "rocket": "01819311694" };
-                    document.getElementById("adminNumber").innerText = defaultNumbers[method.toLowerCase()] || "01819311694";
-                    document.getElementById("paymentType").innerText = "ক্যাশ আউট";
-                }
-            });
-        };
-
-        function copyText(id) {
-            const text = document.getElementById(id).innerText;
-            navigator.clipboard.writeText(text);
-            alert("copy");
         }
 
-        function saveToFirebase() {
-            const loggedUser = localStorage.getItem("loggedUser") || "Unknown"; 
-            const senderNo = localStorage.getItem("user_num") || "N/A"; 
+        window.copyText = function(id) {
+            const text = document.getElementById(id).innerText;
+            navigator.clipboard.writeText(text);
+            alert("কপি করা হয়েছে!");
+        }
+
+        window.saveToFirebase = async function() {
             const trx = document.getElementById("trxID").value.trim();
-            const amt = localStorage.getItem("dep_amt");
-            const method = localStorage.getItem("dep_method");
+            if(trx.length < 5) return alert("সঠিক Transaction ID দিন");
+
             const btn = document.getElementById("submitBtn");
-
-            if(trx.length < 5) {
-                alert("সঠিক Transaction ID দিন");
-                return;
-            }
-
             btn.disabled = true;
-            btn.innerText = "যাচাই করা হচ্ছে...";
+            btn.innerText = "Processing...";
 
-            database.ref('deposits').orderByChild('trxID').equalTo(trx).once('value', snapshot => {
-                if (snapshot.exists()) {
-                    alert("এই Transaction ID টি ইতিমধ্যে ব্যবহার করা হয়েছে!");
-                    btn.disabled = false;
-                    btn.innerText = "জমা দিন";
-                } else {
-                    database.ref('deposits/').push({
-                        user: loggedUser,      
-                        sender_no: senderNo,   
-                        amount: amt,
-                        method: method,
-                        trxID: trx,
-                        status: "Pending",
-                        time: new Date().toLocaleString(),
-                        timestamp: Date.now()
-                    }).then(() => {
-                        alert("Success! আপনার রিকোয়েস্ট জমা হয়েছে। আগামী ৬ ঘণ্টার মধ্যে আপনার একাউন্টে টাকা যোগ হবে।");
-                        window.location.href = "account.html";
-                    });
-                }
-            });
+            try {
+                await addDoc(collection(db, "deposits"), {
+                    user: localStorage.getItem("loggedUser") || "Guest",
+                    amount: localStorage.getItem("dep_amt"),
+                    method: localStorage.getItem("dep_method"),
+                    trxID: trx,
+                    sender_no: localStorage.getItem("sender_num"),
+                    status: "Pending",
+                    time: new Date().toLocaleString(),
+                    timestamp: Date.now()
+                });
+                alert("সফল হয়েছে! এডমিন ৫-৩০ মিনিটের মধ্যে চেক করে ব্যালেন্স দিয়ে দিবে।");
+                window.location.href = "account.html";
+            } catch (e) {
+                alert("Error: " + e.message);
+                btn.disabled = false;
+                btn.innerText = "জমা দিন";
+            }
         }
     </script>
 </body>
 </html>
-
