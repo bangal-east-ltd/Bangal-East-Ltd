@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Promotion Center</title>
+    <title>Promotion - Team Report</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     
     <script src="https://www.gstatic.com/firebasejs/9.x.x/firebase-app-compat.js"></script>
@@ -11,26 +11,39 @@
     <script src="https://www.gstatic.com/firebasejs/9.x.x/firebase-firestore-compat.js"></script>
     
     <style>
-        /* আপনার বিদ্যমান CSS স্টাইল এখানে থাকবে */
         * { margin:0; padding:0; box-sizing:border-box; font-family: 'Segoe UI', sans-serif; }
         body { background: #f4f7f6; color: #333; padding-bottom: 30px; }
         .header { background: #11998e; color: white; padding: 20px; text-align: center; border-radius: 0 0 20px 20px; position: sticky; top: 0; z-index: 100; }
+        .header h2 { font-size: 20px; }
         .container { padding: 15px; max-width: 600px; margin: 0 auto; }
+
+        /* Referral Link Card */
         .refer-card { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.05); margin-bottom: 20px; text-align: center; }
+        .refer-card h4 { font-size: 14px; color: #666; margin-bottom: 12px; }
         .refer-link-box { display: flex; background: #f8f9fa; border: 1.5px dashed #11998e; padding: 12px; border-radius: 10px; justify-content: space-between; align-items: center; gap: 10px; }
-        .refer-link-box span { font-weight: bold; color: #11998e; font-size: 13px; word-break: break-all; }
-        .copy-btn { background: #11998e; color: white; border: none; padding: 10px 15px; border-radius: 8px; cursor: pointer; font-size: 12px; font-weight: bold; }
+        .refer-link-box span { font-weight: bold; color: #11998e; font-size: 11px; word-break: break-all; text-align: left; line-height: 1.4; }
+        .copy-btn { background: #11998e; color: white; border: none; padding: 10px 15px; border-radius: 8px; cursor: pointer; font-size: 12px; font-weight: bold; white-space: nowrap; transition: 0.3s; }
+        .copy-btn:active { transform: scale(0.95); opacity: 0.8; }
+
+        /* Stats Grid */
         .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
-        .stat-item { background: white; padding: 15px; border-radius: 15px; border-left: 5px solid #11998e; }
-        .team-section { background: white; border-radius: 15px; padding: 15px; }
-        .level-tabs { display: flex; gap: 8px; margin-bottom: 15px; }
-        .level-btn { padding: 8px 18px; background: #f0f0f0; border-radius: 20px; cursor: pointer; border: none; }
+        .stat-item { background: white; padding: 15px; border-radius: 15px; box-shadow: 0 3px 10px rgba(0,0,0,0.03); border-left: 5px solid #11998e; }
+        .stat-item p { font-size: 11px; color: #888; margin-bottom: 5px; font-weight: 600; }
+        .stat-item h3 { font-size: 15px; color: #333; }
+
+        /* Team Table Section */
+        .team-section { background: white; border-radius: 15px; padding: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.05); }
+        .team-section h3 { font-size: 16px; margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 10px; color: #11998e; }
+        .level-tabs { display: flex; gap: 8px; margin-bottom: 15px; overflow-x: auto; padding-bottom: 5px; }
+        .level-btn { padding: 8px 18px; background: #f0f0f0; border-radius: 20px; font-size: 12px; cursor: pointer; white-space: nowrap; border: none; font-weight: 600; color: #666; }
         .level-btn.active { background: #11998e; color: white; }
+
         table { width: 100%; border-collapse: collapse; }
-        th { text-align: left; font-size: 12px; color: #999; padding: 10px 5px; }
+        th { text-align: left; font-size: 12px; color: #999; padding: 10px 5px; border-bottom: 2px solid #f4f7f6; }
         td { padding: 12px 5px; font-size: 13px; border-bottom: 1px solid #f4f7f6; }
-        .status-active { color: #28a745; font-weight: bold; }
-        .status-inactive { color: #d9534f; font-weight: bold; }
+        .user-id { font-weight: bold; color: #444; }
+        .status-active { color: #28a745; font-weight: bold; font-size: 11px; }
+        .status-inactive { color: #d9534f; font-weight: bold; font-size: 11px; }
     </style>
 </head>
 <body>
@@ -41,35 +54,56 @@
 
     <div class="container">
         <div class="refer-card">
-            <h4><i class="fas fa-link"></i> Your Referral Link (ID Based)</h4>
+            <h4><i class="fas fa-link"></i> Share Your Referral Link</h4>
             <div class="refer-link-box">
-                <span id="refCode">Loading your ID...</span>
+                <span id="refCode">Generating link...</span>
                 <button class="copy-btn" onclick="copyCode()"><i class="fas fa-copy"></i> Copy</button>
             </div>
         </div>
 
         <div class="stats-grid">
-            <div class="stat-item"><p>Total Team</p><h3 id="totalTeam">0 Members</h3></div>
-            <div class="stat-item"><p>Total Commission</p><h3 id="teamComm" style="color: #28a745;">৳ 0.00</h3></div>
-            <div class="stat-item"><p>Team Deposit</p><h3 id="teamDeposit">৳ 0.00</h3></div>
-            <div class="stat-item"><p>Level 1 Active</p><h3 id="activeToday">0</h3></div>
+            <div class="stat-item">
+                <p>Total Team</p>
+                <h3 id="totalTeam">0 Members</h3>
+            </div>
+            <div class="stat-item">
+                <p>Total Commission</p>
+                <h3 id="teamComm" style="color: #28a745;">৳ 0.00</h3>
+            </div>
+            <div class="stat-item">
+                <p>Team Deposit</p>
+                <h3 id="teamDeposit">৳ 0.00</h3>
+            </div>
+            <div class="stat-item">
+                <p>Level 1 Active</p>
+                <h3 id="activeToday">0</h3>
+            </div>
         </div>
 
         <div class="team-section">
-            <h3>Team Breakdown</h3>
+            <h3><i class="fas fa-users-cog"></i> Team Breakdown</h3>
             <div class="level-tabs">
                 <button class="level-btn active" onclick="loadTeam(1, this)">Level 1</button>
                 <button class="level-btn" onclick="loadTeam(2, this)">Level 2</button>
                 <button class="level-btn" onclick="loadTeam(3, this)">Level 3</button>
             </div>
+            
             <table>
-                <thead><tr><th>User ID</th><th>Joined</th><th>Status</th></tr></thead>
-                <tbody id="teamList"></tbody>
+                <thead>
+                    <tr>
+                        <th>User ID</th>
+                        <th>Joined</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody id="teamList">
+                    </tbody>
             </table>
         </div>
     </div>
 
     <script>
+        // ১. Firebase কনফিগারেশন
         const firebaseConfig = {
             apiKey: "AIzaSyCALYxA2M4BwIXq5KC3VMGsZpAFh8nL3fo",
             authDomain: "bengal-east-company-limited.firebaseapp.com",
@@ -82,28 +116,27 @@
         const db = firebase.firestore();
         const auth = firebase.auth();
 
-        let myFiveDigitID = ""; // ৫ সংখ্যার আইডি এখানে জমা থাকবে
+        let userUniqueID = "";
 
-        async function initPage() {
+        // ২. ইউজারের তথ্য ও স্ট্যাটাস লোড করা
+        function initPage() {
             auth.onAuthStateChanged(async (user) => {
                 if (user) {
-                    // ১. লোকাল স্টোরেজ থেকে ফোন নম্বর নেয়া
-                    const phone = localStorage.getItem("userPhone");
-                    if (!phone) return;
-
-                    // ২. Firestore থেকে ওই ইউজারের ৫ সংখ্যার userID খুঁজে বের করা
-                    const userDoc = await db.collection("users").doc(phone).get();
+                    const phone = localStorage.getItem("userPhone") || user.phoneNumber.replace("+88", "");
                     
-                    if (userDoc.exists) {
+                    const userDoc = await db.collection("users").doc(phone).get();
+                    if(userDoc.exists) {
                         const userData = userDoc.data();
-                        myFiveDigitID = userData.userID; // যেমন: ৩৫২৮১
+                        userUniqueID = userData.userID; 
 
-                        // ৩. ৫ সংখ্যার আইডি দিয়ে রেফার লিংক তৈরি
-                        const refLink = window.location.origin + "/register.html?ref=" + myFiveDigitID;
+                        // ৫ সংখ্যার আইডি দিয়ে আপনার মূল ডোমেইনের লিংক তৈরি
+                        // এখানে ডোমেইন URL টি আপনার চাহিদা অনুযায়ী ফিক্স করা হয়েছে
+                        const baseURL = "https://bangal-east-ltd.github.io/Bangal-East-Ltd/index.html";
+                        const refLink = baseURL + "?ref=" + userUniqueID;
                         document.getElementById("refCode").innerText = refLink;
 
                         loadUserStats(phone);
-                        loadTeam(1, null, myFiveDigitID); 
+                        loadTeam(1, null, userUniqueID); 
                     }
                 } else {
                     window.location.replace("index.html");
@@ -125,15 +158,15 @@
 
         window.copyCode = function() {
             const link = document.getElementById("refCode").innerText;
-            if(link.includes("Loading")) return;
+            if(link.includes("Generating")) return;
             navigator.clipboard.writeText(link).then(() => {
                 alert("Promotion Link Copied!");
             });
         }
 
-        window.loadTeam = async function(level, btn, referralID) {
-            const searchID = referralID || myFiveDigitID;
-            if (!searchID) return;
+        window.loadTeam = async function(level, btn, customID) {
+            const finalID = customID || userUniqueID;
+            if(!finalID) return;
 
             if(btn) {
                 document.querySelectorAll('.level-btn').forEach(b => b.classList.remove('active'));
@@ -143,36 +176,36 @@
             const listBody = document.getElementById("teamList");
             listBody.innerHTML = "<tr><td colspan='3' style='text-align:center;'>Loading...</td></tr>";
 
-            // রেফারেন্স আইডি অনুযায়ী ফিল্টার (referrerID ফিল্ডে আপনার ৫ সংখ্যার আইডি সেভ হয়)
             let fieldName = "referrerID"; 
-            if(level === 2) fieldName = "refLevel2"; 
-            if(level === 3) fieldName = "refLevel3";
+            if(level === 2) fieldName = "referrerID_L2"; 
+            if(level === 3) fieldName = "referrerID_L3";
 
             try {
                 const snapshot = await db.collection("users")
-                    .where(fieldName, "==", String(searchID)) 
+                    .where(fieldName, "==", String(finalID))
                     .get();
 
                 listBody.innerHTML = "";
                 if (snapshot.empty) {
-                    listBody.innerHTML = "<tr><td colspan='3' style='text-align:center;'>No members in Level " + level + "</td></tr>";
+                    listBody.innerHTML = "<tr><td colspan='3' style='text-align:center;'>No Level " + level + " members.</td></tr>";
                     return;
                 }
 
                 snapshot.forEach(doc => {
                     const data = doc.data();
                     const statusClass = data.isActive ? "status-active" : "status-inactive";
+                    const statusText = data.isActive ? "● Active" : "○ Inactive";
                     
                     listBody.innerHTML += `
                         <tr>
                             <td class="user-id">ID: ${data.userID}</td>
                             <td>${data.createdAt ? data.createdAt.split('T')[0] : '---'}</td>
-                            <td class="${statusClass}">${data.isActive ? 'Active' : 'Inactive'}</td>
+                            <td class="${statusClass}">${statusText}</td>
                         </tr>
                     `;
                 });
             } catch (e) {
-                listBody.innerHTML = "<tr><td colspan='3' style='text-align:center; color:red;'>Load Failed</td></tr>";
+                listBody.innerHTML = "<tr><td colspan='3' style='text-align:center; color:red;'>Error loading team.</td></tr>";
             }
         }
 
