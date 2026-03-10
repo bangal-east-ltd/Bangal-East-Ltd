@@ -29,7 +29,7 @@
             margin-bottom: 15px;
             box-shadow: 0 4px 12px rgba(0,0,0,0.03);
             display: flex;
-            flex-direction: column; /* Changed for better text placement */
+            flex-direction: column;
             border-left: 5px solid var(--primary);
         }
 
@@ -53,7 +53,6 @@
         .success { background: #e8f5e9; color: #2e7d32; }
         .failed { background: #ffebee; color: #c62828; }
 
-        /* পন্ডিং নোটিশ স্টাইল */
         .pending-notice {
             margin-top: 10px;
             font-size: 11px;
@@ -62,14 +61,10 @@
             padding: 8px;
             border-radius: 8px;
             display: flex;
-            align-items: center;
-            gap: 5px;
+            align-items: center; gap: 5px;
         }
 
-        #noData { 
-            text-align: center; margin-top: 100px; color: #bdc3c7; 
-            background: var(--white); padding: 40px; border-radius: 20px;
-        }
+        #noData { text-align: center; margin-top: 100px; color: #bdc3c7; }
     </style>
 </head>
 <body>
@@ -81,84 +76,91 @@
 
     <div class="container" id="historyContainer"></div>
 
-    <div class="container" id="noData" style="display: none;">
-        <i class="fas fa-receipt" style="font-size: 50px; margin-bottom: 15px; color: #eee;"></i>
-        <p style="font-weight: 500;">এখনো কোনো ডিপোজিট রেকর্ড পাওয়া যায়নি</p>
+    <div id="noData" style="display: none; text-align: center; padding: 50px;">
+        <i class="fas fa-receipt" style="font-size: 50px; color: #eee; margin-bottom: 10px;"></i>
+        <p>কোনো ডিপোজিট রেকর্ড পাওয়া যায়নি</p>
     </div>
 
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
 
     <script>
+        // আপনার Firebase Config
         const firebaseConfig = {
           apiKey: "AIzaSyAoZ39EQR-Buy6QJT71P2R4wL0RyiOQaAc",
           authDomain: "ai-signal-75e73.firebaseapp.com",
           projectId: "ai-signal-75e73",
           storageBucket: "ai-signal-75e73.firebasestorage.app",
           messagingSenderId: "610985325221",
-          appId: "1:610985325221:web:16e2600afb3b3698ae534c",
-          measurementId: "G-5X29WBQHJK",
-          databaseURL: "https://ai-signal-75e73-default-rtdb.firebaseio.com"
+          appId: "1:610985325221:web:16e2600afb3b3698ae534c"
         };
 
         firebase.initializeApp(firebaseConfig);
-        const database = firebase.database();
+        const db = firebase.firestore();
+
+        // আপনার ছবির ইউজার আইডি: 35281 (লগইন সিস্টেম থাকলে সেটি এখানে ডাইনামিক বসবে)
+        const currentUserID = "35281"; 
 
         function loadHistory() {
             const container = document.getElementById('historyContainer');
             const noData = document.getElementById('noData');
-            
-            database.ref('deposits/').on('value', (snapshot) => {
-                container.innerHTML = "";
-                if (snapshot.exists()) {
-                    noData.style.display = "none";
-                    snapshot.forEach((child) => {
-                        const data = child.val();
-                        const key = child.key;
-                        const status = data.status || 'Pending';
-                        const statusClass = status.toLowerCase();
 
-                        // ৮ ঘণ্টা পার হয়েছে কি না চেক করা (Auto-Reject Logic)
+            // Firestore এর 'deposits' কালেকশন থেকে ডাটা আনা
+            db.collection("deposits")
+              .where("userID", "==", currentUserID)
+              .orderBy("time", "desc") // নতুন ডাটা আগে দেখাবে
+              .onSnapshot((querySnapshot) => {
+                container.innerHTML = "";
+                
+                if (querySnapshot.empty) {
+                    noData.style.display = "block";
+                    return;
+                }
+
+                noData.style.display = "none";
+                querySnapshot.forEach((doc) => {
+                    const data = doc.data();
+                    const status = data.status || 'Pending';
+                    const statusClass = status.toLowerCase();
+
+                    // ৮ ঘণ্টা অটো-রিজেক্ট লজিক
+                    if (status === 'Pending' && data.time) {
                         const requestTime = new Date(data.time).getTime();
                         const currentTime = new Date().getTime();
                         const diffHours = (currentTime - requestTime) / (1000 * 60 * 60);
 
-                        if (status === 'Pending' && diffHours >= 8) {
-                            database.ref('deposits/' + key).update({ status: 'Failed' });
-                            return; // আপডেট হওয়ার পর রেন্ডারিং স্কিপ করবে, কারণ 'on value' আবার ট্রিগার হবে
+                        if (diffHours >= 8) {
+                            db.collection("deposits").doc(doc.id).update({ status: 'Failed' });
                         }
+                    }
 
-                        let pendingMessage = "";
-                        if(status === 'Pending') {
-                            pendingMessage = `
-                                <div class="pending-notice">
-                                    <i class="fas fa-info-circle"></i>
-                                    ৬ ঘণ্টার মধ্যে টাকা আপনার একাউন্টে জমা হবে।
+                    let pendingMessage = (status === 'Pending') ? `
+                        <div class="pending-notice">
+                            <i class="fas fa-info-circle"></i>
+                            ৬ ঘণ্টার মধ্যে টাকা আপনার একাউন্টে জমা হবে।
+                        </div>
+                    ` : "";
+
+                    const itemHtml = `
+                        <div class="history-item">
+                            <div class="item-main">
+                                <div class="left-info">
+                                    <b>${data.method || 'General'} Deposit</b>
+                                    <span>Trx: <span class="trx-text">${data.trxID || 'N/A'}</span></span><br>
+                                    <span><i class="far fa-clock"></i> ${data.time || ''}</span>
                                 </div>
-                            `;
-                        }
-                        
-                        const itemHtml = `
-                            <div class="history-item">
-                                <div class="item-main">
-                                    <div class="left-info">
-                                        <b>${data.method || 'General'} Deposit</b>
-                                        <span>Trx: <span class="trx-text">${data.trxID || 'N/A'}</span></span><br>
-                                        <span><i class="far fa-clock"></i> ${data.time || 'Date Unknown'}</span>
-                                    </div>
-                                    <div class="right-info">
-                                        <span class="amount">৳${data.amount}</span>
-                                        <span class="status ${statusClass}">${status}</span>
-                                    </div>
+                                <div class="right-info">
+                                    <span class="amount">৳${data.amount || 0}</span>
+                                    <span class="status ${statusClass}">${status}</span>
                                 </div>
-                                ${pendingMessage}
                             </div>
-                        `;
-                        container.insertAdjacentHTML('afterbegin', itemHtml);
-                    });
-                } else {
-                    noData.style.display = "block";
-                }
+                            ${pendingMessage}
+                        </div>
+                    `;
+                    container.innerHTML += itemHtml;
+                });
+            }, (error) => {
+                console.error("Firestore Error:", error);
             });
         }
 
@@ -166,4 +168,3 @@
     </script>
 </body>
 </html>
-
