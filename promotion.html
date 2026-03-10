@@ -103,7 +103,7 @@
     </div>
 
     <script>
-        // ১. আপনার Firebase কনফিগারেশন (আপনার ডাটাবেস অনুযায়ী পরিবর্তন করুন)
+        // ১. আপনার Firebase কনফিগারেশন
         const firebaseConfig = {
             apiKey: "YOUR_API_KEY",
             authDomain: "bengal-east-company-limited.firebaseapp.com",
@@ -116,29 +116,30 @@
         const db = firebase.firestore();
         const auth = firebase.auth();
 
-        const loggedUser = localStorage.getItem("loggedUser");
-
-        // ২. ইউজারের তথ্য ও স্ট্যাটাস লোড করা
+        // ২. ইউজারের তথ্য ও স্ট্যাটাস লোড করা (Auth State Changed ব্যবহার করে)
         async function initPage() {
-            if (!loggedUser) {
-                window.location.replace("index.html");
-                return;
-            }
+            auth.onAuthStateChanged(user => {
+                if (user) {
+                    const currentUID = user.uid;
+                    
+                    // রেফারেল লিংক তৈরি ও প্রদর্শন
+                    const refLink = window.location.origin + "/register.html?ref=" + currentUID;
+                    document.getElementById("refCode").innerText = refLink;
 
-            // রেফারেল লিংক তৈরি (আপনার ডোমেইন অনুযায়ী)
-            const refLink = window.location.origin + "/register.html?ref=" + loggedUser;
-            document.getElementById("refCode").innerText = refLink;
+                    // ডাটা ও টিম লোড করার জন্য আইডি পাঠানো
+                    loadUserStats(currentUID);
+                    loadTeam(1, null, currentUID); 
+                } else {
+                    // লগইন না থাকলে লগইন পেজে পাঠিয়ে দিবে
+                    window.location.replace("login.html");
+                }
+            });
 
-            // অ্যাডমিন প্যানেল (Vip3) থেকে কমিশন সেটিংস চেক করা (Optional)
             checkAdminSettings();
-
-            // পার্সোনাল ডাটা ও টিম লোড
-            loadUserStats();
-            loadTeam(1);
         }
 
-        async function loadUserStats() {
-            db.collection("users").doc(loggedUser).onSnapshot(doc => {
+        async function loadUserStats(uid) {
+            db.collection("users").doc(uid).onSnapshot(doc => {
                 if (doc.exists) {
                     const data = doc.data();
                     document.getElementById("totalTeam").innerText = (data.totalTeam || 0) + " Members";
@@ -149,27 +150,27 @@
             });
         }
 
-        // ৩. Vip3 অ্যাডমিন কন্ট্রোল লজিক (কমিশন সেটিং)
         async function checkAdminSettings() {
-            // অ্যাডমিন যদি 'vip3' এর মাধ্যমে কমিশন পরিবর্তন করে
             db.collection("settings").doc("vip3_config").onSnapshot(doc => {
                 if(doc.exists) {
                     console.log("Admin commission rates updated from Vip3 panel");
-                    // এখানে কমিশন ক্যালকুলেশনের রেট আপডেট করা যায়
                 }
             });
         }
 
-        // ৪. রেফারেল লিংক কপি ফাংশন
         window.copyCode = function() {
             const link = document.getElementById("refCode").innerText;
+            if(link.includes("Generating")) return;
             navigator.clipboard.writeText(link).then(() => {
                 alert("Promotion Link Copied!");
             });
         }
 
         // ৫. টিম মেম্বার লিস্ট লোড করা
-        window.loadTeam = async function(level, btn) {
+        window.loadTeam = async function(level, btn, uid) {
+            const currentUID = uid || (auth.currentUser ? auth.currentUser.uid : null);
+            if (!currentUID) return;
+
             if(btn) {
                 document.querySelectorAll('.level-btn').forEach(b => b.classList.remove('active'));
                 btn.classList.add('active');
@@ -179,25 +180,24 @@
             listBody.innerHTML = "<tr><td colspan='3' style='text-align:center; padding: 20px;'>Loading...</td></tr>";
 
             let fieldName = "referredBy"; 
-            if(level === 2) fieldName = "refLevel2"; // আপনার DB স্ট্রাকচার অনুযায়ী
+            if(level === 2) fieldName = "refLevel2"; 
             if(level === 3) fieldName = "refLevel3";
 
             try {
                 const snapshot = await db.collection("users")
-                    .where(fieldName, "==", loggedUser)
+                    .where(fieldName, "==", currentUID)
                     .orderBy("joinTimestamp", "desc")
                     .limit(50)
                     .get();
 
                 listBody.innerHTML = "";
                 if (snapshot.empty) {
-                    listBody.innerHTML = "<tr><td colspan='3' style='text-align:center; padding: 20px; color: #999;'>No members in Level " + level + "</td></tr>";
+                    listBody.innerHTML = "<tr><td colspan='3' style='text-align:center; padding: 20px; color: #999;'>No members found in Level " + level + "</td></tr>";
                     return;
                 }
 
                 snapshot.forEach(doc => {
                     const data = doc.data();
-                    // প্যাকেজ কেনা থাকলে status-active হবে (যেমন: balance > 0 বা isVip: true)
                     const statusClass = data.isActive ? "status-active" : "status-inactive";
                     const statusText = data.isActive ? "● Active" : "○ Inactive";
                     
@@ -210,6 +210,7 @@
                     `;
                 });
             } catch (e) {
+                console.error(e);
                 listBody.innerHTML = "<tr><td colspan='3' style='text-align:center; color:red;'>Data load failed.</td></tr>";
             }
         }
