@@ -106,7 +106,7 @@
         <div class="admin-card">
             <h2>Pending Deposits</h2>
             <table>
-                <thead><tr><th>User</th><th>Amount</th><th>TrxID</th><th>Method</th><th>Action</th></tr></thead>
+                <thead><tr><th>Reg Phone</th><th>User ID</th><th>Sender Number</th><th>Transaction ID</th><th>Amount</th><th>Method</th><th>Action</th></tr></thead>
                 <tbody id="depositBody"></tbody>
             </table>
         </div>
@@ -233,11 +233,18 @@
             snapshot.forEach(child => {
                 const d = child.data();
                 if(d.status === "Pending") {
-                    depBody.innerHTML += `<tr><td>${d.user}</td><td>${d.amount}</td><td><code>${d.trxID}</code></td><td>${d.method}</td>
-                    <td>
-                        <button class="btn btn-success" onclick="approveDep('${child.id}','${d.user}',${d.amount})">Approve</button>
-                        <button class="btn btn-danger" onclick="rejectDep('${child.id}')">Reject</button>
-                    </td></tr>`;
+                    depBody.innerHTML += `<tr>
+                        <td>${d.user}</td>
+                        <td>${d.userID || 'N/A'}</td>
+                        <td>${d.senderNumber || d.sender_no || 'N/A'}</td>
+                        <td><code>${d.trxID}</code></td>
+                        <td>৳${d.amount}</td>
+                        <td>${d.method}</td>
+                        <td>
+                            <button class="btn btn-success" onclick="approveDep('${child.id}','${d.user}',${d.amount})">Approve</button>
+                            <button class="btn btn-danger" onclick="rejectDep('${child.id}')">Reject</button>
+                        </td>
+                    </tr>`;
                 } else if(d.status === "Success") {
                     totalD += parseFloat(d.amount);
                     depSuccessBody.innerHTML += `<tr><td>${d.user}</td><td>${d.amount}</td><td>${d.trxID}</td><td>${d.time}</td></tr>`;
@@ -248,7 +255,7 @@
             document.getElementById('totalDep').innerText = totalD.toFixed(2);
         });
 
-        // Withdraws
+        // Withdraws Logic
         onSnapshot(collection(db, "withdraws"), (snapshot) => {
             const withBody = document.getElementById('withdrawBody');
             let totalW = 0;
@@ -257,11 +264,16 @@
             snapshot.forEach(child => {
                 const w = child.data();
                 if(w.status === "Pending") {
-                    withBody.innerHTML += `<tr><td>${w.user}</td><td>${w.amount}</td><td>${w.receiver_no || w.number}</td><td>${w.method}</td>
-                    <td>
-                        <button class="btn btn-success" onclick="approveWith('${child.id}')">Approve</button>
-                        <button class="btn btn-danger" onclick="rejectWith('${child.id}','${w.user}',${w.amount})">Reject</button>
-                    </td></tr>`;
+                    withBody.innerHTML += `<tr>
+                        <td>${w.user}</td>
+                        <td>৳${w.amount}</td>
+                        <td>${w.receiver_no || w.number}</td>
+                        <td>${w.method}</td>
+                        <td>
+                            <button class="btn btn-success" onclick="approveWith('${child.id}')">Approve</button>
+                            <button class="btn btn-danger" onclick="rejectWith('${child.id}','${w.user}',${w.amount})">Reject</button>
+                        </td>
+                    </tr>`;
                 } else if(w.status === "Approved") {
                     totalW += parseFloat(w.amount);
                 }
@@ -293,21 +305,31 @@
         }
     }
 
+    // উইথড্র অ্যাপ্রুভ ফাংশন
     window.approveWith = async function(id) {
-        await updateDoc(doc(db, "withdraws", id), { status: "Approved", time: new Date().toLocaleString() });
-        alert("Withdraw Approved!");
+        if(confirm("Confirm this withdrawal?")) {
+            await updateDoc(doc(db, "withdraws", id), { 
+                status: "Approved", 
+                processedAt: new Date().toLocaleString() 
+            });
+            alert("উইথড্র সফলভাবে অ্যাপ্রুভ হয়েছে।");
+        }
     }
 
+    // উইথড্র রিজেক্ট ফাংশন (টাকা ফেরত যাবে)
     window.rejectWith = async function(id, userId, amt) {
-        let reason = prompt("Reason for rejection (Balance will be returned):");
+        let reason = prompt("রিজেক্ট করার কারণ (টাকা ইউজারের ব্যালেন্সে ফেরত যাবে):");
         if(reason) {
             const userRef = doc(db, "users", userId);
             const snap = await getDoc(userRef);
             if(snap.exists()){
                 const newBal = (parseFloat(snap.data().balance) || 0) + parseFloat(amt);
                 await updateDoc(userRef, { balance: newBal });
-                await updateDoc(doc(db, "withdraws", id), { status: "Rejected", note: reason });
-                alert("Withdraw Rejected & Money Refunded.");
+                await updateDoc(doc(db, "withdraws", id), { 
+                    status: "Rejected", 
+                    note: reason 
+                });
+                alert("রিজেক্ট করা হয়েছে এবং টাকা ফেরত দেওয়া হয়েছে।");
             }
         }
     }
