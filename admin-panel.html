@@ -36,7 +36,8 @@
         th { background: #f8f9fa; color: #666; }
 
         .btn { padding: 8px 15px; border: none; border-radius: 5px; cursor: pointer; font-size: 12px; font-weight: bold; }
-        .btn-success { background: #28a745; color: white; margin-right: 5px; }
+        /* বাটন দুটির মাঝে গ্যাপ তৈরি করার জন্য মার্জিন বাড়ানো হয়েছে */
+        .btn-success { background: #28a745; color: white; margin-right: 15px; } 
         .btn-danger { background: #dc3545; color: white; }
         
         .input-group { margin-bottom: 15px; text-align: left; }
@@ -45,6 +46,8 @@
         
         .online-dot { height: 10px; width: 10px; background-color: #28a745; border-radius: 50%; display: inline-block; margin-right: 5px; }
         .offline-dot { height: 10px; width: 10px; background-color: #bbb; border-radius: 50%; display: inline-block; margin-right: 5px; }
+        
+        .preview-img { width: 100%; max-width: 300px; border-radius: 10px; margin-top: 10px; border: 2px solid #ddd; }
     </style>
 </head>
 <body>
@@ -89,6 +92,17 @@
             <div class="stat-card"><h4>Online Now</h4><h2><span id="statOnlineUsers" style="color: #28a745;">0</span></h2></div>
             <div class="stat-card"><h4>Total Deposit</h4><h2>৳ <span id="totalDep">0</span></h2></div>
             <div class="stat-card"><h4>Total Withdraw</h4><h2>৳ <span id="totalWith">0</span></h2></div>
+        </div>
+
+        <div style="display: flex; gap: 20px; flex-wrap: wrap; margin-top: 20px;">
+            <div class="admin-card" style="flex: 1; min-width: 300px;">
+                <h3>Withdrawal System Preview</h3>
+                <img src="8ad34e7e-26a9-419e-95d0-e5e7d2095d9b" alt="Withdraw System" class="preview-img">
+            </div>
+            <div class="admin-card" style="flex: 1; min-width: 300px;">
+                <h3>User ID Identification</h3>
+                <img src="1000031258.jpg" alt="User Identification" class="preview-img">
+            </div>
         </div>
     </div>
 
@@ -222,7 +236,6 @@
 
     // --- Transactions (Deposit & Withdraw) ---
     function setupTransactions() {
-        // Deposits
         onSnapshot(collection(db, "deposits"), (snapshot) => {
             const depBody = document.getElementById('depositBody');
             const depSuccessBody = document.getElementById('depSuccessBody');
@@ -255,7 +268,6 @@
             document.getElementById('totalDep').innerText = totalD.toFixed(2);
         });
 
-        // Withdraws Logic
         onSnapshot(collection(db, "withdraws"), (snapshot) => {
             const withBody = document.getElementById('withdrawBody');
             let totalW = 0;
@@ -293,33 +305,36 @@
             await updateDoc(doc(db, "deposits", id), { status: "Success", time: new Date().toLocaleString() });
             alert("Deposit Approved!");
         } else {
-            alert("User not found in 'users' collection. Please check User ID.");
+            alert("User not found in 'users' collection.");
         }
     }
 
+    // ডিপোজিট রিজেক্ট ফাংশন (পেন্ডিং বাতিল হবে এবং রিজেক্ট হিসেবে সেভ হবে)
     window.rejectDep = async function(id) {
-        let reason = prompt("Reason for rejection:");
-        if(reason) {
-            await updateDoc(doc(db, "deposits", id), { status: "Rejected", note: reason });
-            alert("Rejected.");
+        let reason = prompt("ডিপোজিট রিজেক্ট করার কারণ লিখুন:");
+        if(reason !== null) {
+            await updateDoc(doc(db, "deposits", id), { 
+                status: "Rejected", 
+                note: reason || "No reason provided",
+                time: new Date().toLocaleString()
+            });
+            alert("ডিপোজিট বাতিল (Reject) করা হয়েছে।");
         }
     }
 
-    // উইথড্র অ্যাপ্রুভ ফাংশন
     window.approveWith = async function(id) {
         if(confirm("Confirm this withdrawal?")) {
             await updateDoc(doc(db, "withdraws", id), { 
                 status: "Approved", 
                 processedAt: new Date().toLocaleString() 
             });
-            alert("উইথড্র সফলভাবে অ্যাপ্রুভ হয়েছে।");
+            alert("উইথড্র অ্যাপ্রুভ হয়েছে।");
         }
     }
 
-    // উইথড্র রিজেক্ট ফাংশন (টাকা ফেরত যাবে)
     window.rejectWith = async function(id, userId, amt) {
-        let reason = prompt("রিজেক্ট করার কারণ (টাকা ইউজারের ব্যালেন্সে ফেরত যাবে):");
-        if(reason) {
+        let reason = prompt("রিজেক্ট করার কারণ:");
+        if(reason !== null) {
             const userRef = doc(db, "users", userId);
             const snap = await getDoc(userRef);
             if(snap.exists()){
@@ -327,7 +342,7 @@
                 await updateDoc(userRef, { balance: newBal });
                 await updateDoc(doc(db, "withdraws", id), { 
                     status: "Rejected", 
-                    note: reason 
+                    note: reason || "No reason provided" 
                 });
                 alert("রিজেক্ট করা হয়েছে এবং টাকা ফেরত দেওয়া হয়েছে।");
             }
