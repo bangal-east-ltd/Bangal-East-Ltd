@@ -123,6 +123,7 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         const loggedUser = localStorage.getItem("loggedUser");
+        let userDisplayID = ""; // ৫ সংখ্যার আইডি রাখার জন্য
 
         if (!loggedUser) window.location.replace("index.html");
 
@@ -162,6 +163,7 @@
         onSnapshot(doc(db, "users", loggedUser), (snapshot) => {
             if (snapshot.exists()) {
                 const data = snapshot.data();
+                userDisplayID = data.userID || loggedUser; // ৫ সংখ্যার আইডি এখানে সেভ হচ্ছে
                 document.getElementById("userBalance").innerText = parseFloat(data.balance || 0).toFixed(2);
                 const select = document.getElementById("selectedNo");
                 select.innerHTML = '<option value="">-- Choose Number --</option>';
@@ -198,7 +200,6 @@
             const check2 = n2 ? await isNumberInUse(n2) : false;
 
             if(check1 || check2) {
-                // পপ-আপের শিরোনাম বাদ দিয়ে শুধু মেসেজ দেখানো হচ্ছে
                 showModal('limit', '', 'Already account extra');
                 return;
             }
@@ -225,7 +226,6 @@
             const userSnap = await getDoc(userRef);
 
             if (userSnap.data().lastWithdrawDate === today) {
-                // পপ-আপের শিরোনাম বাদ দিয়ে শুধু মেসেজ দেখানো হচ্ছে
                 showModal('limit', '', 'আজকে একবার উইথড্র করেছেন। আগামীকাল চেষ্টা করুন।');
                 return;
             }
@@ -234,6 +234,7 @@
                 await updateDoc(userRef, { balance: currentBal - amount, lastWithdrawDate: today });
                 await addDoc(collection(db, "withdraws"), {
                     user: loggedUser,
+                    displayID: userDisplayID, // হিস্টোরির জন্য আইডি এখানে পাঠানো হচ্ছে
                     amount: amount,
                     method: method,
                     receiver_no: receiverNo,
@@ -250,6 +251,7 @@
             }
         };
 
+        // এই অংশটি হিস্টোরি ২৪ ঘণ্টা দেখাবে এবং ৫ সংখ্যার আইডি দেখাবে
         const q = query(collection(db, "withdraws"), where("user", "==", loggedUser));
         onSnapshot(q, (snapshot) => {
             const hist = document.getElementById("withdrawHistory");
@@ -260,10 +262,12 @@
                 items.push(d);
             });
             items.sort((a,b) => b.timestamp - a.timestamp).forEach(data => {
+                // এখানে userDisplayID অথবা ডাটাবেসে সেভ করা displayID ব্যবহার করা হচ্ছে
+                const finalID = data.displayID || userDisplayID || loggedUser;
                 hist.innerHTML += `
                     <div class="history-item">
                         <div class="hist-row">
-                            <span class="label-text">ID: <span class="value-text">${loggedUser}</span></span>
+                            <span class="label-text">ID: <span class="value-text">${finalID}</span></span>
                             <div class="status ${data.status}">${data.status}</div>
                         </div>
                         <div class="hist-row">
@@ -280,4 +284,3 @@
     </script>
 </body>
 </html>
-
