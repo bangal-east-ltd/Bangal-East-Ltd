@@ -6,7 +6,7 @@
     <title>Deposit History - Bengal East</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        :root { --primary: #11998e; --bg: #f4f7f6; --white: #ffffff; }
+        :root { --primary: #11998e; --bg: #f8fafc; --white: #ffffff; }
         * { margin:0; padding:0; box-sizing:border-box; font-family: 'Segoe UI', sans-serif; }
         body { background: var(--bg); color: #333; }
 
@@ -19,62 +19,59 @@
         .header h2 { color: var(--primary); font-size: 18px; font-weight: 800; }
         .header a { color: #555; text-decoration: none; font-size: 18px; }
 
-        .container { max-width: 600px; margin: 15px auto; padding: 0 15px; }
+        .container { max-width: 500px; margin: 15px auto; padding: 0 15px; }
 
-        .history-item {
-            background: var(--white); padding: 18px; border-radius: 15px;
-            margin-bottom: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.03);
-            display: flex; flex-direction: column; 
+        .history-card {
+            background: var(--white); padding: 20px; border-radius: 18px;
+            margin-bottom: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.04);
             border-left: 6px solid var(--primary);
-            animation: fadeIn 0.5s ease;
+            animation: slideIn 0.4s ease-out;
         }
 
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes slideIn { from { opacity: 0; transform: translateX(-10px); } to { opacity: 1; transform: translateX(0); } }
 
-        .item-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+        .info-row { display: flex; justify-content: space-between; margin-bottom: 10px; align-items: center; }
+        .label { font-size: 12px; color: #718096; font-weight: 600; text-transform: uppercase; }
         
-        /* টেক্সট বোল্ড এবং সুন্দর করার স্টাইল */
-        .label-text { font-size: 13px; color: #7f8c8d; font-weight: 600; }
-        .value-text { font-size: 15px; color: #2c3e50; font-weight: 800; } /* সব ভ্যালু বোল্ড */
-        .trx-id { color: var(--primary); font-family: 'Courier New', monospace; }
-        .amount-text { font-size: 18px; color: #27ae60; font-weight: 900; }
+        /* আপনার রিকুয়েস্ট অনুযায়ী সব ভ্যালু বোল্ড করা হয়েছে */
+        .value { font-size: 15px; color: #1a202c; font-weight: 800; } 
+        .amount-val { color: #2ecc71; font-size: 18px; }
+        .trx-val { color: var(--primary); font-family: monospace; }
 
-        .status { padding: 5px 12px; border-radius: 20px; font-size: 11px; font-weight: 900; text-transform: uppercase; }
-        .pending { background: #fff9db; color: #f08c00; border: 1px solid #f08c00; }
-        .success { background: #e8f5e9; color: #2e7d32; border: 1px solid #2e7d32; }
-        .rejected { background: #ffebee; color: #c62828; border: 1px solid #c62828; }
-
-        .notice {
-            margin-top: 10px; font-size: 12px; color: #e67e22;
-            background: #fff5e6; padding: 8px; border-radius: 8px;
-            font-weight: 700; text-align: center; border: 1px dashed #e67e22;
+        .status-badge {
+            padding: 6px 14px; border-radius: 30px; font-size: 11px;
+            font-weight: 900; text-transform: uppercase; border: 1px solid;
         }
+
+        /* স্ট্যাটাস কালার কোড */
+        .pending { background: #fff9db; color: #f08c00; border-color: #f08c00; }
+        .success { background: #e8f5e9; color: #2e7d32; border-color: #2e7d32; }
+        .rejected { background: #ffebee; color: #c62828; border-color: #c62828; }
 
         #loader { text-align: center; margin-top: 50px; color: var(--primary); font-weight: bold; }
-        #noData { text-align: center; margin-top: 100px; color: #bdc3c7; display: none; }
+        #noData { text-align: center; margin-top: 100px; color: #a0aec0; display: none; }
     </style>
 </head>
 <body>
 
     <div class="header">
-        <a href="account.html"><i class="fas fa-chevron-left"></i></a>
+        <a href="deposit.html"><i class="fas fa-arrow-left"></i></a>
         <h2><i class="fas fa-history"></i> Deposit History</h2>
     </div>
 
     <div id="loader"><i class="fas fa-spinner fa-spin"></i> লোড হচ্ছে...</div>
 
-    <div class="container" id="historyContainer"></div>
+    <div class="container" id="historyList"></div>
 
     <div id="noData">
-        <i class="fas fa-receipt" style="font-size: 50px; margin-bottom: 10px;"></i>
-        <p>এখনো কোনো ডিপোজিট করা হয়নি</p>
+        <i class="fas fa-folder-open" style="font-size: 40px; margin-bottom: 10px;"></i>
+        <p>এখনো কোনো ট্রানজেকশন পাওয়া যায়নি</p>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
         import { getFirestore, collection, query, where, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-        // আপনার ফায়ারবেস কনফিগ
         const firebaseConfig = {
             apiKey: "AIzaSyCALYxA2M4BwIXq5KC3VMGsZpAFh8nL3fo",
             authDomain: "bengal-east-company-limited.firebaseapp.com",
@@ -89,12 +86,11 @@
 
         const loggedUser = localStorage.getItem("loggedUser") || "Guest";
 
-        function loadHistory() {
-            const container = document.getElementById('historyContainer');
+        function fetchHistory() {
+            const listContainer = document.getElementById('historyList');
             const noData = document.getElementById('noData');
             const loader = document.getElementById('loader');
 
-            // ইউজার অনুযায়ী ডাটা কুয়েরি
             const q = query(
                 collection(db, "deposits"),
                 where("user", "==", loggedUser),
@@ -103,7 +99,7 @@
 
             onSnapshot(q, (snapshot) => {
                 loader.style.display = "none";
-                container.innerHTML = "";
+                listContainer.innerHTML = "";
                 
                 if (snapshot.empty) {
                     noData.style.display = "block";
@@ -111,45 +107,48 @@
                 }
 
                 noData.style.display = "none";
-                snapshot.forEach((document) => {
-                    const d = document.data();
-                    const status = d.status || 'Pending';
-                    const statusClass = status.toLowerCase();
+                snapshot.forEach((doc) => {
+                    const data = doc.data();
+                    const status = data.status || 'Pending';
+                    
+                    // স্ট্যাটাস অনুসারে ক্লাস নির্ধারণ
+                    let statusClass = "pending";
+                    if(status === "Success") statusClass = "success";
+                    if(status === "Rejected") statusClass = "rejected";
 
-                    const itemHtml = `
-                        <div class="history-item">
-                            <div class="item-row">
-                                <span class="label-text">Transaction ID:</span>
-                                <span class="value-text trx-id">${d.trxID}</span>
+                    const cardHtml = `
+                        <div class="history-card">
+                            <div class="info-row">
+                                <span class="label">ID (TrxID)</span>
+                                <span class="value trx-val">${data.trxID}</span>
                             </div>
-                            <div class="item-row">
-                                <span class="label-text">Amount:</span>
-                                <span class="value-text amount-text">৳ ${d.amount}</span>
+                            <div class="info-row">
+                                <span class="label">TK (Amount)</span>
+                                <span class="value amount-val">৳ ${data.amount}</span>
                             </div>
-                            <div class="item-row">
-                                <span class="label-text">Date:</span>
-                                <span class="value-text">${d.time}</span>
+                            <div class="info-row">
+                                <span class="label">Method</span>
+                                <span class="value">${data.method}</span>
                             </div>
-                            <div class="item-row">
-                                <span class="label-text">Status:</span>
-                                <span class="status ${statusClass}">${status}</span>
+                            <div class="info-row">
+                                <span class="label">Date</span>
+                                <span class="value">${data.time}</span>
                             </div>
-                            ${status === 'Pending' ? `
-                                <div class="notice">
-                                    <i class="fas fa-clock"></i> পেমেন্টটি যাচাই করা হচ্ছে। অনুগ্রহ করে অপেক্ষা করুন।
-                                </div>
-                            ` : ""}
+                            <div class="info-row" style="margin-top:15px; border-top:1px solid #eee; padding-top:10px;">
+                                <span class="label">Status</span>
+                                <span class="status-badge ${statusClass}">${status}</span>
+                            </div>
                         </div>
                     `;
-                    container.insertAdjacentHTML('beforeend', itemHtml);
+                    listContainer.insertAdjacentHTML('beforeend', cardHtml);
                 });
             }, (error) => {
-                console.error(error);
-                loader.innerHTML = "ডাটা লোড করতে সমস্যা হচ্ছে। ইনডেক্স চেক করুন।";
+                console.error("Error:", error);
+                loader.innerHTML = "ডাটা লোড করতে ইনডেক্স প্রয়োজন। ব্রাউজার কনসোল চেক করুন।";
             });
         }
 
-        window.onload = loadHistory;
+        window.onload = fetchHistory;
     </script>
 </body>
 </html>
