@@ -18,7 +18,8 @@
             position: sticky; top: 0; z-index: 1000;
         }
         .header h2 { color: var(--primary); font-size: 18px; }
-        .header a { color: #555; text-decoration: none; font-size: 18px; }
+        .header a { color: #555; text-decoration: none; font-size: 18px; transition: 0.3s; }
+        .header a:hover { color: var(--primary); }
 
         .container { max-width: 600px; margin: 15px auto; padding: 0 15px; }
 
@@ -26,28 +27,33 @@
             background: var(--white); padding: 18px; border-radius: 15px;
             margin-bottom: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.03);
             display: flex; flex-direction: column; border-left: 5px solid var(--primary);
+            animation: fadeIn 0.5s ease;
         }
 
-        .item-main { display: flex; justify-content: space-between; align-items: center; width: 100%; }
-        .left-info b { display: block; font-size: 15px; color: #2c3e50; margin-bottom: 5px; }
-        .left-info span { font-size: 11px; color: #95a5a6; font-weight: 500; }
-        .trx-text { color: var(--primary) !important; font-weight: bold; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-        .right-info { text-align: right; }
+        .item-main { display: flex; justify-content: space-between; align-items: center; width: 100%; }
+        .left-info b { display: block; font-size: 15px; color: #2c3e50; margin-bottom: 5px; text-transform: capitalize; }
+        .left-info span { font-size: 11px; color: #95a5a6; font-weight: 500; }
+        .trx-text { color: var(--primary) !important; font-weight: bold; word-break: break-all; }
+
+        .right-info { text-align: right; min-width: 80px; }
         .amount { font-size: 18px; font-weight: 800; color: #2c3e50; margin-bottom: 6px; display: block; }
         
-        .status { padding: 5px 12px; border-radius: 20px; font-size: 10px; font-weight: 700; text-transform: uppercase; }
+        .status { padding: 5px 12px; border-radius: 20px; font-size: 10px; font-weight: 700; text-transform: uppercase; display: inline-block; }
         .pending { background: #fff9db; color: #f08c00; }
         .success { background: #e8f5e9; color: #2e7d32; }
         .failed { background: #ffebee; color: #c62828; }
 
         .pending-notice {
             margin-top: 10px; font-size: 11px; color: #d35400;
-            background: #fff5e6; padding: 8px; border-radius: 8px;
-            display: flex; align-items: center; gap: 5px;
+            background: #fff5e6; padding: 10px; border-radius: 8px;
+            display: flex; align-items: center; gap: 8px;
+            border: 1px dashed #f08c00;
         }
 
         #noData { text-align: center; margin-top: 100px; color: #bdc3c7; display: none; }
+        #loader { text-align: center; margin-top: 50px; color: var(--primary); }
     </style>
 </head>
 <body>
@@ -56,6 +62,8 @@
         <a href="deposit.html"><i class="fas fa-chevron-left"></i></a>
         <h2><i class="fas fa-history"></i> Deposit History</h2>
     </div>
+
+    <div id="loader"><i class="fas fa-spinner fa-spin"></i> লোড হচ্ছে...</div>
 
     <div class="container" id="historyContainer"></div>
 
@@ -80,79 +88,84 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        // লগইন করা ইউজারের তথ্য (আপনার Payment Details কোড অনুযায়ী)
+        // লগইন করা ইউজারের আইডি নিশ্চিত করা
         const loggedUser = localStorage.getItem("loggedUser") || "Guest";
 
         function loadHistory() {
             const container = document.getElementById('historyContainer');
             const noData = document.getElementById('noData');
+            const loader = document.getElementById('loader');
 
-            // Firestore Query
-            const q = query(
-                collection(db, "deposits"),
-                where("user", "==", loggedUser),
-                orderBy("timestamp", "desc")
-            );
+            try {
+                // Firestore Query
+                const q = query(
+                    collection(db, "deposits"),
+                    where("user", "==", loggedUser),
+                    orderBy("timestamp", "desc")
+                );
 
-            onSnapshot(q, (snapshot) => {
-                container.innerHTML = "";
-                if (snapshot.empty) {
-                    noData.style.display = "block";
-                    return;
-                }
-
-                noData.style.display = "none";
-                snapshot.forEach((document) => {
-                    const data = document.data();
-                    const docId = document.id;
-                    const status = data.status || 'Pending';
-                    const statusClass = status.toLowerCase();
-
-                    // ৮ ঘণ্টা অটো-রিজেক্ট লজিক
-                    if (status === 'Pending' && data.timestamp) {
-                        const currentTime = Date.now();
-                        const diffHours = (currentTime - data.timestamp) / (1000 * 60 * 60);
-                        if (diffHours >= 8) {
-                            const docRef = doc(db, "deposits", docId);
-                            updateDoc(docRef, { status: 'Failed' });
-                        }
+                onSnapshot(q, (snapshot) => {
+                    loader.style.display = "none";
+                    container.innerHTML = "";
+                    
+                    if (snapshot.empty) {
+                        noData.style.display = "block";
+                        return;
                     }
 
-                    let pendingMessage = (status === 'Pending') ? `
-                        <div class="pending-notice">
-                            <i class="fas fa-info-circle"></i>
-                            ৬ ঘণ্টার মধ্যে টাকা আপনার একাউন্টে জমা হবে।
-                        </div>
-                    ` : "";
+                    noData.style.display = "none";
+                    snapshot.forEach((document) => {
+                        const data = document.data();
+                        const docId = document.id;
+                        const status = data.status || 'Pending';
+                        const statusClass = status.toLowerCase();
 
-                    const itemHtml = `
-                        <div class="history-item">
-                            <div class="item-main">
-                                <div class="left-info">
-                                    <b>${data.method} Deposit</b>
-                                    <span>Trx: <span class="trx-text">${data.trxID}</span></span><br>
-                                    <span><i class="far fa-clock"></i> ${data.time}</span>
+                        // অটো-রিজেক্ট লজিক (৮ ঘণ্টা)
+                        if (status === 'Pending' && data.timestamp) {
+                            const diffHours = (Date.now() - data.timestamp) / (1000 * 60 * 60);
+                            if (diffHours >= 8) {
+                                updateDoc(doc(db, "deposits", docId), { status: 'Failed' });
+                                return;
+                            }
+                        }
+
+                        const itemHtml = `
+                            <div class="history-item">
+                                <div class="item-main">
+                                    <div class="left-info">
+                                        <b>${data.method || 'General'} Deposit</b>
+                                        <span>Trx: <span class="trx-text">${data.trxID || 'N/A'}</span></span><br>
+                                        <span><i class="far fa-calendar-alt"></i> ${data.time || 'N/A'}</span>
+                                    </div>
+                                    <div class="right-info">
+                                        <span class="amount">৳${data.amount || 0}</span>
+                                        <span class="status ${statusClass}">${status}</span>
+                                    </div>
                                 </div>
-                                <div class="right-info">
-                                    <span class="amount">৳${data.amount}</span>
-                                    <span class="status ${statusClass}">${status}</span>
-                                </div>
+                                ${status === 'Pending' ? `
+                                    <div class="pending-notice">
+                                        <i class="fas fa-clock"></i>
+                                        ৬ ঘণ্টার মধ্যে টাকা আপনার একাউন্টে জমা হবে।
+                                    </div>
+                                ` : ""}
                             </div>
-                            ${pendingMessage}
-                        </div>
-                    `;
-                    container.insertAdjacentHTML('beforeend', itemHtml);
+                        `;
+                        container.insertAdjacentHTML('beforeend', itemHtml);
+                    });
+                }, (error) => {
+                    loader.style.display = "none";
+                    console.error("Firestore Error:", error);
+                    if (error.code === 'failed-precondition') {
+                        container.innerHTML = "<p style='text-align:center; color:red; padding:20px;'>ডাটাবেস ইনডেক্স প্রয়োজন। অনুগ্রহ করে ব্রাউজার কনসোল চেক করুন।</p>";
+                    }
                 });
-            }, (error) => {
-                console.error("Error:", error);
-                // যদি Index সেট করা না থাকে তবে এখানে এরর দেখাবে
-                if(error.code === 'failed-precondition') {
-                    console.log("Firestore Index প্রয়োজন। কনসোলের লিঙ্কে ক্লিক করুন।");
-                }
-            });
+            } catch (err) {
+                loader.style.display = "none";
+                console.error("System Error:", err);
+            }
         }
 
-        loadHistory();
+        window.onload = loadHistory;
     </script>
 </body>
 </html>
