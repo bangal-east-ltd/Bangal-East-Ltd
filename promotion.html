@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Promotion - Team Report</title>
+    <title>Promotion Center - MLMS</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     
     <script src="https://www.gstatic.com/firebasejs/9.x.x/firebase-app-compat.js"></script>
@@ -17,33 +17,32 @@
         .header h2 { font-size: 20px; }
         .container { padding: 15px; max-width: 600px; margin: 0 auto; }
 
-        /* Referral Link Card */
+        /* Referral Card */
         .refer-card { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.05); margin-bottom: 20px; text-align: center; }
         .refer-card h4 { font-size: 14px; color: #666; margin-bottom: 12px; }
         .refer-link-box { display: flex; background: #f8f9fa; border: 1.5px dashed #11998e; padding: 12px; border-radius: 10px; justify-content: space-between; align-items: center; gap: 10px; }
-        .refer-link-box span { font-weight: bold; color: #11998e; font-size: 11px; word-break: break-all; text-align: left; line-height: 1.4; }
-        .copy-btn { background: #11998e; color: white; border: none; padding: 10px 15px; border-radius: 8px; cursor: pointer; font-size: 12px; font-weight: bold; white-space: nowrap; transition: 0.3s; }
-        .copy-btn:active { transform: scale(0.95); opacity: 0.8; }
+        .refer-link-box span { font-weight: bold; color: #11998e; font-size: 12px; word-break: break-all; text-align: left; }
+        .copy-btn { background: #11998e; color: white; border: none; padding: 10px 15px; border-radius: 8px; cursor: pointer; font-size: 12px; font-weight: bold; white-space: nowrap; }
 
         /* Stats Grid */
         .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
         .stat-item { background: white; padding: 15px; border-radius: 15px; box-shadow: 0 3px 10px rgba(0,0,0,0.03); border-left: 5px solid #11998e; }
-        .stat-item p { font-size: 11px; color: #888; margin-bottom: 5px; font-weight: 600; }
-        .stat-item h3 { font-size: 15px; color: #333; }
+        .stat-item p { font-size: 11px; color: #888; font-weight: 600; }
+        .stat-item h3 { font-size: 15px; color: #333; margin-top: 5px; }
 
-        /* Team Table Section */
+        /* Team Breakdown */
         .team-section { background: white; border-radius: 15px; padding: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.05); }
         .team-section h3 { font-size: 16px; margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 10px; color: #11998e; }
-        .level-tabs { display: flex; gap: 8px; margin-bottom: 15px; overflow-x: auto; padding-bottom: 5px; }
-        .level-btn { padding: 8px 18px; background: #f0f0f0; border-radius: 20px; font-size: 12px; cursor: pointer; white-space: nowrap; border: none; font-weight: 600; color: #666; }
+        .level-tabs { display: flex; gap: 8px; margin-bottom: 15px; overflow-x: auto; }
+        .level-btn { padding: 8px 18px; background: #f0f0f0; border-radius: 20px; font-size: 12px; cursor: pointer; border: none; font-weight: 600; }
         .level-btn.active { background: #11998e; color: white; }
 
         table { width: 100%; border-collapse: collapse; }
-        th { text-align: left; font-size: 12px; color: #999; padding: 10px 5px; border-bottom: 2px solid #f4f7f6; }
+        th { text-align: left; font-size: 11px; color: #999; padding: 10px 5px; border-bottom: 2px solid #f4f7f6; }
         td { padding: 12px 5px; font-size: 13px; border-bottom: 1px solid #f4f7f6; }
         .user-id { font-weight: bold; color: #444; }
-        .status-active { color: #28a745; font-weight: bold; font-size: 11px; }
-        .status-inactive { color: #d9534f; font-weight: bold; font-size: 11px; }
+        .status-active { color: #28a745; font-weight: bold; }
+        .status-inactive { color: #d9534f; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -54,9 +53,9 @@
 
     <div class="container">
         <div class="refer-card">
-            <h4><i class="fas fa-link"></i> Share Your Referral Link</h4>
+            <h4>Your 5-Digit ID Link</h4>
             <div class="refer-link-box">
-                <span id="refCode">Generating link...</span>
+                <span id="refCode">Fetching your ID...</span>
                 <button class="copy-btn" onclick="copyCode()"><i class="fas fa-copy"></i> Copy</button>
             </div>
         </div>
@@ -67,7 +66,7 @@
                 <h3 id="totalTeam">0 Members</h3>
             </div>
             <div class="stat-item">
-                <p>Total Commission</p>
+                <p>Team Commission</p>
                 <h3 id="teamComm" style="color: #28a745;">৳ 0.00</h3>
             </div>
             <div class="stat-item">
@@ -75,13 +74,13 @@
                 <h3 id="teamDeposit">৳ 0.00</h3>
             </div>
             <div class="stat-item">
-                <p>Level 1 Active</p>
+                <p>Active L1</p>
                 <h3 id="activeToday">0</h3>
             </div>
         </div>
 
         <div class="team-section">
-            <h3><i class="fas fa-users-cog"></i> Team Breakdown</h3>
+            <h3>Team Breakdown</h3>
             <div class="level-tabs">
                 <button class="level-btn active" onclick="loadTeam(1, this)">Level 1</button>
                 <button class="level-btn" onclick="loadTeam(2, this)">Level 2</button>
@@ -103,43 +102,48 @@
     </div>
 
     <script>
-        // ১. আপনার Firebase কনফিগারেশন
+        // ১. Firebase কনফিগারেশন
         const firebaseConfig = {
-            apiKey: "YOUR_API_KEY",
+            apiKey: "AIzaSyCALYxA2M4BwIXq5KC3VMGsZpAFh8nL3fo",
             authDomain: "bengal-east-company-limited.firebaseapp.com",
             projectId: "bengal-east-company-limited",
-            storageBucket: "bengal-east-company-limited.appspot.com",
-            messagingSenderId: "YOUR_ID",
-            appId: "YOUR_APP_ID"
+            storageBucket: "bengal-east-company-limited.firebasestorage.app",
+            messagingSenderId: "653223286483",
+            appId: "1:653223286483:web:8e4ed0782ae807f8f02626"
         };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
         const auth = firebase.auth();
 
-        // ২. ইউজারের তথ্য ও স্ট্যাটাস লোড করা (Auth State Changed ব্যবহার করে)
-        async function initPage() {
-            auth.onAuthStateChanged(user => {
-                if (user) {
-                    const currentUID = user.uid;
-                    
-                    // রেফারেল লিংক তৈরি ও প্রদর্শন
-                    const refLink = window.location.origin + "/register.html?ref=" + currentUID;
-                    document.getElementById("refCode").innerText = refLink;
+        let userUniqueID = ""; // ৫ সংখ্যার আইডি এখানে সেভ হবে
 
-                    // ডাটা ও টিম লোড করার জন্য আইডি পাঠানো
-                    loadUserStats(currentUID);
-                    loadTeam(1, null, currentUID); 
+        // ২. ইউজারের তথ্য ও স্ট্যাটাস লোড করা
+        function initPage() {
+            auth.onAuthStateChanged(async (user) => {
+                if (user) {
+                    const phone = localStorage.getItem("userPhone") || user.phoneNumber.replace("+88", "");
+                    
+                    // Firestore থেকে ইউজারের ৫ সংখ্যার আইডি বের করা
+                    const userDoc = await db.collection("users").doc(phone).get();
+                    if(userDoc.exists) {
+                        const userData = userDoc.data();
+                        userUniqueID = userData.userID; // ৫ সংখ্যার আইডি (যেমন: ১২৩৪৫)
+
+                        // ৫ সংখ্যার আইডি দিয়ে লিংক তৈরি
+                        const refLink = window.location.origin + "/register.html?ref=" + userUniqueID;
+                        document.getElementById("refCode").innerText = refLink;
+
+                        loadUserStats(phone);
+                        loadTeam(1, null, userUniqueID); // ৫ সংখ্যার আইডি দিয়ে টিম লোড
+                    }
                 } else {
-                    // লগইন না থাকলে লগইন পেজে পাঠিয়ে দিবে
-                    window.location.replace("login.html");
+                    window.location.replace("index.html");
                 }
             });
-
-            checkAdminSettings();
         }
 
-        async function loadUserStats(uid) {
-            db.collection("users").doc(uid).onSnapshot(doc => {
+        async function loadUserStats(phone) {
+            db.collection("users").doc(phone).onSnapshot(doc => {
                 if (doc.exists) {
                     const data = doc.data();
                     document.getElementById("totalTeam").innerText = (data.totalTeam || 0) + " Members";
@@ -150,26 +154,18 @@
             });
         }
 
-        async function checkAdminSettings() {
-            db.collection("settings").doc("vip3_config").onSnapshot(doc => {
-                if(doc.exists) {
-                    console.log("Admin commission rates updated from Vip3 panel");
-                }
-            });
-        }
-
         window.copyCode = function() {
             const link = document.getElementById("refCode").innerText;
-            if(link.includes("Generating")) return;
+            if(link.includes("Fetching")) return;
             navigator.clipboard.writeText(link).then(() => {
-                alert("Promotion Link Copied!");
+                alert("Referral Link Copied!");
             });
         }
 
-        // ৫. টিম মেম্বার লিস্ট লোড করা
-        window.loadTeam = async function(level, btn, uid) {
-            const currentUID = uid || (auth.currentUser ? auth.currentUser.uid : null);
-            if (!currentUID) return;
+        // ৫ সংখ্যার আইডি ব্যবহার করে টিম মেম্বার খোঁজা
+        window.loadTeam = async function(level, btn, customID) {
+            const finalID = customID || userUniqueID;
+            if(!finalID) return;
 
             if(btn) {
                 document.querySelectorAll('.level-btn').forEach(b => b.classList.remove('active'));
@@ -177,41 +173,40 @@
             }
 
             const listBody = document.getElementById("teamList");
-            listBody.innerHTML = "<tr><td colspan='3' style='text-align:center; padding: 20px;'>Loading...</td></tr>";
+            listBody.innerHTML = "<tr><td colspan='3' style='text-align:center;'>Loading...</td></tr>";
 
-            let fieldName = "referredBy"; 
-            if(level === 2) fieldName = "refLevel2"; 
-            if(level === 3) fieldName = "refLevel3";
+            // আপনার ডাটাবেস স্ট্রাকচার অনুযায়ী ফিল্ড চেক
+            let fieldName = "referrerID"; // রেজিস্ট্রেশন পেজের রেফার আইডি সেভ করার ফিল্ড
+            if(level === 2) fieldName = "referrerID_L2"; 
+            if(level === 3) fieldName = "referrerID_L3";
 
             try {
+                // ৫ সংখ্যার আইডির সাথে মেলাবে
                 const snapshot = await db.collection("users")
-                    .where(fieldName, "==", currentUID)
-                    .orderBy("joinTimestamp", "desc")
-                    .limit(50)
+                    .where(fieldName, "==", String(finalID))
                     .get();
 
                 listBody.innerHTML = "";
                 if (snapshot.empty) {
-                    listBody.innerHTML = "<tr><td colspan='3' style='text-align:center; padding: 20px; color: #999;'>No members found in Level " + level + "</td></tr>";
+                    listBody.innerHTML = "<tr><td colspan='3' style='text-align:center;'>No Level " + level + " members.</td></tr>";
                     return;
                 }
 
                 snapshot.forEach(doc => {
                     const data = doc.data();
                     const statusClass = data.isActive ? "status-active" : "status-inactive";
-                    const statusText = data.isActive ? "● Active" : "○ Inactive";
+                    const statusText = data.isActive ? "Active" : "Inactive";
                     
                     listBody.innerHTML += `
                         <tr>
-                            <td class="user-id">ID: ${data.userID || 'N/A'}</td>
-                            <td>${data.joinDate || '---'}</td>
+                            <td class="user-id">ID: ${data.userID}</td>
+                            <td>${data.createdAt ? data.createdAt.split('T')[0] : '---'}</td>
                             <td class="${statusClass}">${statusText}</td>
                         </tr>
                     `;
                 });
             } catch (e) {
-                console.error(e);
-                listBody.innerHTML = "<tr><td colspan='3' style='text-align:center; color:red;'>Data load failed.</td></tr>";
+                listBody.innerHTML = "<tr><td colspan='3' style='text-align:center; color:red;'>Error loading team.</td></tr>";
             }
         }
 
@@ -219,4 +214,3 @@
     </script>
 </body>
 </html>
-
