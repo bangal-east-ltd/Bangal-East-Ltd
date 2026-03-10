@@ -54,7 +54,7 @@
 
         .error-card {
             background: #fff; padding: 20px; border-radius: 12px;
-            text-align: center; color: #dc3545; border: 1px solid #ffccd5;
+            text-align: center; color: #dc3545; border: 2px solid #ff0000;
         }
 
         #noData { text-align: center; margin-top: 100px; color: #bdc3c7; display: none; }
@@ -81,7 +81,6 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
         import { getFirestore, collection, query, where, orderBy, onSnapshot, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-        // আপনার Firebase কনফিগ
         const firebaseConfig = {
             apiKey: "AIzaSyCALYxA2M4BwIXq5KC3VMGsZpAFh8nL3fo",
             authDomain: "bengal-east-company-limited.firebaseapp.com",
@@ -94,7 +93,7 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        // লগইন করা ইউজারের আইডি (ID: 54122 ইত্যাদি)
+        // লগইন করা ইউজার আইডি নিশ্চিত করা
         const loggedUser = localStorage.getItem("loggedUser") || "Guest";
 
         function loadHistory() {
@@ -102,82 +101,76 @@
             const noData = document.getElementById('noData');
             const loader = document.getElementById('loader');
 
-            try {
-                // ডাটা ফিল্টার করার কুয়েরি
-                const q = query(
-                    collection(db, "deposits"),
-                    where("user", "==", loggedUser),
-                    orderBy("timestamp", "desc")
-                );
+            // কুয়েরি: নির্দিষ্ট ইউজার এবং সময় অনুযায়ী সাজানো
+            const q = query(
+                collection(db, "deposits"),
+                where("user", "==", loggedUser),
+                orderBy("timestamp", "desc")
+            );
 
-                // রিয়েল-টাইম ডাটা আপডেট লিসেনার
-                onSnapshot(q, (snapshot) => {
-                    loader.style.display = "none";
-                    container.innerHTML = "";
-                    
-                    if (snapshot.empty) {
-                        noData.style.display = "block";
-                        return;
-                    }
-
-                    noData.style.display = "none";
-                    snapshot.forEach((document) => {
-                        const data = document.data();
-                        const docId = document.id;
-                        const status = data.status || 'Pending';
-                        const statusClass = status.toLowerCase();
-
-                        // ৮ ঘণ্টা পর অটো-ফেইল করার লজিক
-                        if (status === 'Pending' && data.timestamp) {
-                            const diffHours = (Date.now() - data.timestamp) / (1000 * 60 * 60);
-                            if (diffHours >= 8) {
-                                updateDoc(doc(db, "deposits", docId), { status: 'Failed' });
-                                return;
-                            }
-                        }
-
-                        const itemHtml = `
-                            <div class="history-item">
-                                <div class="item-main">
-                                    <div class="left-info">
-                                        <b>${data.method || 'General'} Deposit</b>
-                                        <span>Trx: <span class="trx-text">${data.trxID || 'N/A'}</span></span><br>
-                                        <span><i class="far fa-calendar-alt"></i> ${data.time || 'N/A'}</span>
-                                    </div>
-                                    <div class="right-info">
-                                        <span class="amount">৳${data.amount || 0}</span>
-                                        <span class="status ${statusClass}">${status}</span>
-                                    </div>
-                                </div>
-                                ${status === 'Pending' ? `
-                                    <div class="pending-notice">
-                                        <i class="fas fa-clock"></i>
-                                        ৬ ঘণ্টার মধ্যে টাকা আপনার একাউন্টে জমা হবে।
-                                    </div>
-                                ` : ""}
-                            </div>
-                        `;
-                        container.insertAdjacentHTML('beforeend', itemHtml);
-                    });
-                }, (error) => {
-                    loader.style.display = "none";
-                    console.error("Firebase Error:", error);
-                    
-                    // ইনডেক্স এরর হ্যান্ডলিং (ছবিতে আপনি এই এররটিই দেখতে পাচ্ছিলেন)
-                    if (error.code === 'failed-precondition') {
-                        container.innerHTML = `
-                            <div class="error-card">
-                                <p style="font-weight:bold;">ডাটাবেস ইনডেক্স প্রয়োজন।</p>
-                                <p style="font-size:12px; color:#666; margin-top:10px;">
-                                    দয়া করে ব্রাউজার কনসোলে দেওয়া লিঙ্কে ক্লিক করে ইনডেক্সটি এক্টিভ করুন। এটি না করলে হিষ্টোরি দেখাবে না।
-                                </p>
-                            </div>`;
-                    }
-                });
-            } catch (err) {
+            // রিয়েল-টাইম লিসেনার
+            onSnapshot(q, (snapshot) => {
                 loader.style.display = "none";
-                console.error("System Error:", err);
-            }
+                container.innerHTML = "";
+                
+                if (snapshot.empty) {
+                    noData.style.display = "block";
+                    return;
+                }
+
+                noData.style.display = "none";
+                snapshot.forEach((document) => {
+                    const data = document.data();
+                    const docId = document.id;
+                    const status = data.status || 'Pending';
+                    const statusClass = status.toLowerCase();
+
+                    // অটো-ফেইল লজিক (৮ ঘণ্টা পর)
+                    if (status === 'Pending' && data.timestamp) {
+                        const diffHours = (Date.now() - data.timestamp) / (1000 * 60 * 60);
+                        if (diffHours >= 8) {
+                            updateDoc(doc(db, "deposits", docId), { status: 'Failed' });
+                        }
+                    }
+
+                    const itemHtml = `
+                        <div class="history-item">
+                            <div class="item-main">
+                                <div class="left-info">
+                                    <b>${data.method || 'General'} Deposit</b>
+                                    <span>Trx: <span class="trx-text">${data.trxID || 'N/A'}</span></span><br>
+                                    <span><i class="far fa-calendar-alt"></i> ${data.time || 'N/A'}</span>
+                                </div>
+                                <div class="right-info">
+                                    <span class="amount">৳${data.amount || 0}</span>
+                                    <span class="status ${statusClass}">${status}</span>
+                                </div>
+                            </div>
+                            ${status === 'Pending' ? `
+                                <div class="pending-notice">
+                                    <i class="fas fa-clock"></i>
+                                    ৬ ঘণ্টার মধ্যে টাকা আপনার একাউন্টে জমা হবে।
+                                </div>
+                            ` : ""}
+                        </div>
+                    `;
+                    container.insertAdjacentHTML('beforeend', itemHtml);
+                });
+            }, (error) => {
+                loader.style.display = "none";
+                console.error("Firebase Error:", error);
+                
+                // ইনডেক্স সেটিংস বাকি থাকলে এই এরর মেসেজ দেখাবে
+                if (error.code === 'failed-precondition') {
+                    container.innerHTML = `
+                        <div class="error-card">
+                            <h3 style="color: #ff0000; margin-bottom: 10px;">ইন্ডেক্স সেটিংস বাকি!</h3>
+                            <p style="color: #333; font-size: 13px;">
+                                Firebase কনসোলে গিয়ে এই লিস্টের জন্য ইনডেক্স এক্টিভ করুন। ইনডেক্স ছাড়া হিষ্টোরি লোড হবে না।
+                            </p>
+                        </div>`;
+                }
+            });
         }
 
         window.onload = loadHistory;
