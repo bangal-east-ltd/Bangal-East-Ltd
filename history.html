@@ -6,9 +6,9 @@
     <title>Deposit History - Bengal East</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        :root { --primary: #11998e; --bg: #f8fafc; --white: #ffffff; }
+        :root { --primary: #11998e; --bg: #f0f2f5; --white: #ffffff; }
         * { margin:0; padding:0; box-sizing:border-box; font-family: 'Segoe UI', sans-serif; }
-        body { background: var(--bg); color: #333; }
+        body { background: var(--bg); color: #333; padding-bottom: 30px; }
 
         .header { 
             background: var(--white); padding: 20px; 
@@ -24,26 +24,30 @@
         .history-card {
             background: var(--white); padding: 20px; border-radius: 18px;
             margin-bottom: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.04);
-            border-left: 6px solid var(--primary);
+            border-left: 6px solid #ccc; /* ডিফল্ট কালার */
             animation: slideIn 0.4s ease-out;
         }
 
-        @keyframes slideIn { from { opacity: 0; transform: translateX(-10px); } to { opacity: 1; transform: translateX(0); } }
+        /* মেথড অনুযায়ী বর্ডার কালার */
+        .card-bkash { border-left-color: #d12053; }
+        .card-nagad { border-left-color: #ff8c00; }
+        .card-rocket { border-left-color: #8c3494; }
+
+        @keyframes slideIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
         .info-row { display: flex; justify-content: space-between; margin-bottom: 10px; align-items: center; }
         .label { font-size: 12px; color: #718096; font-weight: 600; text-transform: uppercase; }
         
-        /* আপনার রিকুয়েস্ট অনুযায়ী সব ভ্যালু বোল্ড করা হয়েছে */
-        .value { font-size: 15px; color: #1a202c; font-weight: 800; } 
-        .amount-val { color: #2ecc71; font-size: 18px; }
-        .trx-val { color: var(--primary); font-family: monospace; }
+        /* সব ভ্যালু বোল্ড */
+        .value { font-size: 14px; color: #1a202c; font-weight: 800; } 
+        .amount-val { color: #2ecc71; font-size: 17px; font-weight: 900; }
+        .trx-val { color: var(--primary); font-family: 'Courier New', monospace; background: #f0fdfa; padding: 2px 6px; border-radius: 4px; }
 
         .status-badge {
             padding: 6px 14px; border-radius: 30px; font-size: 11px;
             font-weight: 900; text-transform: uppercase; border: 1px solid;
         }
 
-        /* স্ট্যাটাস কালার কোড */
         .pending { background: #fff9db; color: #f08c00; border-color: #f08c00; }
         .success { background: #e8f5e9; color: #2e7d32; border-color: #2e7d32; }
         .rejected { background: #ffebee; color: #c62828; border-color: #c62828; }
@@ -64,14 +68,15 @@
     <div class="container" id="historyList"></div>
 
     <div id="noData">
-        <i class="fas fa-folder-open" style="font-size: 40px; margin-bottom: 10px;"></i>
-        <p>এখনো কোনো ট্রানজেকশন পাওয়া যায়নি</p>
+        <i class="fas fa-receipt" style="font-size: 40px; color: #cbd5e0; margin-bottom: 10px;"></i>
+        <p style="font-weight: 600;">কোনো হিস্টোরি পাওয়া যায়নি</p>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
         import { getFirestore, collection, query, where, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
+        // আপনার অ্যাপের ফায়ারবেস কনফিগ
         const firebaseConfig = {
             apiKey: "AIzaSyCALYxA2M4BwIXq5KC3VMGsZpAFh8nL3fo",
             authDomain: "bengal-east-company-limited.firebaseapp.com",
@@ -84,6 +89,7 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
+        // লগইন করা ইউজারের আইডি (payment_details এর সাথে মিল রেখে)
         const loggedUser = localStorage.getItem("loggedUser") || "Guest";
 
         function fetchHistory() {
@@ -91,12 +97,14 @@
             const noData = document.getElementById('noData');
             const loader = document.getElementById('loader');
 
+            // সরাসরি কালেকশন থেকে কুয়েরি
             const q = query(
                 collection(db, "deposits"),
                 where("user", "==", loggedUser),
-                orderBy("timestamp", "desc")
+                orderBy("timestamp", "desc") // নতুন ট্রানজেকশন উপরে থাকবে
             );
 
+            // রিয়েল টাইম লিসেনার (এডমিন আপডেট করলে সাথে সাথে এখানে পরিবর্তন হবে)
             onSnapshot(q, (snapshot) => {
                 loader.style.display = "none";
                 listContainer.innerHTML = "";
@@ -109,15 +117,24 @@
                 noData.style.display = "none";
                 snapshot.forEach((doc) => {
                     const data = doc.data();
-                    const status = data.status || 'Pending';
                     
-                    // স্ট্যাটাস অনুসারে ক্লাস নির্ধারণ
+                    // স্ট্যাটাস টেক্সট ঠিক করা
+                    let statusText = data.status || 'Pending';
+                    if(statusText === "Success") statusText = "Success"; // এডমিন প্যানেলের সাথে মিল রেখে
+
                     let statusClass = "pending";
-                    if(status === "Success") statusClass = "success";
-                    if(status === "Rejected") statusClass = "rejected";
+                    if(statusText === "Success") statusClass = "success";
+                    if(statusText === "Rejected") statusClass = "rejected";
+
+                    // মেথড অনুযায়ী কার্ডের রঙ
+                    let methodClass = "";
+                    const m = (data.method || "").toLowerCase();
+                    if(m.includes("bkash")) methodClass = "card-bkash";
+                    else if(m.includes("nagad")) methodClass = "card-nagad";
+                    else if(m.includes("rocket")) methodClass = "card-rocket";
 
                     const cardHtml = `
-                        <div class="history-card">
+                        <div class="history-card ${methodClass}">
                             <div class="info-row">
                                 <span class="label">ID (TrxID)</span>
                                 <span class="value trx-val">${data.trxID}</span>
@@ -128,23 +145,23 @@
                             </div>
                             <div class="info-row">
                                 <span class="label">Method</span>
-                                <span class="value">${data.method}</span>
+                                <span class="value" style="text-transform: capitalize;">${data.method}</span>
                             </div>
                             <div class="info-row">
                                 <span class="label">Date</span>
                                 <span class="value">${data.time}</span>
                             </div>
-                            <div class="info-row" style="margin-top:15px; border-top:1px solid #eee; padding-top:10px;">
+                            <div class="info-row" style="margin-top:12px; border-top:1px dashed #eee; padding-top:10px;">
                                 <span class="label">Status</span>
-                                <span class="status-badge ${statusClass}">${status}</span>
+                                <span class="status-badge ${statusClass}">${statusText === 'Success' ? 'Success' : statusText}</span>
                             </div>
                         </div>
                     `;
                     listContainer.insertAdjacentHTML('beforeend', cardHtml);
                 });
             }, (error) => {
-                console.error("Error:", error);
-                loader.innerHTML = "ডাটা লোড করতে ইনডেক্স প্রয়োজন। ব্রাউজার কনসোল চেক করুন।";
+                console.error("Error fetching data:", error);
+                loader.innerHTML = "ডাটা লোড হচ্ছে না। ফায়ারবেস ইণ্ডেক্স তৈরি করুন।";
             });
         }
 
