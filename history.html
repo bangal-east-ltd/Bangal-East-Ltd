@@ -23,18 +23,12 @@
         .container { max-width: 600px; margin: 15px auto; padding: 0 15px; }
 
         .history-item {
-            background: var(--white);
-            padding: 18px;
-            border-radius: 15px;
-            margin-bottom: 15px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.03);
-            display: flex;
-            flex-direction: column;
-            border-left: 5px solid var(--primary);
+            background: var(--white); padding: 18px; border-radius: 15px;
+            margin-bottom: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+            display: flex; flex-direction: column; border-left: 5px solid var(--primary);
         }
 
         .item-main { display: flex; justify-content: space-between; align-items: center; width: 100%; }
-
         .left-info b { display: block; font-size: 15px; color: #2c3e50; margin-bottom: 5px; }
         .left-info span { font-size: 11px; color: #95a5a6; font-weight: 500; }
         .trx-text { color: var(--primary) !important; font-weight: bold; }
@@ -42,29 +36,18 @@
         .right-info { text-align: right; }
         .amount { font-size: 18px; font-weight: 800; color: #2c3e50; margin-bottom: 6px; display: block; }
         
-        .status {
-            padding: 5px 12px;
-            border-radius: 20px;
-            font-size: 10px;
-            font-weight: 700;
-            text-transform: uppercase;
-        }
+        .status { padding: 5px 12px; border-radius: 20px; font-size: 10px; font-weight: 700; text-transform: uppercase; }
         .pending { background: #fff9db; color: #f08c00; }
         .success { background: #e8f5e9; color: #2e7d32; }
         .failed { background: #ffebee; color: #c62828; }
 
         .pending-notice {
-            margin-top: 10px;
-            font-size: 11px;
-            color: #d35400;
-            background: #fff5e6;
-            padding: 8px;
-            border-radius: 8px;
-            display: flex;
-            align-items: center; gap: 5px;
+            margin-top: 10px; font-size: 11px; color: #d35400;
+            background: #fff5e6; padding: 8px; border-radius: 8px;
+            display: flex; align-items: center; gap: 5px;
         }
 
-        #noData { text-align: center; margin-top: 100px; color: #bdc3c7; }
+        #noData { text-align: center; margin-top: 100px; color: #bdc3c7; display: none; }
     </style>
 </head>
 <body>
@@ -76,61 +59,62 @@
 
     <div class="container" id="historyContainer"></div>
 
-    <div id="noData" style="display: none; text-align: center; padding: 50px;">
+    <div id="noData">
         <i class="fas fa-receipt" style="font-size: 50px; color: #eee; margin-bottom: 10px;"></i>
         <p>কোনো ডিপোজিট রেকর্ড পাওয়া যায়নি</p>
     </div>
 
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getFirestore, collection, query, where, orderBy, onSnapshot, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-    <script>
-        // আপনার Firebase Config
         const firebaseConfig = {
-          apiKey: "AIzaSyAoZ39EQR-Buy6QJT71P2R4wL0RyiOQaAc",
-          authDomain: "ai-signal-75e73.firebaseapp.com",
-          projectId: "ai-signal-75e73",
-          storageBucket: "ai-signal-75e73.firebasestorage.app",
-          messagingSenderId: "610985325221",
-          appId: "1:610985325221:web:16e2600afb3b3698ae534c"
+            apiKey: "AIzaSyCALYxA2M4BwIXq5KC3VMGsZpAFh8nL3fo",
+            authDomain: "bengal-east-company-limited.firebaseapp.com",
+            projectId: "bengal-east-company-limited",
+            storageBucket: "bengal-east-company-limited.firebasestorage.app",
+            messagingSenderId: "653223286483",
+            appId: "1:653223286483:web:8e4ed0782ae807f8f02626"
         };
 
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.firestore();
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
 
-        // আপনার ছবির ইউজার আইডি: 35281 (লগইন সিস্টেম থাকলে সেটি এখানে ডাইনামিক বসবে)
-        const currentUserID = "35281"; 
+        // লগইন করা ইউজারের তথ্য (আপনার Payment Details কোড অনুযায়ী)
+        const loggedUser = localStorage.getItem("loggedUser") || "Guest";
 
         function loadHistory() {
             const container = document.getElementById('historyContainer');
             const noData = document.getElementById('noData');
 
-            // Firestore এর 'deposits' কালেকশন থেকে ডাটা আনা
-            db.collection("deposits")
-              .where("userID", "==", currentUserID)
-              .orderBy("time", "desc") // নতুন ডাটা আগে দেখাবে
-              .onSnapshot((querySnapshot) => {
+            // Firestore Query
+            const q = query(
+                collection(db, "deposits"),
+                where("user", "==", loggedUser),
+                orderBy("timestamp", "desc")
+            );
+
+            onSnapshot(q, (snapshot) => {
                 container.innerHTML = "";
-                
-                if (querySnapshot.empty) {
+                if (snapshot.empty) {
                     noData.style.display = "block";
                     return;
                 }
 
                 noData.style.display = "none";
-                querySnapshot.forEach((doc) => {
-                    const data = doc.data();
+                snapshot.forEach((document) => {
+                    const data = document.data();
+                    const docId = document.id;
                     const status = data.status || 'Pending';
                     const statusClass = status.toLowerCase();
 
                     // ৮ ঘণ্টা অটো-রিজেক্ট লজিক
-                    if (status === 'Pending' && data.time) {
-                        const requestTime = new Date(data.time).getTime();
-                        const currentTime = new Date().getTime();
-                        const diffHours = (currentTime - requestTime) / (1000 * 60 * 60);
-
+                    if (status === 'Pending' && data.timestamp) {
+                        const currentTime = Date.now();
+                        const diffHours = (currentTime - data.timestamp) / (1000 * 60 * 60);
                         if (diffHours >= 8) {
-                            db.collection("deposits").doc(doc.id).update({ status: 'Failed' });
+                            const docRef = doc(db, "deposits", docId);
+                            updateDoc(docRef, { status: 'Failed' });
                         }
                     }
 
@@ -145,26 +129,30 @@
                         <div class="history-item">
                             <div class="item-main">
                                 <div class="left-info">
-                                    <b>${data.method || 'General'} Deposit</b>
-                                    <span>Trx: <span class="trx-text">${data.trxID || 'N/A'}</span></span><br>
-                                    <span><i class="far fa-clock"></i> ${data.time || ''}</span>
+                                    <b>${data.method} Deposit</b>
+                                    <span>Trx: <span class="trx-text">${data.trxID}</span></span><br>
+                                    <span><i class="far fa-clock"></i> ${data.time}</span>
                                 </div>
                                 <div class="right-info">
-                                    <span class="amount">৳${data.amount || 0}</span>
+                                    <span class="amount">৳${data.amount}</span>
                                     <span class="status ${statusClass}">${status}</span>
                                 </div>
                             </div>
                             ${pendingMessage}
                         </div>
                     `;
-                    container.innerHTML += itemHtml;
+                    container.insertAdjacentHTML('beforeend', itemHtml);
                 });
             }, (error) => {
-                console.error("Firestore Error:", error);
+                console.error("Error:", error);
+                // যদি Index সেট করা না থাকে তবে এখানে এরর দেখাবে
+                if(error.code === 'failed-precondition') {
+                    console.log("Firestore Index প্রয়োজন। কনসোলের লিঙ্কে ক্লিক করুন।");
+                }
             });
         }
 
-        window.onload = loadHistory;
+        loadHistory();
     </script>
 </body>
 </html>
