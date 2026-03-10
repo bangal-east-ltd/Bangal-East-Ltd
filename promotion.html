@@ -103,55 +103,57 @@
     </div>
 
     <script>
-        // ১. Firebase কনফিগারেশন
+        // ১. আপনার Firebase কনফিগারেশন
         const firebaseConfig = {
-            apiKey: "AIzaSyCALYxA2M4BwIXq5KC3VMGsZpAFh8nL3fo",
+            apiKey: "YOUR_API_KEY",
             authDomain: "bengal-east-company-limited.firebaseapp.com",
             projectId: "bengal-east-company-limited",
-            storageBucket: "bengal-east-company-limited.firebasestorage.app",
-            messagingSenderId: "653223286483",
-            appId: "1:653223286483:web:8e4ed0782ae807f8f02626"
+            storageBucket: "bengal-east-company-limited.appspot.com",
+            messagingSenderId: "YOUR_ID",
+            appId: "YOUR_APP_ID"
         };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
         const auth = firebase.auth();
 
-        let userUniqueID = "";
-
-        // ২. ইউজারের তথ্য ও স্ট্যাটাস লোড করা
-        function initPage() {
-            auth.onAuthStateChanged(async (user) => {
+        // ২. ইউজারের তথ্য ও স্ট্যাটাস লোড করা (Auth State Changed ব্যবহার করে)
+        async function initPage() {
+            auth.onAuthStateChanged(user => {
                 if (user) {
-                    const phone = localStorage.getItem("userPhone") || user.phoneNumber.replace("+88", "");
+                    const currentUID = user.uid;
                     
-                    const userDoc = await db.collection("users").doc(phone).get();
-                    if(userDoc.exists) {
-                        const userData = userDoc.data();
-                        userUniqueID = userData.userID; 
+                    // রেফারেল লিংক তৈরি ও প্রদর্শন
+                    const refLink = window.location.origin + "/register.html?ref=" + currentUID;
+                    document.getElementById("refCode").innerText = refLink;
 
-                        // ৫ সংখ্যার আইডি দিয়ে আপনার মূল ডোমেইনের লিংক তৈরি
-                        // এখানে ডোমেইন URL টি আপনার চাহিদা অনুযায়ী ফিক্স করা হয়েছে
-                        const baseURL = "https://bangal-east-ltd.github.io/Bangal-East-Ltd/index.html";
-                        const refLink = baseURL + "?ref=" + userUniqueID;
-                        document.getElementById("refCode").innerText = refLink;
-
-                        loadUserStats(phone);
-                        loadTeam(1, null, userUniqueID); 
-                    }
+                    // ডাটা ও টিম লোড করার জন্য আইডি পাঠানো
+                    loadUserStats(currentUID);
+                    loadTeam(1, null, currentUID); 
                 } else {
-                    window.location.replace("index.html");
+                    // লগইন না থাকলে লগইন পেজে পাঠিয়ে দিবে
+                    window.location.replace("login.html");
                 }
             });
+
+            checkAdminSettings();
         }
 
-        async function loadUserStats(phone) {
-            db.collection("users").doc(phone).onSnapshot(doc => {
+        async function loadUserStats(uid) {
+            db.collection("users").doc(uid).onSnapshot(doc => {
                 if (doc.exists) {
                     const data = doc.data();
                     document.getElementById("totalTeam").innerText = (data.totalTeam || 0) + " Members";
                     document.getElementById("teamDeposit").innerText = "৳ " + parseFloat(data.teamDeposit || 0).toFixed(2);
                     document.getElementById("teamComm").innerText = "৳ " + parseFloat(data.teamCommission || 0).toFixed(2);
                     document.getElementById("activeToday").innerText = data.activeL1 || 0;
+                }
+            });
+        }
+
+        async function checkAdminSettings() {
+            db.collection("settings").doc("vip3_config").onSnapshot(doc => {
+                if(doc.exists) {
+                    console.log("Admin commission rates updated from Vip3 panel");
                 }
             });
         }
@@ -164,9 +166,10 @@
             });
         }
 
-        window.loadTeam = async function(level, btn, customID) {
-            const finalID = customID || userUniqueID;
-            if(!finalID) return;
+        // ৫. টিম মেম্বার লিস্ট লোড করা
+        window.loadTeam = async function(level, btn, uid) {
+            const currentUID = uid || (auth.currentUser ? auth.currentUser.uid : null);
+            if (!currentUID) return;
 
             if(btn) {
                 document.querySelectorAll('.level-btn').forEach(b => b.classList.remove('active'));
@@ -174,20 +177,22 @@
             }
 
             const listBody = document.getElementById("teamList");
-            listBody.innerHTML = "<tr><td colspan='3' style='text-align:center;'>Loading...</td></tr>";
+            listBody.innerHTML = "<tr><td colspan='3' style='text-align:center; padding: 20px;'>Loading...</td></tr>";
 
-            let fieldName = "referrerID"; 
-            if(level === 2) fieldName = "referrerID_L2"; 
-            if(level === 3) fieldName = "referrerID_L3";
+            let fieldName = "referredBy"; 
+            if(level === 2) fieldName = "refLevel2"; 
+            if(level === 3) fieldName = "refLevel3";
 
             try {
                 const snapshot = await db.collection("users")
-                    .where(fieldName, "==", String(finalID))
+                    .where(fieldName, "==", currentUID)
+                    .orderBy("joinTimestamp", "desc")
+                    .limit(50)
                     .get();
 
                 listBody.innerHTML = "";
                 if (snapshot.empty) {
-                    listBody.innerHTML = "<tr><td colspan='3' style='text-align:center;'>No Level " + level + " members.</td></tr>";
+                    listBody.innerHTML = "<tr><td colspan='3' style='text-align:center; padding: 20px; color: #999;'>No members found in Level " + level + "</td></tr>";
                     return;
                 }
 
@@ -198,14 +203,15 @@
                     
                     listBody.innerHTML += `
                         <tr>
-                            <td class="user-id">ID: ${data.userID}</td>
-                            <td>${data.createdAt ? data.createdAt.split('T')[0] : '---'}</td>
+                            <td class="user-id">ID: ${data.userID || 'N/A'}</td>
+                            <td>${data.joinDate || '---'}</td>
                             <td class="${statusClass}">${statusText}</td>
                         </tr>
                     `;
                 });
             } catch (e) {
-                listBody.innerHTML = "<tr><td colspan='3' style='text-align:center; color:red;'>Error loading team.</td></tr>";
+                console.error(e);
+                listBody.innerHTML = "<tr><td colspan='3' style='text-align:center; color:red;'>Data load failed.</td></tr>";
             }
         }
 
