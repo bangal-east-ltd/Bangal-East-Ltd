@@ -52,6 +52,11 @@
             border: 1px dashed #f08c00;
         }
 
+        .error-card {
+            background: #fff; padding: 20px; border-radius: 12px;
+            text-align: center; color: #dc3545; border: 1px solid #ffccd5;
+        }
+
         #noData { text-align: center; margin-top: 100px; color: #bdc3c7; display: none; }
         #loader { text-align: center; margin-top: 50px; color: var(--primary); }
     </style>
@@ -76,6 +81,7 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
         import { getFirestore, collection, query, where, orderBy, onSnapshot, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
+        // আপনার Firebase কনফিগ
         const firebaseConfig = {
             apiKey: "AIzaSyCALYxA2M4BwIXq5KC3VMGsZpAFh8nL3fo",
             authDomain: "bengal-east-company-limited.firebaseapp.com",
@@ -88,7 +94,7 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        // লগইন করা ইউজারের আইডি নিশ্চিত করা
+        // লগইন করা ইউজারের আইডি (ID: 54122 ইত্যাদি)
         const loggedUser = localStorage.getItem("loggedUser") || "Guest";
 
         function loadHistory() {
@@ -97,13 +103,14 @@
             const loader = document.getElementById('loader');
 
             try {
-                // Firestore Query
+                // ডাটা ফিল্টার করার কুয়েরি
                 const q = query(
                     collection(db, "deposits"),
                     where("user", "==", loggedUser),
                     orderBy("timestamp", "desc")
                 );
 
+                // রিয়েল-টাইম ডাটা আপডেট লিসেনার
                 onSnapshot(q, (snapshot) => {
                     loader.style.display = "none";
                     container.innerHTML = "";
@@ -120,7 +127,7 @@
                         const status = data.status || 'Pending';
                         const statusClass = status.toLowerCase();
 
-                        // অটো-রিজেক্ট লজিক (৮ ঘণ্টা)
+                        // ৮ ঘণ্টা পর অটো-ফেইল করার লজিক
                         if (status === 'Pending' && data.timestamp) {
                             const diffHours = (Date.now() - data.timestamp) / (1000 * 60 * 60);
                             if (diffHours >= 8) {
@@ -154,9 +161,17 @@
                     });
                 }, (error) => {
                     loader.style.display = "none";
-                    console.error("Firestore Error:", error);
+                    console.error("Firebase Error:", error);
+                    
+                    // ইনডেক্স এরর হ্যান্ডলিং (ছবিতে আপনি এই এররটিই দেখতে পাচ্ছিলেন)
                     if (error.code === 'failed-precondition') {
-                        container.innerHTML = "<p style='text-align:center; color:red; padding:20px;'>ডাটাবেস ইনডেক্স প্রয়োজন। অনুগ্রহ করে ব্রাউজার কনসোল চেক করুন।</p>";
+                        container.innerHTML = `
+                            <div class="error-card">
+                                <p style="font-weight:bold;">ডাটাবেস ইনডেক্স প্রয়োজন।</p>
+                                <p style="font-size:12px; color:#666; margin-top:10px;">
+                                    দয়া করে ব্রাউজার কনসোলে দেওয়া লিঙ্কে ক্লিক করে ইনডেক্সটি এক্টিভ করুন। এটি না করলে হিষ্টোরি দেখাবে না।
+                                </p>
+                            </div>`;
                     }
                 });
             } catch (err) {
