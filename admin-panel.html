@@ -36,7 +36,6 @@
         th { background: #f8f9fa; color: #666; }
 
         .btn { padding: 8px 15px; border: none; border-radius: 5px; cursor: pointer; font-size: 12px; font-weight: bold; }
-        /* বাটন দুটির মাঝে গ্যাপ তৈরি করার জন্য মার্জিন বাড়ানো হয়েছে */
         .btn-success { background: #28a745; color: white; margin-right: 15px; } 
         .btn-danger { background: #dc3545; color: white; }
         
@@ -120,7 +119,7 @@
         <div class="admin-card">
             <h2>Pending Deposits</h2>
             <table>
-                <thead><tr><th>Reg Phone</th><th>User ID</th><th>Sender Number</th><th>Transaction ID</th><th>Amount</th><th>Method</th><th>Action</th></tr></thead>
+                <thead><tr><th>User ID</th><th>Sender Number</th><th>Transaction ID</th><th>Amount</th><th>Method</th><th>Action</th></tr></thead>
                 <tbody id="depositBody"></tbody>
             </table>
         </div>
@@ -181,7 +180,6 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    // --- Auth & Navigation ---
     window.checkAdminLogin = function() {
         const pass = document.getElementById('adminPassInput').value;
         if(pass === "123456") {
@@ -203,7 +201,6 @@
         if(activeNav) activeNav.classList.add('active');
     }
 
-    // --- Users Data ---
     onSnapshot(collection(db, "users"), (snapshot) => {
         const userListBody = document.getElementById('userListBody');
         userListBody.innerHTML = "";
@@ -234,7 +231,6 @@
         }
     }
 
-    // --- Transactions (Deposit & Withdraw) ---
     function setupTransactions() {
         onSnapshot(collection(db, "deposits"), (snapshot) => {
             const depBody = document.getElementById('depositBody');
@@ -247,7 +243,6 @@
                 const d = child.data();
                 if(d.status === "Pending") {
                     depBody.innerHTML += `<tr>
-                        <td>${d.user}</td>
                         <td>${d.userID || 'N/A'}</td>
                         <td>${d.senderNumber || d.sender_no || 'N/A'}</td>
                         <td><code>${d.trxID}</code></td>
@@ -294,7 +289,6 @@
         });
     }
 
-    // --- Action Functions ---
     window.approveDep = async function(id, userId, amt) {
         if(!confirm("Approve this deposit?")) return;
         const userRef = doc(db, "users", userId);
@@ -309,7 +303,6 @@
         }
     }
 
-    // ডিপোজিট রিজেক্ট ফাংশন (পেন্ডিং বাতিল হবে এবং রিজেক্ট হিসেবে সেভ হবে)
     window.rejectDep = async function(id) {
         let reason = prompt("ডিপোজিট রিজেক্ট করার কারণ লিখুন:");
         if(reason !== null) {
