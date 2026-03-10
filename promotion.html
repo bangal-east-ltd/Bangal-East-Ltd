@@ -11,7 +11,6 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
     
     <style>
-        /* আপনার দেওয়া সুন্দর ডিজাইনটি এখানে রাখা হয়েছে */
         * { margin:0; padding:0; box-sizing:border-box; font-family: 'Segoe UI', sans-serif; }
         body { background: #f4f7f6; color: #333; padding-bottom: 30px; }
         .header { background: #11998e; color: white; padding: 20px; text-align: center; border-radius: 0 0 20px 20px; position: sticky; top: 0; z-index: 100; }
@@ -20,15 +19,25 @@
         .refer-link-box { display: flex; background: #f8f9fa; border: 1.5px dashed #11998e; padding: 12px; border-radius: 10px; justify-content: space-between; align-items: center; gap: 10px; margin-top: 10px; }
         .refer-link-box span { font-weight: bold; color: #11998e; font-size: 12px; word-break: break-all; text-align: left; }
         .copy-btn { background: #11998e; color: white; border: none; padding: 10px 15px; border-radius: 8px; cursor: pointer; font-size: 12px; font-weight: bold; }
+        
+        /* Stats Grid Updated */
         .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
         .stat-item { background: white; padding: 15px; border-radius: 15px; box-shadow: 0 3px 10px rgba(0,0,0,0.03); border-left: 5px solid #11998e; }
+        
         .team-section { background: white; border-radius: 15px; padding: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.05); }
         .level-tabs { display: flex; gap: 8px; margin-bottom: 15px; overflow-x: auto; }
         .level-btn { padding: 8px 18px; background: #f0f0f0; border-radius: 20px; font-size: 12px; cursor: pointer; border: none; font-weight: 600; }
         .level-btn.active { background: #11998e; color: white; }
+        
+        /* Search Bar */
+        .search-box { width: 100%; padding: 10px; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 8px; outline: none; }
+
         table { width: 100%; border-collapse: collapse; }
-        th, td { padding: 12px 5px; font-size: 13px; border-bottom: 1px solid #f4f7f6; text-align: left; }
-        .level-tag { font-size: 10px; background: #e8f5e9; padding: 2px 6px; border-radius: 5px; color: #2e7d32; font-weight: bold; }
+        th, td { padding: 12px 5px; font-size: 12px; border-bottom: 1px solid #f4f7f6; text-align: center; }
+        .status-badge { padding: 3px 8px; border-radius: 10px; font-size: 10px; font-weight: bold; }
+        .active-user { background: #e8f5e9; color: #2e7d32; }
+        .inactive-user { background: #ffebee; color: #c62828; }
+
         #toast { visibility: hidden; min-width: 200px; background: #333; color: #fff; text-align: center; border-radius: 8px; padding: 12px; position: fixed; left: 50%; bottom: 30px; transform: translateX(-50%); }
         #toast.show { visibility: visible; animation: fadein 0.5s, fadeout 0.5s 2.5s; }
         @keyframes fadein { from {bottom: 0; opacity: 0;} to {bottom: 30px; opacity: 1;} }
@@ -54,17 +63,27 @@
 
         <div class="stats-grid">
             <div class="stat-item">
-                <p style="font-size: 11px; color: #888;">মোট টিম</p>
-                <h3 id="totalTeam">0 Members</h3>
+                <p style="font-size: 11px; color: #888;">মোট টিম / কমিশন</p>
+                <h3 id="totalTeam">0 / ৳ 0</h3>
             </div>
             <div class="stat-item">
-                <p style="font-size: 11px; color: #888;">মোট কমিশন</p>
-                <h3 id="totalComm" style="color: #28a745;">৳ 0.00</h3>
+                <p style="font-size: 11px; color: #888;">টিম ডিপোজিট</p>
+                <h3 id="teamDeposit" style="color: #11998e;">৳ 0.00</h3>
+            </div>
+            <div class="stat-item">
+                <p style="font-size: 11px; color: #888;">আজকের এক্টিভ মেম্বার</p>
+                <h3 id="activeToday">0</h3>
+            </div>
+            <div class="stat-item">
+                <p style="font-size: 11px; color: #888;">আজকের টিম ইনকাম</p>
+                <h3 id="todayTeamIncome" style="color: #28a745;">৳ 0.00</h3>
             </div>
         </div>
 
         <div class="team-section">
             <h3>টিম রিপোর্ট</h3>
+            <input type="text" id="memberSearch" class="search-box" placeholder="ইউজার আইডি দিয়ে খুঁজুন..." onkeyup="searchMember()">
+            
             <div class="level-tabs">
                 <button class="level-btn active" onclick="filterTeam(1, this)">Level 1</button>
                 <button class="level-btn" onclick="filterTeam(2, this)">Level 2</button>
@@ -72,7 +91,7 @@
             </div>
             <table>
                 <thead>
-                    <tr><th>নাম</th><th>ইউজার আইডি</th><th>ডিপোজিট</th></tr>
+                    <tr><th>আইডি</th><th>ডিপোজিট</th><th>স্ট্যাটাস</th></tr>
                 </thead>
                 <tbody id="teamBody">
                     <tr><td colspan="3" style="text-align:center; padding: 20px;">লোড হচ্ছে...</td></tr>
@@ -82,7 +101,6 @@
     </div>
 
 <script>
-    // আপনার এডমিন প্যানেলের Firebase কনফিগারেশন
     const firebaseConfig = {
         apiKey: "AIzaSyCALYxA2M4BwIXq5KC3VMGsZpAFh8nL3fo",
         authDomain: "bengal-east-company-limited.firebaseapp.com",
@@ -96,24 +114,21 @@
 
     const userPhone = localStorage.getItem("userPhone");
     let allTeamData = [];
+    let currentLevel = 1;
 
     async function loadPromotionData() {
         if(!userPhone) { window.location.href="login.html"; return; }
 
         try {
-            // ১. ইউজারের ৫ সংখ্যার আইডি (userID) ডাটাবেস থেকে নেওয়া
             const userSnap = await db.collection("users").doc(userPhone).get();
             if (userSnap.exists) {
                 const userData = userSnap.data();
-                const myUID = userData.userID; // এটি সেই ৫ সংখ্যার আইডি
+                const myUID = userData.userID;
 
-                // ২. রেফার লিঙ্ক তৈরি (সরাসরি index.html এর জন্য)
                 const baseURL = window.location.origin + window.location.pathname.replace(/\/[^\/]*$/, "");
                 const finalLink = baseURL + "/index.html?ref=" + myUID;
                 document.getElementById('displayLink').innerText = finalLink;
-                document.getElementById('totalComm').innerText = "৳ " + (userData.refCommission || 0);
-
-                // ৩. ৩ লেভেল টিম ডাটা লোড লজিক
+                
                 fetchTeam(myUID);
             }
         } catch (e) { console.error(e); }
@@ -121,56 +136,71 @@
 
     async function fetchTeam(myUID) {
         allTeamData = [];
-        let count = 0;
+        let totalDep = 0;
+        let activeCount = 0;
 
-        // Level 1
-        const q1 = await db.collection("users").where("referrerID", "==", String(myUID)).get();
-        for (let d1 of q1.docs) {
-            const u1 = d1.data();
-            count++;
-            allTeamData.push({ name: u1.name || 'User', id: u1.userID, dep: u1.totalDeposit || 0, level: 1 });
+        const snapshot = await db.collection("users").get();
+        const users = snapshot.docs.map(doc => doc.data());
 
-            // Level 2
-            const q2 = await db.collection("users").where("referrerID", "==", String(u1.userID)).get();
-            for (let d2 of q2.docs) {
-                const u2 = d2.data();
-                count++;
-                allTeamData.push({ name: u2.name || 'User', id: u2.userID, dep: u2.totalDeposit || 0, level: 2 });
+        // Recursive team fetch function
+        function findReferrals(parentID, level) {
+            if (level > 3) return;
+            const refs = users.filter(u => String(u.referrerID) === String(parentID));
+            
+            refs.forEach(u => {
+                const dep = parseFloat(u.totalDeposit || 0);
+                const isActive = dep > 0;
+                if(isActive) activeCount++;
+                totalDep += dep;
 
-                // Level 3
-                const q3 = await db.collection("users").where("referrerID", "==", String(u2.userID)).get();
-                for (let d3 of q3.docs) {
-                    const u3 = d3.data();
-                    count++;
-                    allTeamData.push({ name: u3.name || 'User', id: u3.userID, dep: u3.totalDeposit || 0, level: 3 });
-                }
-            }
+                allTeamData.push({
+                    id: u.userID,
+                    dep: dep,
+                    status: isActive ? 'Active' : 'Inactive',
+                    level: level
+                });
+                findReferrals(u.userID, level + 1);
+            });
         }
-        document.getElementById('totalTeam').innerText = count + " Members";
-        filterTeam(1); // ডিফল্ট Level 1 দেখাবে
+
+        findReferrals(myUID, 1);
+
+        document.getElementById('totalTeam').innerText = `${allTeamData.length} / ৳ 0`;
+        document.getElementById('teamDeposit').innerText = `৳ ${totalDep.toFixed(2)}`;
+        document.getElementById('activeToday').innerText = activeCount;
+        
+        filterTeam(1);
     }
 
     function filterTeam(level, btn) {
+        currentLevel = level;
         if(btn) {
             document.querySelectorAll('.level-btn').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
         }
-        
-        const body = document.getElementById('teamBody');
-        const data = allTeamData.filter(x => x.level === level);
+        renderTable(allTeamData.filter(x => x.level === level));
+    }
 
+    function renderTable(data) {
+        const body = document.getElementById('teamBody');
         if(data.length === 0) {
-            body.innerHTML = `<tr><td colspan="3" style="text-align:center; padding:20px;">এই লেভেলে কেউ নেই</td></tr>`;
+            body.innerHTML = `<tr><td colspan="3" style="text-align:center; padding:20px;">কোন মেম্বার নেই</td></tr>`;
             return;
         }
 
         body.innerHTML = data.map(u => `
             <tr>
-                <td>${u.name} <span class="level-tag">L${u.level}</span></td>
                 <td><b>${u.id}</b></td>
-                <td style="color:#28a745;">৳${u.dep}</td>
+                <td>৳${u.dep}</td>
+                <td><span class="status-badge ${u.status === 'Active' ? 'active-user' : 'inactive-user'}">${u.status}</span></td>
             </tr>
         `).join('');
+    }
+
+    function searchMember() {
+        const val = document.getElementById('memberSearch').value.toLowerCase();
+        const filtered = allTeamData.filter(u => u.level === currentLevel && String(u.id).includes(val));
+        renderTable(filtered);
     }
 
     window.copyLink = function() {
