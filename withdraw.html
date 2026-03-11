@@ -9,12 +9,10 @@
         * { margin:0; padding:0; box-sizing:border-box; font-family: 'Segoe UI', sans-serif; }
         body { background: #f4f7f6; color: #333; padding-bottom: 50px; scroll-behavior: smooth; }
         
-        /* Header and History Button */
         .header { display: flex; align-items: center; padding: 15px 20px; background: white; border-bottom: 1px solid #eee; position: sticky; top: 0; z-index: 100; }
         .header h3 { flex: 1; text-align: left; font-size: 18px; margin-left: 15px; }
         .header .nav-link { color: #333; text-decoration: none; font-size: 20px; }
         
-        /* History Button Style */
         .history-page-btn { 
             background: #ff8c00; 
             color: white !important; 
@@ -150,6 +148,7 @@
 
         if (!loggedUser) window.location.replace("index.html");
 
+        // ভ্যাট কনফিগারেশন লিসেনার
         onSnapshot(doc(db, "admin_settings", "withdrawal_config"), (snap) => {
             if(snap.exists()){
                 const config = snap.data();
@@ -167,6 +166,7 @@
             document.getElementById("receiveAmount").innerText = receive.toFixed(2);
         }
 
+        // টাইম চেক ফাংশন
         function checkWithdrawTime() {
             const now = new Date();
             const hour = now.getHours();
@@ -187,6 +187,7 @@
         }
         setInterval(checkWithdrawTime, 1000);
 
+        // মোডাল ফাংশন
         window.showModal = function(type, title, msg) {
             const modal = document.getElementById("customModal");
             const icon = document.getElementById("modalIcon");
@@ -201,19 +202,20 @@
             document.getElementById("customModal").style.display = "none";
         };
 
+        // রিয়েল টাইম ডাটা লিসেনার (ব্যালেন্স এবং লক/আনলক হ্যান্ডেল করার জন্য)
         onSnapshot(doc(db, "users", loggedUser), (snapshot) => {
             if (snapshot.exists()) {
                 const data = snapshot.data();
                 userDisplayID = data.userID || loggedUser;
                 document.getElementById("userBalance").innerText = parseFloat(data.balance || 0).toFixed(2);
                 
-                const select = document.getElementById("selectedNo");
                 const n1Input = document.getElementById("savedNo1");
                 const n2Input = document.getElementById("savedNo2");
                 const sBtn = document.getElementById("saveNumBtn");
+                const select = document.getElementById("selectedNo");
 
+                // সিলেকশন ড্রপডাউন আপডেট
                 select.innerHTML = '<option value="">-- Choose Number --</option>';
-
                 if (data.withdrawNo1) {
                     n1Input.value = data.withdrawNo1;
                     select.innerHTML += `<option value="${data.withdrawNo1}">${data.withdrawNo1}</option>`;
@@ -223,22 +225,21 @@
                     select.innerHTML += `<option value="${data.withdrawNo2}">${data.withdrawNo2}</option>`;
                 }
 
-                // --- নম্বর সেভ ও লক করার সংশোধিত লজিক ---
+                // লক এবং আনলক লজিক
                 if (!data.withdrawNo1 || data.is_unlocked === true) {
-                    // যদি নম্বর না থাকে অথবা অ্যাডমিন আনলক করে দেয়
                     n1Input.disabled = false;
                     n2Input.disabled = false;
-                    sBtn.style.display = "block"; // বাটনটি সব সময় দেখাবে
-                    sBtn.innerText = data.withdrawNo1 ? "Update & Lock Numbers" : "Save & Lock Numbers";
+                    sBtn.style.display = "block"; 
+                    sBtn.innerText = data.withdrawNo1 ? "Update & Re-Lock Numbers" : "Save & Lock Numbers";
                 } else {
-                    // নম্বর সেভ করা আছে এবং আনলক করা নেই, তাই লক করে দাও
                     n1Input.disabled = true;
                     n2Input.disabled = true;
-                    sBtn.style.display = "none"; // বাটনটি হাইড করে দাও
+                    sBtn.style.display = "none";
                 }
             }
         });
 
+        // নম্বর সেভ করার ফাংশন
         window.saveWithdrawNumbers = async function() {
             const n1 = document.getElementById("savedNo1").value;
             const n2 = document.getElementById("savedNo2").value;
@@ -248,7 +249,7 @@
                 await updateDoc(doc(db, "users", loggedUser), { 
                     withdrawNo1: n1, 
                     withdrawNo2: n2 || "",
-                    is_unlocked: false // সেভ করার সাথে সাথে অটোমেটিক লক হয়ে যাবে
+                    is_unlocked: false 
                 });
                 showModal('success', 'Save Success', 'আপনার নম্বরগুলো সফলভাবে সেভ ও লক করা হয়েছে।');
             } catch (e) {
@@ -256,6 +257,7 @@
             }
         };
 
+        // উইথড্র রিকোয়েস্ট ফাংশন
         window.requestWithdraw = async function() {
             const amount = parseFloat(document.getElementById("amount").value);
             const method = document.getElementById("method").value;
@@ -314,6 +316,7 @@
             }
         };
 
+        // উইথড্র হিস্টোরি লিসেনার
         const qHist = query(collection(db, "withdraws"), where("user", "==", loggedUser));
         onSnapshot(qHist, (snapshot) => {
             const hist = document.getElementById("withdrawHistory");
