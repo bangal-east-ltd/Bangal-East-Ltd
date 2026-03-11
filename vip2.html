@@ -101,7 +101,6 @@
             <button id="unlockBtn" class="btn btn-unlock" onclick="unlockUserNumber()">Unlock Numbers</button>
         </div>
     </div>
-
 </div>
 
 <script type="module">
@@ -123,7 +122,7 @@
 
     let currentTargetUser = "";
 
-    // পেমেন্ট আপডেট ফাংশন
+    // পেমেন্ট নম্বর আপডেট
     window.updatePaymentInfo = async function() {
         const method = document.getElementById('setMethod').value;
         const type = document.getElementById('setType').value;
@@ -132,34 +131,23 @@
         if(!number) { alert("নম্বর দিন!"); return; }
 
         try {
-            await setDoc(doc(db, "admin_settings", "numbers"), {
-                [method]: number
-            }, { merge: true });
-
-            await setDoc(doc(db, "admin_settings", "vip2_details"), {
-                [method + "_type"]: type
-            }, { merge: true });
-
+            await setDoc(doc(db, "admin_settings", "numbers"), { [method]: number }, { merge: true });
+            await setDoc(doc(db, "admin_settings", "vip2_details"), { [method + "_type"]: type }, { merge: true });
             alert("পেমেন্ট তথ্য আপডেট হয়েছে!");
             document.getElementById('setNumber').value = "";
-        } catch (e) {
-            alert("ব্যর্থ হয়েছে! " + e.message);
-        }
+        } catch (e) { alert("ব্যর্থ হয়েছে! " + e.message); }
     }
 
-    // ভ্যাট আপডেট ফাংশন
+    // ভ্যাট কনফিগ আপডেট
     window.updateVatConfig = async function() {
         const vat = document.getElementById('vatPercent').value;
         try {
-            await setDoc(doc(db, "admin_settings", "withdrawal_config"), {
-                vat_percentage: vat || 0
-            }, { merge: true });
+            await setDoc(doc(db, "admin_settings", "withdrawal_config"), { vat_percentage: vat || 0 }, { merge: true });
             alert("ভ্যাট তথ্য সফলভাবে আপডেট হয়েছে!");
-        } catch (e) {
-            alert("ভ্যাট আপডেট ব্যর্থ! " + e.message);
-        }
+        } catch (e) { alert("ভ্যাট আপডেট ব্যর্থ! " + e.message); }
     }
 
+    // পেমেন্ট নম্বরের রিয়েলটাইম ডিসপ্লে
     onSnapshot(doc(db, "admin_settings", "numbers"), (snapshot) => {
         if (snapshot.exists()) {
             const data = snapshot.data();
@@ -179,7 +167,7 @@
         }
     });
 
-    // --- SEARCH & UNLOCK LOGIC ---
+    // ইউজারের নম্বর আনলক লজিক (Search)
     window.searchUser = async function() {
         const userId = document.getElementById('searchUserID').value.trim();
         if(!userId) { alert("ID দিন!"); return; }
@@ -199,17 +187,14 @@
             const unlockBtn = document.getElementById('unlockBtn');
 
             if(data.is_unlocked === true) {
-                statusEl.innerText = "Status: Already Unlocked";
-                statusEl.style.color = "green";
-                unlockBtn.innerText = "Force Unlock Again";
-                unlockBtn.disabled = false;
+                statusEl.innerText = "Status: Unlocked (Ready to Edit)";
+                statusEl.style.color = "#28a745";
+                unlockBtn.innerText = "Re-Unlock / Keep Open";
             } else {
                 statusEl.innerText = "Status: Locked";
-                statusEl.style.color = "red";
+                statusEl.style.color = "#d9534f";
                 unlockBtn.innerText = "Unlock Numbers";
-                unlockBtn.disabled = false;
             }
-
             display.style.display = "block";
         } else {
             display.style.display = "none";
@@ -217,22 +202,20 @@
         }
     }
 
+    // ইউজারের নম্বর আনলক করা (Execution)
     window.unlockUserNumber = async function() {
         if(!currentTargetUser) return;
         
-        if(confirm("আপনি কি এই ইউজারের উইথড্র নম্বর আনলক করতে চান?")) {
+        if(confirm("আপনি কি এই ইউজারের উইথড্র নম্বর আনলক করতে চান? এর ফলে ইউজার আবার নম্বর এডিট করতে পারবে।")) {
             try {
-                await updateDoc(doc(db, "users", currentTargetUser), {
-                    is_unlocked: true 
-                });
+                await updateDoc(doc(db, "users", currentTargetUser), { is_unlocked: true });
                 alert("ইউজার সফলভাবে আনলক হয়েছে!");
                 searchUser(); 
-            } catch (e) {
-                alert("Error: " + e.message);
-            }
+            } catch (e) { alert("Error: " + e.message); }
         }
     }
 </script>
 
 </body>
 </html>
+
