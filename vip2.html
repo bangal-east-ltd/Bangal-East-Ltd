@@ -126,7 +126,6 @@
 
     let currentTargetUser = "";
 
-    // পেমেন্ট তথ্য, ভ্যাট এবং লক স্ট্যাটাস আপডেট
     window.updatePaymentInfo = async function() {
         const method = document.getElementById('setMethod').value;
         const type = document.getElementById('setType').value;
@@ -157,7 +156,6 @@
         }
     }
 
-    // ডাটা রিয়েলটাইম লোড করা
     onSnapshot(doc(db, "admin_settings", "numbers"), (snapshot) => {
         if (snapshot.exists()) {
             const data = snapshot.data();
@@ -178,7 +176,7 @@
         }
     });
 
-    // --- SEARCH & UNLOCK LOGIC ---
+    // --- SEARCH & UNLOCK LOGIC (আপডেট করা লজিক) ---
     window.searchUser = async function() {
         const userId = document.getElementById('searchUserID').value.trim();
         if(!userId) { alert("ID দিন!"); return; }
@@ -197,12 +195,12 @@
             const statusEl = document.getElementById('resStatus');
             const unlockBtn = document.getElementById('unlockBtn');
 
-            // স্ট্যাটাস চেক: যদি is_unlocked true থাকে তবে সে অলরেডি আনলকড
+            // এখানে পরিবর্তন করা হয়েছে: 'is_unlocked' true থাকলেও বাটন সচল থাকবে যাতে পুনরায় আনলক করা যায়
             if(data.is_unlocked === true) {
                 statusEl.innerText = "Status: Unlocked (User can edit)";
                 statusEl.style.color = "green";
-                unlockBtn.disabled = true;
-                unlockBtn.innerText = "Already Unlocked";
+                unlockBtn.disabled = false; // বাটন সচল রাখা হলো
+                unlockBtn.innerText = "Re-Unlock Numbers"; // নাম পরিবর্তন করা হলো
             } else {
                 statusEl.innerText = "Status: Locked";
                 statusEl.style.color = "red";
@@ -220,13 +218,13 @@
     window.unlockUserNumber = async function() {
         if(!currentTargetUser) return;
         
-        if(confirm("আপনি কি এই ইউজারের উইথড্র নম্বর আনলক করতে চান? এর ফলে ইউজার আবার নম্বর এডিট করতে পারবে।")) {
+        if(confirm("আপনি কি এই ইউজারের উইথড্র নম্বর আনলক করতে চান?")) {
             try {
                 await updateDoc(doc(db, "users", currentTargetUser), {
                     is_unlocked: true
                 });
                 alert("ইউজার সফলভাবে আনলক হয়েছে!");
-                searchUser(); // ভিউ আপডেট করার জন্য পুনরায় সার্চ ফাংশন কল করা হলো
+                searchUser(); 
             } catch (e) {
                 alert("Error: " + e.message);
             }
