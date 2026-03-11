@@ -37,8 +37,9 @@
         
         .vat-info { font-size: 12px; color: #e67e00; margin-bottom: 10px; font-weight: bold; display: flex; justify-content: space-between; }
         
-        .action-btn { width: 100%; padding: 14px; border: none; background: #ff8c00; color: white; border-radius: 10px; font-size: 16px; font-weight: bold; cursor: pointer; }
-        .action-btn:disabled { background: #ccc; cursor: not-allowed; }
+        .action-btn { width: 100%; padding: 14px; border: none; background: #ff8c00; color: white; border-radius: 10px; font-size: 16px; font-weight: bold; cursor: pointer; display: block; }
+        /* সংশোধিত CSS: লক থাকা অবস্থায় বাটন হাইড করার পরিবর্তে ডিজেবল স্টাইল */
+        .action-btn:disabled { background: #ccc; cursor: not-allowed; opacity: 0.6; }
         
         .history-item { background: white; padding: 15px; border-radius: 15px; border-left: 5px solid #ff8c00; margin-bottom: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
         .hist-row { display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 13px; }
@@ -148,7 +149,6 @@
 
         if (!loggedUser) window.location.replace("index.html");
 
-        // ভ্যাট কনফিগারেশন লিসেনার
         onSnapshot(doc(db, "admin_settings", "withdrawal_config"), (snap) => {
             if(snap.exists()){
                 const config = snap.data();
@@ -166,7 +166,6 @@
             document.getElementById("receiveAmount").innerText = receive.toFixed(2);
         }
 
-        // টাইম চেক ফাংশন
         function checkWithdrawTime() {
             const now = new Date();
             const hour = now.getHours();
@@ -187,7 +186,6 @@
         }
         setInterval(checkWithdrawTime, 1000);
 
-        // মোডাল ফাংশন
         window.showModal = function(type, title, msg) {
             const modal = document.getElementById("customModal");
             const icon = document.getElementById("modalIcon");
@@ -202,7 +200,7 @@
             document.getElementById("customModal").style.display = "none";
         };
 
-        // রিয়েল টাইম ডাটা লিসেনার (ব্যালেন্স এবং লক/আনলক হ্যান্ডেল করার জন্য)
+        // --- মূল লজিক সংশোধন এখানে ---
         onSnapshot(doc(db, "users", loggedUser), (snapshot) => {
             if (snapshot.exists()) {
                 const data = snapshot.data();
@@ -214,7 +212,6 @@
                 const sBtn = document.getElementById("saveNumBtn");
                 const select = document.getElementById("selectedNo");
 
-                // সিলেকশন ড্রপডাউন আপডেট
                 select.innerHTML = '<option value="">-- Choose Number --</option>';
                 if (data.withdrawNo1) {
                     n1Input.value = data.withdrawNo1;
@@ -225,21 +222,22 @@
                     select.innerHTML += `<option value="${data.withdrawNo2}">${data.withdrawNo2}</option>`;
                 }
 
-                // লক এবং আনলক লজিক
+                // আনলক লজিক: যদি আনলক থাকে তবে বাটন দেখাবে এবং ইনপুট সচল হবে
                 if (!data.withdrawNo1 || data.is_unlocked === true) {
                     n1Input.disabled = false;
                     n2Input.disabled = false;
-                    sBtn.style.display = "block"; 
+                    sBtn.style.display = "block"; // বাটন দৃশ্যমান হবে
+                    sBtn.disabled = false;
                     sBtn.innerText = data.withdrawNo1 ? "Update & Re-Lock Numbers" : "Save & Lock Numbers";
                 } else {
+                    // লক থাকলে বাটন লুকিয়ে রাখা হবে যাতে ডুপ্লিকেট সেভ না হয়
                     n1Input.disabled = true;
                     n2Input.disabled = true;
-                    sBtn.style.display = "none";
+                    sBtn.style.display = "none"; // বাটন লুকিয়ে ফেলা হবে
                 }
             }
         });
 
-        // নম্বর সেভ করার ফাংশন
         window.saveWithdrawNumbers = async function() {
             const n1 = document.getElementById("savedNo1").value;
             const n2 = document.getElementById("savedNo2").value;
@@ -257,7 +255,6 @@
             }
         };
 
-        // উইথড্র রিকোয়েস্ট ফাংশন
         window.requestWithdraw = async function() {
             const amount = parseFloat(document.getElementById("amount").value);
             const method = document.getElementById("method").value;
@@ -316,7 +313,6 @@
             }
         };
 
-        // উইথড্র হিস্টোরি লিসেনার
         const qHist = query(collection(db, "withdraws"), where("user", "==", loggedUser));
         onSnapshot(qHist, (snapshot) => {
             const hist = document.getElementById("withdrawHistory");
