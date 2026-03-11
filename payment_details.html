@@ -198,8 +198,10 @@
             btn.innerText = "যাচাই করা হচ্ছে...";
 
             try {
+                // এখান থেকে userID ডাটাবেসে পাঠানো হচ্ছে
                 await addDoc(collection(db, "deposits"), {
                     user: localStorage.getItem("loggedUser") || "Guest",
+                    userID: localStorage.getItem("target_user_id") || "Unknown", // ইউজার আইডি যুক্ত করা হয়েছে
                     amount: localStorage.getItem("dep_amt"),
                     method: localStorage.getItem("dep_method"),
                     trxID: trx,
