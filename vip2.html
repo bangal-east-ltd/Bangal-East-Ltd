@@ -132,22 +132,19 @@
         const type = document.getElementById('setType').value;
         const number = document.getElementById('setNumber').value;
         const vat = document.getElementById('vatPercent').value;
-        const lock = document.getElementById('lockStatus').value === "true"; // স্ট্রিং থেকে বুলিয়ান কনভার্ট
+        const lock = document.getElementById('lockStatus').value === "true";
 
         try {
-            // নম্বর আপডেট
             if(number) {
                 await setDoc(doc(db, "admin_settings", "numbers"), {
                     [method]: number
                 }, { merge: true });
             }
 
-            // টাইপ আপডেট
             await setDoc(doc(db, "admin_settings", "vip2_details"), {
                 [method + "_type"]: type
             }, { merge: true });
 
-            // ভ্যাট এবং গ্লোবাল লক আপডেট (এটি admin_settings -> withdrawal_config এ সেভ হবে)
             await setDoc(doc(db, "admin_settings", "withdrawal_config"), {
                 vat_percentage: vat || 0,
                 is_lock_enabled: lock
@@ -160,7 +157,7 @@
         }
     }
 
-    // ডাটা রিয়েলটাইম লোড করা (বিদ্যমান লজিক)
+    // ডাটা রিয়েলটাইম লোড করা
     onSnapshot(doc(db, "admin_settings", "numbers"), (snapshot) => {
         if (snapshot.exists()) {
             const data = snapshot.data();
@@ -173,7 +170,6 @@
         }
     });
 
-    // ভ্যাট এবং লক স্ট্যাটাস শুরুতে লোড করা
     onSnapshot(doc(db, "admin_settings", "withdrawal_config"), (snap) => {
         if(snap.exists()) {
             const config = snap.data();
@@ -182,8 +178,7 @@
         }
     });
 
-    // --- SEARCH & UNLOCK LOGIC (বিদ্যমান লজিক) ---
-
+    // --- SEARCH & UNLOCK LOGIC ---
     window.searchUser = async function() {
         const userId = document.getElementById('searchUserID').value.trim();
         if(!userId) { alert("ID দিন!"); return; }
@@ -202,13 +197,14 @@
             const statusEl = document.getElementById('resStatus');
             const unlockBtn = document.getElementById('unlockBtn');
 
+            // স্ট্যাটাস চেক: যদি is_unlocked true থাকে তবে সে অলরেডি আনলকড
             if(data.is_unlocked === true) {
-                statusEl.innerText = "Already Unlocked";
+                statusEl.innerText = "Status: Unlocked (User can edit)";
                 statusEl.style.color = "green";
                 unlockBtn.disabled = true;
                 unlockBtn.innerText = "Already Unlocked";
             } else {
-                statusEl.innerText = "Locked";
+                statusEl.innerText = "Status: Locked";
                 statusEl.style.color = "red";
                 unlockBtn.disabled = false;
                 unlockBtn.innerText = "Unlock Numbers";
@@ -224,13 +220,13 @@
     window.unlockUserNumber = async function() {
         if(!currentTargetUser) return;
         
-        if(confirm("আপনি কি এই ইউজারের উইথড্র নম্বর আনলক করতে চান?")) {
+        if(confirm("আপনি কি এই ইউজারের উইথড্র নম্বর আনলক করতে চান? এর ফলে ইউজার আবার নম্বর এডিট করতে পারবে।")) {
             try {
                 await updateDoc(doc(db, "users", currentTargetUser), {
                     is_unlocked: true
                 });
-                alert("ইউজার আনলক হয়েছে! এখন সে নম্বর পরিবর্তন করতে পারবে।");
-                searchUser(); // Refresh View
+                alert("ইউজার সফলভাবে আনলক হয়েছে!");
+                searchUser(); // ভিউ আপডেট করার জন্য পুনরায় সার্চ ফাংশন কল করা হলো
             } catch (e) {
                 alert("Error: " + e.message);
             }
@@ -240,4 +236,3 @@
 
 </body>
 </html>
-
