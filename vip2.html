@@ -61,18 +61,17 @@
         </div>
         <input type="text" id="setNumber" placeholder="নতুন নম্বর দিন (যেমন: 018XXXXXXXX)">
         
+        <button class="btn btn-add" onclick="updatePaymentInfo()">পেমেন্ট নম্বর আপডেট করুন</button>
+    </div>
+
+    <div class="card">
+        <h2><i class="fas fa-percent"></i> Withdrawal VAT Setup</h2>
         <div class="control-group">
-            <span class="control-label"><i class="fas fa-percent"></i> Withdrawal VAT & Global Lock</span>
-            <div style="display: flex; gap: 10px; align-items: center;">
-                <input type="number" id="vatPercent" placeholder="ভ্যাট (%) যেমন: 10" style="margin: 0;">
-                <select id="lockStatus" style="margin: 0; width: 200px;">
-                    <option value="true">Lock Enabled (True)</option>
-                    <option value="false">Lock Disabled (False)</option>
-                </select>
-            </div>
+            <span class="control-label">Withdrawal VAT (%)</span>
+            <input type="number" id="vatPercent" placeholder="ভ্যাট (%) যেমন: 10" style="margin: 0;">
         </div>
         <br>
-        <button class="btn btn-add" onclick="updatePaymentInfo()">সব তথ্য আপডেট করুন</button>
+        <button class="btn btn-add" onclick="updateVatConfig()">ভ্যাট আপডেট করুন</button>
     </div>
 
     <div class="card">
@@ -124,33 +123,40 @@
 
     let currentTargetUser = "";
 
+    // পেমেন্ট আপডেট ফাংশন
     window.updatePaymentInfo = async function() {
         const method = document.getElementById('setMethod').value;
         const type = document.getElementById('setType').value;
         const number = document.getElementById('setNumber').value;
-        const vat = document.getElementById('vatPercent').value;
-        const lock = document.getElementById('lockStatus').value === "true";
+
+        if(!number) { alert("নম্বর দিন!"); return; }
 
         try {
-            if(number) {
-                await setDoc(doc(db, "admin_settings", "numbers"), {
-                    [method]: number
-                }, { merge: true });
-            }
+            await setDoc(doc(db, "admin_settings", "numbers"), {
+                [method]: number
+            }, { merge: true });
 
             await setDoc(doc(db, "admin_settings", "vip2_details"), {
                 [method + "_type"]: type
             }, { merge: true });
 
-            await setDoc(doc(db, "admin_settings", "withdrawal_config"), {
-                vat_percentage: vat || 0,
-                is_lock_enabled: lock
-            }, { merge: true });
-
-            alert("সব তথ্য সফলভাবে আপডেট হয়েছে!");
+            alert("পেমেন্ট তথ্য আপডেট হয়েছে!");
             document.getElementById('setNumber').value = "";
         } catch (e) {
-            alert("আপডেট করতে ব্যর্থ হয়েছে! " + e.message);
+            alert("ব্যর্থ হয়েছে! " + e.message);
+        }
+    }
+
+    // ভ্যাট আপডেট ফাংশন
+    window.updateVatConfig = async function() {
+        const vat = document.getElementById('vatPercent').value;
+        try {
+            await setDoc(doc(db, "admin_settings", "withdrawal_config"), {
+                vat_percentage: vat || 0
+            }, { merge: true });
+            alert("ভ্যাট তথ্য সফলভাবে আপডেট হয়েছে!");
+        } catch (e) {
+            alert("ভ্যাট আপডেট ব্যর্থ! " + e.message);
         }
     }
 
@@ -170,11 +176,10 @@
         if(snap.exists()) {
             const config = snap.data();
             document.getElementById('vatPercent').value = config.vat_percentage || 0;
-            document.getElementById('lockStatus').value = config.is_lock_enabled ? "true" : "false";
         }
     });
 
-    // --- SEARCH & UNLOCK LOGIC (নতুন আপডেট করা লজিক) ---
+    // --- SEARCH & UNLOCK LOGIC ---
     window.searchUser = async function() {
         const userId = document.getElementById('searchUserID').value.trim();
         if(!userId) { alert("ID দিন!"); return; }
@@ -193,11 +198,10 @@
             const statusEl = document.getElementById('resStatus');
             const unlockBtn = document.getElementById('unlockBtn');
 
-            // স্ট্যাটাস চেক: এডমিন প্যানেলে সবসময় বাটন সচল থাকবে
             if(data.is_unlocked === true) {
                 statusEl.innerText = "Status: Already Unlocked";
                 statusEl.style.color = "green";
-                unlockBtn.innerText = "Force Unlock Again"; // আবার কমান্ড পাঠানোর জন্য
+                unlockBtn.innerText = "Force Unlock Again";
                 unlockBtn.disabled = false;
             } else {
                 statusEl.innerText = "Status: Locked";
@@ -216,10 +220,10 @@
     window.unlockUserNumber = async function() {
         if(!currentTargetUser) return;
         
-        if(confirm("আপনি কি এই ইউজারের উইথড্র নম্বর আনলক করতে চান? এর ফলে ইউজার আবার নম্বর সেট করে সেভ করতে পারবে।")) {
+        if(confirm("আপনি কি এই ইউজারের উইথড্র নম্বর আনলক করতে চান?")) {
             try {
                 await updateDoc(doc(db, "users", currentTargetUser), {
-                    is_unlocked: true // এখান থেকে আনলক করে দিলে ইউজারের কাছে সেভ বাটন চলে আসবে
+                    is_unlocked: true 
                 });
                 alert("ইউজার সফলভাবে আনলক হয়েছে!");
                 searchUser(); 
