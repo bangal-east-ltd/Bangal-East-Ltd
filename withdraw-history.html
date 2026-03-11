@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Withdraw History - Bengal East</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root { --primary: #11998e; --bg: #f0f2f5; --white: #ffffff; }
+        * { margin:0; padding:0; box-sizing:border-box; font-family: 'Segoe UI', sans-serif; }
+        body { background: var(--bg); color: #333; padding-bottom: 30px; }
+
+        .header { 
+            background: var(--white); padding: 20px; 
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05); 
+            display: flex; align-items: center; gap: 15px;
+            position: sticky; top: 0; z-index: 1000;
+        }
+        .header h2 { color: var(--primary); font-size: 18px; font-weight: 800; }
+        .header a { color: #555; text-decoration: none; font-size: 18px; }
+
+        .container { max-width: 500px; margin: 15px auto; padding: 0 15px; }
+
+        .history-card {
+            background: var(--white); padding: 20px; border-radius: 18px;
+            margin-bottom: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.04);
+            border-left: 6px solid #e74c3c; /* উইথড্রর জন্য লালচে বর্ডার */
+            animation: slideIn 0.4s ease-out;
+        }
+
+        @keyframes slideIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        .info-row { display: flex; justify-content: space-between; margin-bottom: 10px; align-items: center; }
+        .label { font-size: 12px; color: #718096; font-weight: 600; text-transform: uppercase; }
+        
+        .value { font-size: 14px; color: #1a202c; font-weight: 800; } 
+        .amount-val { color: #e74c3c; font-size: 17px; font-weight: 900; }
+        .acc-val { color: var(--primary); font-family: 'Courier New', monospace; background: #f0fdfa; padding: 2px 6px; border-radius: 4px; }
+
+        .status-badge {
+            padding: 6px 14px; border-radius: 30px; font-size: 11px;
+            font-weight: 900; text-transform: uppercase; border: 1px solid;
+        }
+
+        .pending { background: #fff9db; color: #f08c00; border-color: #f08c00; }
+        .success { background: #e8f5e9; color: #2e7d32; border-color: #2e7d32; }
+        .rejected { background: #ffebee; color: #c62828; border-color: #c62828; }
+
+        #loader { text-align: center; margin-top: 50px; color: var(--primary); font-weight: bold; }
+        #noData { text-align: center; margin-top: 100px; color: #a0aec0; display: none; }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <a href="profile.html"><i class="fas fa-arrow-left"></i></a>
+        <h2><i class="fas fa-wallet"></i> Withdraw History</h2>
+    </div>
+
+    <div id="loader"><i class="fas fa-spinner fa-spin"></i> লোড হচ্ছে...</div>
+
+    <div class="container" id="historyList"></div>
+
+    <div id="noData">
+        <i class="fas fa-history" style="font-size: 40px; color: #cbd5e0; margin-bottom: 10px;"></i>
+        <p style="font-weight: 600;">কোনো উইথড্র হিস্টোরি পাওয়া যায়নি</p>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getFirestore, collection, query, where, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCALYxA2M4BwIXq5KC3VMGsZpAFh8nL3fo",
+            authDomain: "bengal-east-company-limited.firebaseapp.com",
+            projectId: "bengal-east-company-limited",
+            storageBucket: "bengal-east-company-limited.firebasestorage.app",
+            messagingSenderId: "653223286483",
+            appId: "1:653223286483:web:8e4ed0782ae807f8f02626"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const loggedUser = localStorage.getItem("loggedUser") || "Guest";
+
+        function fetchWithdrawHistory() {
+            const listContainer = document.getElementById('historyList');
+            const noData = document.getElementById('noData');
+            const loader = document.getElementById('loader');
+
+            // withdraws কালেকশন থেকে ডাটা নেওয়া হবে
+            const q = query(
+                collection(db, "withdraws"),
+                where("user", "==", loggedUser),
+                orderBy("timestamp", "desc")
+            );
+
+            onSnapshot(q, (snapshot) => {
+                loader.style.display = "none";
+                listContainer.innerHTML = "";
+                
+                if (snapshot.empty) {
+                    noData.style.display = "block";
+                    return;
+                }
+
+                noData.style.display = "none";
+                snapshot.forEach((doc) => {
+                    const data = doc.data();
+                    let status = data.status || 'Pending';
+                    let statusClass = status.toLowerCase();
+
+                    const cardHtml = `
+                        <div class="history-card">
+                            <div class="info-row">
+                                <span class="label">Number</span>
+                                <span class="value acc-val">${data.number}</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="label">Amount</span>
+                                <span class="value amount-val">৳ ${data.amount}</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="label">Method</span>
+                                <span class="value">${data.method}</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="label">Date</span>
+                                <span class="value">${data.time}</span>
+                            </div>
+                            <div class="info-row" style="margin-top:12px; border-top:1px dashed #eee; padding-top:10px;">
+                                <span class="label">Status</span>
+                                <span class="status-badge ${statusClass}">${status}</span>
+                            </div>
+                        </div>
+                    `;
+                    listContainer.insertAdjacentHTML('beforeend', cardHtml);
+                });
+            }, (error) => {
+                console.error("Error:", error);
+                // যদি উইথড্রর জন্যও ইনডেক্স প্রয়োজন হয়, তবে কনসোলে লিঙ্ক আসবে।
+                loader.innerHTML = "উইথড্র ইনডেক্স কনফিগার করুন।";
+            });
+        }
+
+        window.onload = fetchWithdrawHistory;
+    </script>
+</body>
+</html>
