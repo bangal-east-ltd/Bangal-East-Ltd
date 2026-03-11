@@ -7,21 +7,30 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         * { margin:0; padding:0; box-sizing:border-box; font-family: 'Segoe UI', sans-serif; }
-        body { background: #f4f7f6; color: #333; padding-bottom: 50px; }
+        body { background: #f4f7f6; color: #333; padding-bottom: 50px; scroll-behavior: smooth; }
+        
+        /* Header and History Button */
         .header { display: flex; align-items: center; padding: 15px 20px; background: white; border-bottom: 1px solid #eee; position: sticky; top: 0; z-index: 100; }
-        .header h3 { flex: 1; text-align: center; font-size: 18px; margin-right: 30px; }
-        .header a { color: #333; text-decoration: none; font-size: 20px; }
+        .header h3 { flex: 1; text-align: center; font-size: 18px; }
+        .header .nav-link { color: #333; text-decoration: none; font-size: 20px; width: 30px; }
+        .history-btn { color: #ff8c00 !important; font-size: 22px !important; }
+
         .container { padding: 20px; max-width: 500px; margin: 0 auto; }
         .balance-section { background: linear-gradient(135deg, #ff8c00, #e67e00); padding: 30px 20px; border-radius: 20px; color: white; text-align: center; margin-bottom: 25px; box-shadow: 0 10px 20px rgba(230, 126, 0, 0.2); }
         .balance-section h2 { font-size: 32px; margin-top: 5px; }
+        
         .card { background: white; padding: 20px; border-radius: 20px; box-shadow: 0 5px 15px rgba(0,0,0,0.05); margin-bottom: 20px; }
         .card-title { font-size: 16px; font-weight: bold; margin-bottom: 15px; color: #ff8c00; border-bottom: 1px solid #eee; padding-bottom: 5px; }
         .input-group { margin-bottom: 15px; }
         .input-group label { display: block; font-size: 13px; color: #666; margin-bottom: 5px; font-weight: 600; }
         .input-field { width: 100%; padding: 12px; border: 1.5px solid #eee; border-radius: 10px; font-size: 15px; outline: none; background: #fafafa; }
+        
+        .vat-info { font-size: 12px; color: #e67e00; margin-bottom: 10px; font-weight: bold; display: flex; justify-content: space-between; }
+        
         .action-btn { width: 100%; padding: 14px; border: none; background: #ff8c00; color: white; border-radius: 10px; font-size: 16px; font-weight: bold; cursor: pointer; }
         .action-btn:disabled { background: #ccc; cursor: not-allowed; }
         
+        /* History Styles */
         .history-item { background: white; padding: 15px; border-radius: 15px; border-left: 5px solid #ff8c00; margin-bottom: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
         .hist-row { display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 13px; }
         .label-text { font-weight: bold; color: #555; }
@@ -34,13 +43,7 @@
         #timeNotice { color: #d9534f; font-size: 12px; text-align: center; margin-top: 15px; font-weight: 600; display: block; padding: 8px; border-radius: 8px; border: 1px dashed #d9534f; }
 
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1000; align-items: center; justify-content: center; backdrop-filter: blur(3px); }
-        .modal-card { background: white; padding: 30px; border-radius: 20px; text-align: center; max-width: 90%; width: 350px; animation: slideUp 0.3s ease-out; }
-        @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-        .modal-card i { font-size: 50px; margin-bottom: 15px; }
-        .success-icon { color: #28a745; }
-        .limit-icon { color: #d9534f; }
-        .modal-card h2 { color: #333; margin-bottom: 10px; font-size: 22px; }
-        .modal-card p { color: #666; line-height: 1.5; font-size: 15px; font-weight: 600; }
+        .modal-card { background: white; padding: 30px; border-radius: 20px; text-align: center; max-width: 90%; width: 350px; }
         .modal-btn { margin-top: 20px; width: 100%; padding: 12px; background: #ff8c00; color: white; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; }
     </style>
 </head>
@@ -48,15 +51,16 @@
 
     <div class="modal-overlay" id="customModal">
         <div class="modal-card">
-            <i id="modalIcon" class="fas"></i>
-            <h2 id="modalTitle" style="display: none;"></h2> <p id="modalMsg"></p>
+            <i id="modalIcon" class="fas" style="font-size: 50px; margin-bottom: 15px;"></i>
+            <h2 id="modalTitle"></h2> <p id="modalMsg"></p>
             <button class="modal-btn" onclick="closeModal()">OK</button>
         </div>
     </div>
 
     <div class="header">
-        <a href="account.html"><i class="fas fa-chevron-left"></i></a>
+        <a href="account.html" class="nav-link"><i class="fas fa-chevron-left"></i></a>
         <h3>Withdraw System</h3>
+        <a href="#withdrawHistoryLabel" class="nav-link history-btn"><i class="fas fa-history"></i></a>
     </div>
 
     <div class="container">
@@ -96,14 +100,19 @@
             </div>
             <div class="input-group">
                 <label>Amount (৳300 - ৳50000)</label>
-                <input type="number" id="amount" class="input-field" placeholder="Enter amount">
+                <input type="number" id="amount" class="input-field" placeholder="Enter amount" oninput="calculateVat()">
             </div>
-            <button class="action-btn" id="withdrawBtn" onclick="requestWithdraw()">Confirm Withdrawal</button>
             
-            <div id="timeNotice">রাত ০৮:০০ PM উইথড্র বন্ধ হবে। সকাল ০৮:০০ AM থেকে রাত ০৮:০০ PM পর্যন্ত উইথড্র চালু থাকবে।</div>
+            <div class="vat-info">
+                <span>Vat (<span id="vatPercent">0</span>%): -৳<span id="vatAmount">0.00</span></span>
+                <span>Receive: ৳<span id="receiveAmount">0.00</span></span>
+            </div>
+
+            <button class="action-btn" id="withdrawBtn" onclick="requestWithdraw()">Confirm Withdrawal</button>
+            <div id="timeNotice">Checking withdrawal time...</div>
         </div>
 
-        <div style="font-weight: bold; margin-bottom: 10px;"><i class="fas fa-history"></i> Recent Withdrawals</div>
+        <div id="withdrawHistoryLabel" style="font-weight: bold; margin-bottom: 10px; padding-top: 10px;"><i class="fas fa-history"></i> Recent Withdrawals</div>
         <div id="withdrawHistory"></div>
     </div>
 
@@ -123,9 +132,28 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         const loggedUser = localStorage.getItem("loggedUser");
-        let userDisplayID = ""; // ৫ সংখ্যার আইডি রাখার জন্য
+        let userDisplayID = "";
+        let currentVatPercent = 0;
 
         if (!loggedUser) window.location.replace("index.html");
+
+        // ভ্যাট রেট রিড করা
+        onSnapshot(doc(db, "admin_settings", "vip2"), (snap) => {
+            if(snap.exists()){
+                const adminData = snap.data();
+                currentVatPercent = parseFloat(adminData.vat_rate || 0);
+                document.getElementById("vatPercent").innerText = currentVatPercent;
+                calculateVat();
+            }
+        });
+
+        window.calculateVat = function() {
+            const amount = parseFloat(document.getElementById("amount").value) || 0;
+            const vat = (amount * currentVatPercent) / 100;
+            const receive = amount - vat;
+            document.getElementById("vatAmount").innerText = vat.toFixed(2);
+            document.getElementById("receiveAmount").innerText = receive.toFixed(2);
+        }
 
         function checkWithdrawTime() {
             const now = new Date();
@@ -151,6 +179,7 @@
             const modal = document.getElementById("customModal");
             const icon = document.getElementById("modalIcon");
             icon.className = type === 'success' ? 'fas fa-check-circle success-icon' : 'fas fa-exclamation-triangle limit-icon';
+            icon.style.color = type === 'success' ? '#28a745' : '#d9534f';
             document.getElementById("modalTitle").innerText = title;
             document.getElementById("modalMsg").innerText = msg;
             modal.style.display = "flex";
@@ -160,52 +189,60 @@
             document.getElementById("customModal").style.display = "none";
         };
 
+        // ইউজারের ডাটা এবং আনলক স্ট্যাটাস চেক করা
         onSnapshot(doc(db, "users", loggedUser), (snapshot) => {
             if (snapshot.exists()) {
                 const data = snapshot.data();
-                userDisplayID = data.userID || loggedUser; // ৫ সংখ্যার আইডি এখানে সেভ হচ্ছে
+                userDisplayID = data.userID || loggedUser;
                 document.getElementById("userBalance").innerText = parseFloat(data.balance || 0).toFixed(2);
+                
+                const n1Input = document.getElementById("savedNo1");
+                const n2Input = document.getElementById("savedNo2");
+                const saveBtn = document.getElementById("saveNumBtn");
                 const select = document.getElementById("selectedNo");
+                
+                n1Input.value = data.withdrawNo1 || "";
+                n2Input.value = data.withdrawNo2 || "";
+                
                 select.innerHTML = '<option value="">-- Choose Number --</option>';
-                if (data.withdrawNo1) {
-                    document.getElementById("savedNo1").value = data.withdrawNo1;
-                    document.getElementById("savedNo1").disabled = true;
-                    select.innerHTML += `<option value="${data.withdrawNo1}">${data.withdrawNo1}</option>`;
+                if (data.withdrawNo1) select.innerHTML += `<option value="${data.withdrawNo1}">${data.withdrawNo1}</option>`;
+                if (data.withdrawNo2) select.innerHTML += `<option value="${data.withdrawNo2}">${data.withdrawNo2}</option>`;
+
+                // SINGLE UNLOCK SYSTEM:
+                // যদি এডমিন এই ইউজারের ডক-এ 'is_unlocked: true' করে দেয়
+                if (data.is_unlocked === true) {
+                    n1Input.disabled = false;
+                    n2Input.disabled = false;
+                    saveBtn.style.display = "block";
+                    saveBtn.innerText = "Update & Lock Numbers";
+                } else {
+                    // লক মোড
+                    if (data.withdrawNo1) {
+                        n1Input.disabled = true;
+                        n2Input.disabled = true;
+                        saveBtn.style.display = "none";
+                    } else {
+                        // প্রথমবার সেট করার সময়
+                        n1Input.disabled = false;
+                        n2Input.disabled = false;
+                        saveBtn.style.display = "block";
+                    }
                 }
-                if (data.withdrawNo2) {
-                    document.getElementById("savedNo2").value = data.withdrawNo2;
-                    document.getElementById("savedNo2").disabled = true;
-                    select.innerHTML += `<option value="${data.withdrawNo2}">${data.withdrawNo2}</option>`;
-                }
-                if(data.withdrawNo1 && data.withdrawNo2) document.getElementById("saveNumBtn").style.display = "none";
             }
         });
-
-        async function isNumberInUse(num) {
-            if(!num) return false;
-            const q1 = query(collection(db, "users"), where("withdrawNo1", "==", num));
-            const q2 = query(collection(db, "users"), where("withdrawNo2", "==", num));
-            const snap1 = await getDocs(q1);
-            const snap2 = await getDocs(q2);
-            return !snap1.empty || !snap2.empty;
-        }
 
         window.saveWithdrawNumbers = async function() {
             const n1 = document.getElementById("savedNo1").value;
             const n2 = document.getElementById("savedNo2").value;
-            
             if (n1.length < 11) { alert("সঠিক নম্বর দিন!"); return; }
             
-            const check1 = await isNumberInUse(n1);
-            const check2 = n2 ? await isNumberInUse(n2) : false;
-
-            if(check1 || check2) {
-                showModal('limit', '', 'Already account extra');
-                return;
-            }
-
-            await updateDoc(doc(db, "users", loggedUser), { withdrawNo1: n1, withdrawNo2: n2 || "" });
-            showModal('success', 'Save Success', 'আপনার নম্বরগুলো সফলভাবে সেভ করা হয়েছে।');
+            // নম্বর সেভ করার পর অটোমেটিক আবার লক হয়ে যাবে (is_unlocked: false)
+            await updateDoc(doc(db, "users", loggedUser), { 
+                withdrawNo1: n1, 
+                withdrawNo2: n2 || "",
+                is_unlocked: false 
+            });
+            showModal('success', 'Save Success', 'আপনার নম্বরগুলো সফলভাবে আপডেট ও লক করা হয়েছে।');
         };
 
         window.requestWithdraw = async function() {
@@ -222,47 +259,57 @@
             }
 
             const today = new Date().toLocaleDateString();
-            const userRef = doc(db, "users", loggedUser);
-            const userSnap = await getDoc(userRef);
+            const qCheck = query(
+                collection(db, "withdraws"), 
+                where("user", "==", loggedUser),
+                where("date", "==", today)
+            );
+            const checkSnap = await getDocs(qCheck);
+            let hasActiveWithdraw = false;
+            checkSnap.forEach(doc => {
+                const status = doc.data().status;
+                if(status === "Pending" || status === "Approved") hasActiveWithdraw = true;
+            });
 
-            if (userSnap.data().lastWithdrawDate === today) {
-                showModal('limit', '', 'আজকে একবার উইথড্র করেছেন। আগামীকাল চেষ্টা করুন।');
+            if (hasActiveWithdraw) {
+                showModal('limit', '', 'আজকে একবার উইথড্র করেছেন। রিজেক্ট না হওয়া পর্যন্ত পুনরায় দিতে পারবেন না।');
                 return;
             }
 
+            const vat = (amount * currentVatPercent) / 100;
+            const finalReceive = amount - vat;
+
             try {
-                await updateDoc(userRef, { balance: currentBal - amount, lastWithdrawDate: today });
+                await updateDoc(doc(db, "users", loggedUser), { balance: currentBal - amount });
                 await addDoc(collection(db, "withdraws"), {
                     user: loggedUser,
-                    displayID: userDisplayID, // হিস্টোরির জন্য আইডি এখানে পাঠানো হচ্ছে
+                    displayID: userDisplayID,
                     amount: amount,
+                    vat_deducted: vat,
+                    net_receive: finalReceive,
                     method: method,
                     receiver_no: receiverNo,
                     status: "Pending",
                     timestamp: Date.now(),
-                    date: new Date().toLocaleDateString(),
+                    date: today,
                     time: new Date().toLocaleTimeString()
                 });
                 
-                showModal('success', 'Withdrawal Success', 'রিকোয়েস্ট সফল হয়েছে। ২৪ ঘন্টার মধ্যে আপনার ওয়ালেটে টাকা পৌঁছে যাবে ইনশাল্লাহ।');
+                showModal('success', 'Withdrawal Success', `রিকোয়েস্ট সফল হয়েছে। ${currentVatPercent}% ভ্যাট কেটে আপনাকে ${finalReceive.toFixed(2)} টাকা পাঠানো হবে।`);
                 document.getElementById("amount").value = "";
+                calculateVat();
             } catch (e) {
                 alert("Error: " + e.message);
             }
         };
 
-        // এই অংশটি হিস্টোরি ২৪ ঘণ্টা দেখাবে এবং ৫ সংখ্যার আইডি দেখাবে
-        const q = query(collection(db, "withdraws"), where("user", "==", loggedUser));
-        onSnapshot(q, (snapshot) => {
+        const qHist = query(collection(db, "withdraws"), where("user", "==", loggedUser));
+        onSnapshot(qHist, (snapshot) => {
             const hist = document.getElementById("withdrawHistory");
             hist.innerHTML = "";
             let items = [];
-            snapshot.forEach(doc => {
-                let d = doc.data();
-                items.push(d);
-            });
+            snapshot.forEach(doc => items.push(doc.data()));
             items.sort((a,b) => b.timestamp - a.timestamp).forEach(data => {
-                // এখানে userDisplayID অথবা ডাটাবেসে সেভ করা displayID ব্যবহার করা হচ্ছে
                 const finalID = data.displayID || userDisplayID || loggedUser;
                 hist.innerHTML += `
                     <div class="history-item">
@@ -272,11 +319,11 @@
                         </div>
                         <div class="hist-row">
                             <span class="label-text">Method: <span class="value-text" style="color:#007bff;">${data.method}</span></span>
-                            <span class="label-text">Amount: <span class="value-text">৳ ${data.amount}</span></span>
+                            <span class="label-text">Net Receive: <span class="value-text">৳ ${data.net_receive || data.amount}</span></span>
                         </div>
                         <div class="hist-row" style="margin-top:8px; border-top:1px solid #eee; padding-top:5px;">
                             <span style="font-size:11px; color:#888;"><i class="fas fa-calendar-alt"></i> ${data.date || ''}</span>
-                            <span style="font-size:11px; color:#888;"><i class="fas fa-clock"></i> ${data.time || ''}</span>
+                            <span style="font-size:11px; color:#888;"><i class="fas fa-percent"></i> VAT: ৳${data.vat_deducted || 0}</span>
                         </div>
                     </div>`;
             });
