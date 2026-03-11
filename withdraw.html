@@ -223,18 +223,18 @@
                     select.innerHTML += `<option value="${data.withdrawNo2}">${data.withdrawNo2}</option>`;
                 }
 
-                // --- নম্বর সেভ ও লক করার লজিক (স্থায়ী সমাধান) ---
-                // অ্যাডমিন যদি আনলক করে (is_unlocked: true) অথবা যদি কোনো নম্বর আগে সেট করা না থাকে
-                if (data.is_unlocked === true || !data.withdrawNo1) {
+                // --- নম্বর সেভ ও লক করার সংশোধিত লজিক ---
+                if (!data.withdrawNo1 || data.is_unlocked === true) {
+                    // যদি নম্বর না থাকে অথবা অ্যাডমিন আনলক করে দেয়
                     n1Input.disabled = false;
                     n2Input.disabled = false;
-                    sBtn.style.display = "block";
+                    sBtn.style.display = "block"; // বাটনটি সব সময় দেখাবে
                     sBtn.innerText = data.withdrawNo1 ? "Update & Lock Numbers" : "Save & Lock Numbers";
                 } else {
-                    // অন্যথায় (যদি নম্বর সেট থাকে এবং অ্যাডমিন আনলক না করে) হাইড থাকবে
+                    // নম্বর সেভ করা আছে এবং আনলক করা নেই, তাই লক করে দাও
                     n1Input.disabled = true;
                     n2Input.disabled = true;
-                    sBtn.style.display = "none";
+                    sBtn.style.display = "none"; // বাটনটি হাইড করে দাও
                 }
             }
         });
@@ -248,7 +248,7 @@
                 await updateDoc(doc(db, "users", loggedUser), { 
                     withdrawNo1: n1, 
                     withdrawNo2: n2 || "",
-                    is_unlocked: false // সেভ করার সাথে সাথে অটোমেটিক লক
+                    is_unlocked: false // সেভ করার সাথে সাথে অটোমেটিক লক হয়ে যাবে
                 });
                 showModal('success', 'Save Success', 'আপনার নম্বরগুলো সফলভাবে সেভ ও লক করা হয়েছে।');
             } catch (e) {
