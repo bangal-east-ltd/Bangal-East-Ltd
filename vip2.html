@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VIP 2 Admin Panel - Manage Payment & Packages</title>
+    <title>VIP 2 Admin Panel - Manage Payment & Unlock</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f0f2f5; margin: 0; padding: 20px; }
@@ -19,14 +19,17 @@
         .btn-add { background: #8c3494; color: white; }
         .btn-add:hover { background: #6a2670; }
         
+        .btn-unlock { background: #28a745; color: white; margin-top: 10px; }
+        .btn-unlock:disabled { background: #ccc; cursor: not-allowed; }
+
         .payment-status { display: flex; justify-content: space-between; background: #f9f9f9; padding: 10px; border-radius: 8px; margin-bottom: 10px; border-left: 4px solid #8c3494; font-size: 14px; }
 
-        table { width: 100%; border-collapse: collapse; margin-top: 15px; background: white; border-radius: 10px; overflow: hidden; }
-        th, td { padding: 15px; text-align: left; border-bottom: 1px solid #eee; vertical-align: middle; }
-        th { background: #8c3494; color: white; }
-        
-        .delete-btn { color: #dc3545; cursor: pointer; font-size: 18px; border: none; background: none; }
-        .pkg-img-preview { width: 50px; height: 50px; border-radius: 8px; object-fit: cover; background: #eee; }
+        /* Search Section Styles */
+        .search-box { display: flex; gap: 10px; margin-bottom: 20px; }
+        .user-info-card { background: #f8f9fa; padding: 15px; border-radius: 10px; border: 1px solid #eee; display: none; }
+        .info-row { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 15px; }
+        .info-label { font-weight: bold; color: #555; }
+        .info-value { color: #8c3494; font-weight: 800; }
     </style>
 </head>
 <body>
@@ -59,39 +62,39 @@
     </div>
 
     <div class="card">
-        <h2><i class="fas fa-plus-circle"></i> VIP 2 - নতুন প্যাকেজ যোগ করুন</h2>
-        <input type="text" id="pName" placeholder="প্যাকেজের নাম">
-        <input type="number" id="pPrice" placeholder="প্যাকেজের দাম (৳)">
-        <input type="number" id="pDaily" placeholder="প্রতিদিনের ইনকাম (৳)">
-        <input type="number" id="pValidity" placeholder="মেয়াদ (দিন)">
-        <input type="text" id="pImage" placeholder="ইমেজ লিঙ্ক (Image URL)">
-        
-        <button class="btn btn-add" onclick="addPackage()">প্যাকেজ সেভ করুন</button>
+        <h2><i class="fas fa-user-lock"></i> Unlock Withdraw Number</h2>
+        <div class="search-box">
+            <input type="text" id="searchUserID" placeholder="ইউজারের ডক আইডি (Document ID) দিন">
+            <button class="btn btn-add" style="width: 120px;" onclick="searchUser()">Search</button>
+        </div>
+
+        <div id="userInfoDisplay" class="user-info-card">
+            <div class="info-row">
+                <span class="info-label">User ID:</span>
+                <span class="info-value" id="resID">-</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Number 1:</span>
+                <span class="info-value" id="resNo1">-</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Number 2:</span>
+                <span class="info-value" id="resNo2">-</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Status:</span>
+                <span id="resStatus" style="font-weight: bold;">-</span>
+            </div>
+            <button id="unlockBtn" class="btn btn-unlock" onclick="unlockUserNumber()">Unlock Numbers</button>
+        </div>
     </div>
 
-    <div class="card">
-        <h2><i class="fas fa-boxes"></i> VIP 2 বর্তমান প্যাকেজসমূহ</h2>
-        <table>
-            <thead>
-                <tr>
-                    <th>ছবি</th>
-                    <th>নাম</th>
-                    <th>দাম</th>
-                    <th>ইনকাম</th>
-                    <th>মেয়াদ</th>
-                    <th>অ্যাকশন</th>
-                </tr>
-            </thead>
-            <tbody id="pkgTableBody"></tbody>
-        </table>
-    </div>
 </div>
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-    import { getFirestore, doc, setDoc, onSnapshot, addDoc, collection, deleteDoc, query, orderBy } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    import { getFirestore, doc, setDoc, onSnapshot, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-    // আপনার দেওয়া নতুন ডাটাবেজ কনফিগ (Bengal East)
     const firebaseConfig = {
         apiKey: "AIzaSyCALYxA2M4BwIXq5KC3VMGsZpAFh8nL3fo",
         authDomain: "bengal-east-company-limited.firebaseapp.com",
@@ -105,7 +108,9 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    // ১. পেমেন্ট তথ্য আপডেট করা (Firestore এ)
+    let currentTargetUser = "";
+
+    // পেমেন্ট তথ্য আপডেট
     window.updatePaymentInfo = async function() {
         const method = document.getElementById('setMethod').value;
         const type = document.getElementById('setType').value;
@@ -114,13 +119,10 @@
         if(!number) { alert("নম্বর দিন!"); return; }
 
         try {
-            // admin_settings কালেকশনের numbers ডকুমেন্টে তথ্য সেভ করা হচ্ছে
-            // যাতে আপনার পেমেন্ট পেজ সরাসরি এই তথ্য পেতে পারে
             await setDoc(doc(db, "admin_settings", "numbers"), {
                 [method]: number
             }, { merge: true });
 
-            // বিশেষ VIP 2 টাইপ ট্র্যাকিংয়ের জন্য (ঐচ্ছিক)
             await setDoc(doc(db, "admin_settings", "vip2_details"), {
                 [method + "_type"]: type
             }, { merge: true });
@@ -128,18 +130,15 @@
             alert(method + " তথ্য সফলভাবে আপডেট হয়েছে!");
             document.getElementById('setNumber').value = "";
         } catch (e) {
-            console.error(e);
             alert("আপডেট করতে ব্যর্থ হয়েছে!");
         }
     }
 
-    // পেমেন্ট তথ্য রিয়েল-টাইম ভিউ
     onSnapshot(doc(db, "admin_settings", "numbers"), (snapshot) => {
         if (snapshot.exists()) {
             const data = snapshot.data();
             onSnapshot(doc(db, "admin_settings", "vip2_details"), (typeSnap) => {
                 const types = typeSnap.exists() ? typeSnap.data() : {};
-                
                 if(data.bkash) document.getElementById('view-bkash').innerText = `${data.bkash} (${types.bkash_type || 'Cash Out'})`;
                 if(data.nagad) document.getElementById('view-nagad').innerText = `${data.nagad} (${types.nagad_type || 'Cash Out'})`;
                 if(data.rocket) document.getElementById('view-rocket').innerText = `${data.rocket} (${types.rocket_type || 'Cash Out'})`;
@@ -147,75 +146,57 @@
         }
     });
 
-    // ২. VIP 2 প্যাকেজ যোগ করা (Firestore কালেকশনে)
-    window.addPackage = async function() {
-        const name = document.getElementById('pName').value;
-        const price = document.getElementById('pPrice').value;
-        const daily = document.getElementById('pDaily').value;
-        const validity = document.getElementById('pValidity').value;
-        const image = document.getElementById('pImage').value;
+    // --- SEARCH & UNLOCK LOGIC ---
 
-        if (!name || !price || !daily || !validity) {
-            alert("সবগুলো ঘর পূরণ করুন!");
-            return;
-        }
+    window.searchUser = async function() {
+        const userId = document.getElementById('searchUserID').value.trim();
+        if(!userId) { alert("ID দিন!"); return; }
 
-        try {
-            await addDoc(collection(db, "packages_vip2"), {
-                name: name,
-                price: parseInt(price),
-                daily: parseInt(daily),
-                validity: parseInt(validity),
-                image: image || "",
-                createdAt: Date.now()
-            });
-            alert("VIP 2 প্যাকেজটি যোগ হয়েছে!");
-            clearFields();
-        } catch (e) {
-            alert("প্যাকেজ যোগ করতে সমস্যা হয়েছে!");
+        const userDoc = await getDoc(doc(db, "users", userId));
+        const display = document.getElementById('userInfoDisplay');
+
+        if(userDoc.exists()) {
+            const data = userDoc.data();
+            currentTargetUser = userId;
+            
+            document.getElementById('resID').innerText = data.userID || userId;
+            document.getElementById('resNo1').innerText = data.withdrawNo1 || "Not Set";
+            document.getElementById('resNo2').innerText = data.withdrawNo2 || "Not Set";
+            
+            const statusEl = document.getElementById('resStatus');
+            const unlockBtn = document.getElementById('unlockBtn');
+
+            if(data.is_unlocked === true) {
+                statusEl.innerText = "Already Unlocked";
+                statusEl.style.color = "green";
+                unlockBtn.disabled = true;
+                unlockBtn.innerText = "Already Unlocked";
+            } else {
+                statusEl.innerText = "Locked";
+                statusEl.style.color = "red";
+                unlockBtn.disabled = false;
+                unlockBtn.innerText = "Unlock Numbers";
+            }
+
+            display.style.display = "block";
+        } else {
+            display.style.display = "none";
+            alert("ইউজার পাওয়া যায়নি!");
         }
     }
 
-    function clearFields() {
-        document.getElementById('pName').value = '';
-        document.getElementById('pPrice').value = '';
-        document.getElementById('pDaily').value = '';
-        document.getElementById('pValidity').value = '';
-        document.getElementById('pImage').value = '';
-    }
-
-    // প্যাকেজ লিস্ট রিয়েল-টাইম দেখানো
-    const q = query(collection(db, "packages_vip2"), orderBy("price", "asc"));
-    onSnapshot(q, (snapshot) => {
-        const tableBody = document.getElementById('pkgTableBody');
-        tableBody.innerHTML = "";
+    window.unlockUserNumber = async function() {
+        if(!currentTargetUser) return;
         
-        snapshot.forEach((child) => {
-            const pkg = child.data();
-            const id = child.id;
-            const imgDisplay = pkg.image 
-                ? `<img src="${pkg.image}" class="pkg-img-preview" onerror="this.src='https://via.placeholder.com/50'">` 
-                : `<i class="fas fa-image" style="font-size:30px; color:#ccc;"></i>`;
-
-            tableBody.innerHTML += `
-                <tr>
-                    <td>${imgDisplay}</td>
-                    <td>${pkg.name}</td>
-                    <td>৳${pkg.price}</td>
-                    <td>৳${pkg.daily}</td>
-                    <td>${pkg.validity} দিন</td>
-                    <td><button class="delete-btn" onclick="deletePackage('${id}')"><i class="fas fa-trash"></i></button></td>
-                </tr>`;
-        });
-    });
-
-    window.deletePackage = async function(id) {
-        if (confirm("প্যাকেজটি মুছে ফেলতে চান?")) {
+        if(confirm("আপনি কি এই ইউজারের উইথড্র নম্বর আনলক করতে চান?")) {
             try {
-                await deleteDoc(doc(db, "packages_vip2", id));
-                alert("প্যাকেজ মুছে ফেলা হয়েছে।");
+                await updateDoc(doc(db, "users", currentTargetUser), {
+                    is_unlocked: true
+                });
+                alert("ইউজার আনলক হয়েছে! এখন সে নম্বর পরিবর্তন করতে পারবে।");
+                searchUser(); // Refresh View
             } catch (e) {
-                alert("মুছতে সমস্যা হয়েছে।");
+                alert("Error: " + e.message);
             }
         }
     }
@@ -223,4 +204,3 @@
 
 </body>
 </html>
-
