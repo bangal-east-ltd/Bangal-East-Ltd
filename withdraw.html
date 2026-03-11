@@ -14,7 +14,7 @@
         .header h3 { flex: 1; text-align: left; font-size: 18px; margin-left: 15px; }
         .header .nav-link { color: #333; text-decoration: none; font-size: 20px; }
         
-        /* New History Button Style */
+        /* History Button Style */
         .history-page-btn { 
             background: #ff8c00; 
             color: white !important; 
@@ -42,7 +42,6 @@
         .action-btn { width: 100%; padding: 14px; border: none; background: #ff8c00; color: white; border-radius: 10px; font-size: 16px; font-weight: bold; cursor: pointer; }
         .action-btn:disabled { background: #ccc; cursor: not-allowed; }
         
-        /* History Styles in this page */
         .history-item { background: white; padding: 15px; border-radius: 15px; border-left: 5px solid #ff8c00; margin-bottom: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
         .hist-row { display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 13px; }
         .label-text { font-weight: bold; color: #555; }
@@ -223,17 +222,21 @@
                     select.innerHTML += `<option value="${data.withdrawNo2}">${data.withdrawNo2}</option>`;
                 }
 
-                // এডমিন যদি ইউজারের ডকুমেন্টে is_unlocked: true করে দেয়, তবে সে নম্বর পরিবর্তন করতে পারবে
-                if (data.is_unlocked) {
+                // ছবির রিকোয়ারমেন্ট অনুযায়ী: এডমিন যদি is_unlocked ফিল্ডটি true করে, তবেই ইউজার এডিট করতে পারবে
+                if (data.is_unlocked === true) {
                     n1Input.disabled = false;
                     n2Input.disabled = false;
                     sBtn.style.display = "block";
-                    sBtn.innerText = "Update Numbers";
+                    sBtn.innerText = "Update & Lock Numbers";
                 } else {
                     if (data.withdrawNo1) {
                         n1Input.disabled = true;
                         n2Input.disabled = true;
                         sBtn.style.display = "none";
+                    } else {
+                        n1Input.disabled = false;
+                        n2Input.disabled = false;
+                        sBtn.style.display = "block";
                     }
                 }
             }
@@ -244,13 +247,16 @@
             const n2 = document.getElementById("savedNo2").value;
             if (n1.length < 11) { alert("সঠিক নম্বর দিন!"); return; }
             
-            // সেভ করার পর আবার লক হয়ে যাবে এবং is_unlocked ফিল্ডটি মিথ্যা হয়ে যাবে
-            await updateDoc(doc(db, "users", loggedUser), { 
-                withdrawNo1: n1, 
-                withdrawNo2: n2 || "",
-                is_unlocked: false 
-            });
-            showModal('success', 'Save Success', 'আপনার নম্বরগুলো সফলভাবে সেভ ও লক করা হয়েছে।');
+            try {
+                await updateDoc(doc(db, "users", loggedUser), { 
+                    withdrawNo1: n1, 
+                    withdrawNo2: n2 || "",
+                    is_unlocked: false // সেইভ করার পর আবার লক হয়ে যাবে
+                });
+                showModal('success', 'Save Success', 'আপনার নম্বরগুলো সফলভাবে সেভ ও লক করা হয়েছে।');
+            } catch (e) {
+                alert("Error: " + e.message);
+            }
         };
 
         window.requestWithdraw = async function() {
