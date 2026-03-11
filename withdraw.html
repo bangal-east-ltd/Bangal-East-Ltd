@@ -38,7 +38,6 @@
         .vat-info { font-size: 12px; color: #e67e00; margin-bottom: 10px; font-weight: bold; display: flex; justify-content: space-between; }
         
         .action-btn { width: 100%; padding: 14px; border: none; background: #ff8c00; color: white; border-radius: 10px; font-size: 16px; font-weight: bold; cursor: pointer; display: block; }
-        /* সংশোধিত CSS: লক থাকা অবস্থায় বাটন হাইড করার পরিবর্তে ডিজেবল স্টাইল */
         .action-btn:disabled { background: #ccc; cursor: not-allowed; opacity: 0.6; }
         
         .history-item { background: white; padding: 15px; border-radius: 15px; border-left: 5px solid #ff8c00; margin-bottom: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
@@ -149,6 +148,7 @@
 
         if (!loggedUser) window.location.replace("index.html");
 
+        // ভ্যাট কনফিগারেশন লিসেনার - এখানে গ্লোবাল লক চেক সরানো হয়েছে
         onSnapshot(doc(db, "admin_settings", "withdrawal_config"), (snap) => {
             if(snap.exists()){
                 const config = snap.data();
@@ -200,7 +200,6 @@
             document.getElementById("customModal").style.display = "none";
         };
 
-        // --- মূল লজিক সংশোধন এখানে ---
         onSnapshot(doc(db, "users", loggedUser), (snapshot) => {
             if (snapshot.exists()) {
                 const data = snapshot.data();
@@ -222,18 +221,16 @@
                     select.innerHTML += `<option value="${data.withdrawNo2}">${data.withdrawNo2}</option>`;
                 }
 
-                // আনলক লজিক: যদি আনলক থাকে তবে বাটন দেখাবে এবং ইনপুট সচল হবে
                 if (!data.withdrawNo1 || data.is_unlocked === true) {
                     n1Input.disabled = false;
                     n2Input.disabled = false;
-                    sBtn.style.display = "block"; // বাটন দৃশ্যমান হবে
+                    sBtn.style.display = "block";
                     sBtn.disabled = false;
                     sBtn.innerText = data.withdrawNo1 ? "Update & Re-Lock Numbers" : "Save & Lock Numbers";
                 } else {
-                    // লক থাকলে বাটন লুকিয়ে রাখা হবে যাতে ডুপ্লিকেট সেভ না হয়
                     n1Input.disabled = true;
                     n2Input.disabled = true;
-                    sBtn.style.display = "none"; // বাটন লুকিয়ে ফেলা হবে
+                    sBtn.style.display = "none";
                 }
             }
         });
