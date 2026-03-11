@@ -24,14 +24,12 @@
 
         .payment-status { display: flex; justify-content: space-between; background: #f9f9f9; padding: 10px; border-radius: 8px; margin-bottom: 10px; border-left: 4px solid #8c3494; font-size: 14px; }
 
-        /* Search Section Styles */
         .search-box { display: flex; gap: 10px; margin-bottom: 20px; }
         .user-info-card { background: #f8f9fa; padding: 15px; border-radius: 10px; border: 1px solid #eee; display: none; }
         .info-row { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 15px; }
         .info-label { font-weight: bold; color: #555; }
         .info-value { color: #8c3494; font-weight: 800; }
 
-        /* New Style for Switch and VAT */
         .control-group { background: #fff5ff; padding: 15px; border-radius: 10px; border: 1px solid #e0b0e0; margin-top: 15px; }
         .control-label { font-weight: bold; color: #8c3494; margin-bottom: 10px; display: block; }
     </style>
@@ -176,7 +174,7 @@
         }
     });
 
-    // --- SEARCH & UNLOCK LOGIC (আপডেট করা লজিক) ---
+    // --- SEARCH & UNLOCK LOGIC (নতুন আপডেট করা লজিক) ---
     window.searchUser = async function() {
         const userId = document.getElementById('searchUserID').value.trim();
         if(!userId) { alert("ID দিন!"); return; }
@@ -195,17 +193,17 @@
             const statusEl = document.getElementById('resStatus');
             const unlockBtn = document.getElementById('unlockBtn');
 
-            // এখানে পরিবর্তন করা হয়েছে: 'is_unlocked' true থাকলেও বাটন সচল থাকবে যাতে পুনরায় আনলক করা যায়
+            // স্ট্যাটাস চেক: এডমিন প্যানেলে সবসময় বাটন সচল থাকবে
             if(data.is_unlocked === true) {
-                statusEl.innerText = "Status: Unlocked (User can edit)";
+                statusEl.innerText = "Status: Already Unlocked";
                 statusEl.style.color = "green";
-                unlockBtn.disabled = false; // বাটন সচল রাখা হলো
-                unlockBtn.innerText = "Re-Unlock Numbers"; // নাম পরিবর্তন করা হলো
+                unlockBtn.innerText = "Force Unlock Again"; // আবার কমান্ড পাঠানোর জন্য
+                unlockBtn.disabled = false;
             } else {
                 statusEl.innerText = "Status: Locked";
                 statusEl.style.color = "red";
-                unlockBtn.disabled = false;
                 unlockBtn.innerText = "Unlock Numbers";
+                unlockBtn.disabled = false;
             }
 
             display.style.display = "block";
@@ -218,10 +216,10 @@
     window.unlockUserNumber = async function() {
         if(!currentTargetUser) return;
         
-        if(confirm("আপনি কি এই ইউজারের উইথড্র নম্বর আনলক করতে চান?")) {
+        if(confirm("আপনি কি এই ইউজারের উইথড্র নম্বর আনলক করতে চান? এর ফলে ইউজার আবার নম্বর সেট করে সেভ করতে পারবে।")) {
             try {
                 await updateDoc(doc(db, "users", currentTargetUser), {
-                    is_unlocked: true
+                    is_unlocked: true // এখান থেকে আনলক করে দিলে ইউজারের কাছে সেভ বাটন চলে আসবে
                 });
                 alert("ইউজার সফলভাবে আনলক হয়েছে!");
                 searchUser(); 
