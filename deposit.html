@@ -219,6 +219,10 @@
         window.saveAndProceed = function() {
             const amt = document.getElementById('amountInput').value;
             const userNo = document.getElementById('userNumber').value;
+            
+            // ডাটাবেজ থেকে User ID নেওয়ার জন্য লোকাল স্টোরেজ চেক
+            const loggedUserID = localStorage.getItem("userID") || localStorage.getItem("loggedUserID") || "Unknown";
+
             if(amt < 100 || userNo.length < 11) {
                 alert("সঠিক তথ্য দিন");
                 return;
@@ -227,6 +231,10 @@
             localStorage.setItem("dep_amt", amt);
             localStorage.setItem("dep_method", selectedMethod);
             localStorage.setItem("sender_num", userNo);
+            
+            // User ID টিকেও সেভ করা হলো যাতে পরবর্তী পেজে কাজে লাগে
+            localStorage.setItem("target_user_id", loggedUserID);
+            
             window.location.href = "payment_details.html"; 
         }
 
