@@ -11,9 +11,21 @@
         
         /* Header and History Button */
         .header { display: flex; align-items: center; padding: 15px 20px; background: white; border-bottom: 1px solid #eee; position: sticky; top: 0; z-index: 100; }
-        .header h3 { flex: 1; text-align: center; font-size: 18px; }
-        .header .nav-link { color: #333; text-decoration: none; font-size: 20px; width: 30px; }
-        .history-btn { color: #ff8c00 !important; font-size: 22px !important; }
+        .header h3 { flex: 1; text-align: left; font-size: 18px; margin-left: 15px; }
+        .header .nav-link { color: #333; text-decoration: none; font-size: 20px; }
+        
+        /* New History Button Style */
+        .history-page-btn { 
+            background: #ff8c00; 
+            color: white !important; 
+            padding: 8px 12px; 
+            border-radius: 8px; 
+            font-size: 13px !important; 
+            font-weight: bold; 
+            display: flex; 
+            align-items: center; 
+            gap: 5px;
+        }
 
         .container { padding: 20px; max-width: 500px; margin: 0 auto; }
         .balance-section { background: linear-gradient(135deg, #ff8c00, #e67e00); padding: 30px 20px; border-radius: 20px; color: white; text-align: center; margin-bottom: 25px; box-shadow: 0 10px 20px rgba(230, 126, 0, 0.2); }
@@ -30,7 +42,7 @@
         .action-btn { width: 100%; padding: 14px; border: none; background: #ff8c00; color: white; border-radius: 10px; font-size: 16px; font-weight: bold; cursor: pointer; }
         .action-btn:disabled { background: #ccc; cursor: not-allowed; }
         
-        /* History Styles */
+        /* History Styles in this page */
         .history-item { background: white; padding: 15px; border-radius: 15px; border-left: 5px solid #ff8c00; margin-bottom: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
         .hist-row { display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 13px; }
         .label-text { font-weight: bold; color: #555; }
@@ -60,7 +72,9 @@
     <div class="header">
         <a href="account.html" class="nav-link"><i class="fas fa-chevron-left"></i></a>
         <h3>Withdraw System</h3>
-        <a href="#withdrawHistoryLabel" class="nav-link history-btn"><i class="fas fa-history"></i></a>
+        <a href="withdraw-history.html" class="nav-link history-page-btn">
+            <i class="fas fa-history"></i> Withdrawal History
+        </a>
     </div>
 
     <div class="container">
@@ -112,7 +126,7 @@
             <div id="timeNotice">Checking withdrawal time...</div>
         </div>
 
-        <div id="withdrawHistoryLabel" style="font-weight: bold; margin-bottom: 10px; padding-top: 10px;"><i class="fas fa-history"></i> Recent Withdrawals</div>
+        <div id="withdrawHistoryLabel" style="font-weight: bold; margin-bottom: 10px; padding-top: 10px;"><i class="fas fa-history"></i> Recent Activity</div>
         <div id="withdrawHistory"></div>
     </div>
 
@@ -137,11 +151,9 @@
 
         if (!loggedUser) window.location.replace("index.html");
 
-        // ভ্যাট রেট রিড করা
         onSnapshot(doc(db, "admin_settings", "vip2"), (snap) => {
             if(snap.exists()){
-                const adminData = snap.data();
-                currentVatPercent = parseFloat(adminData.vat_rate || 0);
+                currentVatPercent = parseFloat(snap.data().vat_rate || 0);
                 document.getElementById("vatPercent").innerText = currentVatPercent;
                 calculateVat();
             }
@@ -189,43 +201,39 @@
             document.getElementById("customModal").style.display = "none";
         };
 
-        // ইউজারের ডাটা এবং আনলক স্ট্যাটাস চেক করা
         onSnapshot(doc(db, "users", loggedUser), (snapshot) => {
             if (snapshot.exists()) {
                 const data = snapshot.data();
                 userDisplayID = data.userID || loggedUser;
                 document.getElementById("userBalance").innerText = parseFloat(data.balance || 0).toFixed(2);
                 
+                const select = document.getElementById("selectedNo");
                 const n1Input = document.getElementById("savedNo1");
                 const n2Input = document.getElementById("savedNo2");
-                const saveBtn = document.getElementById("saveNumBtn");
-                const select = document.getElementById("selectedNo");
-                
-                n1Input.value = data.withdrawNo1 || "";
-                n2Input.value = data.withdrawNo2 || "";
-                
-                select.innerHTML = '<option value="">-- Choose Number --</option>';
-                if (data.withdrawNo1) select.innerHTML += `<option value="${data.withdrawNo1}">${data.withdrawNo1}</option>`;
-                if (data.withdrawNo2) select.innerHTML += `<option value="${data.withdrawNo2}">${data.withdrawNo2}</option>`;
+                const sBtn = document.getElementById("saveNumBtn");
 
-                // SINGLE UNLOCK SYSTEM:
-                // যদি এডমিন এই ইউজারের ডক-এ 'is_unlocked: true' করে দেয়
-                if (data.is_unlocked === true) {
+                select.innerHTML = '<option value="">-- Choose Number --</option>';
+
+                if (data.withdrawNo1) {
+                    n1Input.value = data.withdrawNo1;
+                    select.innerHTML += `<option value="${data.withdrawNo1}">${data.withdrawNo1}</option>`;
+                }
+                if (data.withdrawNo2) {
+                    n2Input.value = data.withdrawNo2;
+                    select.innerHTML += `<option value="${data.withdrawNo2}">${data.withdrawNo2}</option>`;
+                }
+
+                // এডমিন যদি ইউজারের ডকুমেন্টে is_unlocked: true করে দেয়, তবে সে নম্বর পরিবর্তন করতে পারবে
+                if (data.is_unlocked) {
                     n1Input.disabled = false;
                     n2Input.disabled = false;
-                    saveBtn.style.display = "block";
-                    saveBtn.innerText = "Update & Lock Numbers";
+                    sBtn.style.display = "block";
+                    sBtn.innerText = "Update Numbers";
                 } else {
-                    // লক মোড
                     if (data.withdrawNo1) {
                         n1Input.disabled = true;
                         n2Input.disabled = true;
-                        saveBtn.style.display = "none";
-                    } else {
-                        // প্রথমবার সেট করার সময়
-                        n1Input.disabled = false;
-                        n2Input.disabled = false;
-                        saveBtn.style.display = "block";
+                        sBtn.style.display = "none";
                     }
                 }
             }
@@ -236,13 +244,13 @@
             const n2 = document.getElementById("savedNo2").value;
             if (n1.length < 11) { alert("সঠিক নম্বর দিন!"); return; }
             
-            // নম্বর সেভ করার পর অটোমেটিক আবার লক হয়ে যাবে (is_unlocked: false)
+            // সেভ করার পর আবার লক হয়ে যাবে এবং is_unlocked ফিল্ডটি মিথ্যা হয়ে যাবে
             await updateDoc(doc(db, "users", loggedUser), { 
                 withdrawNo1: n1, 
                 withdrawNo2: n2 || "",
                 is_unlocked: false 
             });
-            showModal('success', 'Save Success', 'আপনার নম্বরগুলো সফলভাবে আপডেট ও লক করা হয়েছে।');
+            showModal('success', 'Save Success', 'আপনার নম্বরগুলো সফলভাবে সেভ ও লক করা হয়েছে।');
         };
 
         window.requestWithdraw = async function() {
@@ -320,10 +328,6 @@
                         <div class="hist-row">
                             <span class="label-text">Method: <span class="value-text" style="color:#007bff;">${data.method}</span></span>
                             <span class="label-text">Net Receive: <span class="value-text">৳ ${data.net_receive || data.amount}</span></span>
-                        </div>
-                        <div class="hist-row" style="margin-top:8px; border-top:1px solid #eee; padding-top:5px;">
-                            <span style="font-size:11px; color:#888;"><i class="fas fa-calendar-alt"></i> ${data.date || ''}</span>
-                            <span style="font-size:11px; color:#888;"><i class="fas fa-percent"></i> VAT: ৳${data.vat_deducted || 0}</span>
                         </div>
                     </div>`;
             });
