@@ -35,11 +35,16 @@
         .input-group label { display: block; font-size: 13px; color: #666; margin-bottom: 5px; font-weight: 600; }
         .input-field { width: 100%; padding: 12px; border: 1.5px solid #eee; border-radius: 10px; font-size: 15px; outline: none; background: #fafafa; }
         
+        /* ডিজেবল ফিল্ডের জন্য স্টাইল */
+        .input-field:disabled { background: #f2f2f2; color: #888; cursor: not-allowed; border: 1px solid #ddd; }
+
         .vat-info { font-size: 12px; color: #e67e00; margin-bottom: 10px; font-weight: bold; display: flex; justify-content: space-between; }
         
         .action-btn { width: 100%; padding: 14px; border: none; background: #ff8c00; color: white; border-radius: 10px; font-size: 16px; font-weight: bold; cursor: pointer; display: block; }
         .action-btn:disabled { background: #ccc; cursor: not-allowed; opacity: 0.6; }
         
+        #lockStatusMsg { font-size: 12px; color: #d9534f; text-align: center; margin-top: 10px; font-weight: 600; }
+
         .history-item { background: white; padding: 15px; border-radius: 15px; border-left: 5px solid #ff8c00; margin-bottom: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
         .hist-row { display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 13px; }
         .label-text { font-weight: bold; color: #555; }
@@ -91,6 +96,7 @@
                 <input type="number" id="savedNo2" class="input-field" placeholder="01XXXXXXXXX (Optional)">
             </div>
             <button class="action-btn" id="saveNumBtn" onclick="saveWithdrawNumbers()">Save & Lock Numbers</button>
+            <p id="lockStatusMsg" style="display: none;"><i class="fas fa-lock"></i> নম্বর পরিবর্তনের জন্য এডমিনের অনুমতি প্রয়োজন।</p>
         </div>
 
         <div class="card">
@@ -148,7 +154,6 @@
 
         if (!loggedUser) window.location.replace("index.html");
 
-        // ভ্যাট কনফিগারেশন লিসেনার - এখানে গ্লোবাল লক চেক সরানো হয়েছে
         onSnapshot(doc(db, "admin_settings", "withdrawal_config"), (snap) => {
             if(snap.exists()){
                 const config = snap.data();
@@ -200,6 +205,7 @@
             document.getElementById("customModal").style.display = "none";
         };
 
+        // রিয়েলটাইম ইউজার ডেটা ও লক ম্যানেজমেন্ট
         onSnapshot(doc(db, "users", loggedUser), (snapshot) => {
             if (snapshot.exists()) {
                 const data = snapshot.data();
@@ -209,8 +215,10 @@
                 const n1Input = document.getElementById("savedNo1");
                 const n2Input = document.getElementById("savedNo2");
                 const sBtn = document.getElementById("saveNumBtn");
+                const lockMsg = document.getElementById("lockStatusMsg");
                 const select = document.getElementById("selectedNo");
 
+                // নম্বর ড্রপডাউন আপডেট
                 select.innerHTML = '<option value="">-- Choose Number --</option>';
                 if (data.withdrawNo1) {
                     n1Input.value = data.withdrawNo1;
@@ -221,16 +229,20 @@
                     select.innerHTML += `<option value="${data.withdrawNo2}">${data.withdrawNo2}</option>`;
                 }
 
+                // এডমিন লক লজিক প্রয়োগ
                 if (!data.withdrawNo1 || data.is_unlocked === true) {
+                    // যদি নম্বর না থাকে অথবা এডমিন আনলক করে দেয়
                     n1Input.disabled = false;
                     n2Input.disabled = false;
                     sBtn.style.display = "block";
-                    sBtn.disabled = false;
                     sBtn.innerText = data.withdrawNo1 ? "Update & Re-Lock Numbers" : "Save & Lock Numbers";
+                    lockMsg.style.display = "none";
                 } else {
+                    // নম্বর সেভ করা আছে এবং এডমিন লক খুলেনি
                     n1Input.disabled = true;
                     n2Input.disabled = true;
                     sBtn.style.display = "none";
+                    lockMsg.style.display = "block";
                 }
             }
         });
@@ -241,6 +253,7 @@
             if (n1.length < 11) { alert("সঠিক নম্বর দিন!"); return; }
             
             try {
+                // নম্বর সেভ করার পর অটোমেটিক লক (is_unlocked: false) করে দেওয়া হচ্ছে
                 await updateDoc(doc(db, "users", loggedUser), { 
                     withdrawNo1: n1, 
                     withdrawNo2: n2 || "",
@@ -333,4 +346,5 @@
         });
     </script>
 </body>
-</html>
+    </html>
+    
