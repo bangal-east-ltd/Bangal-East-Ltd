@@ -27,7 +27,7 @@
         .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 30px; }
         .stat-card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); border-top: 4px solid #11998e; }
         .stat-card h4 { color: #666; font-size: 14px; margin-bottom: 10px; }
-        .stat-card h2 { color: #11998e; font-size: 24px; }
+        .stat-card h2 { color: #11998e; font-size: 22px; }
 
         .admin-card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 5px 15px rgba(0,0,0,0.05); margin-bottom: 20px; overflow-x: auto;}
         table { width: 100%; border-collapse: collapse; margin-top: 10px; }
@@ -76,6 +76,7 @@
             <p onclick="alert('Deposit Bonus Logic')"><i class="fas fa-plus-circle"></i> Deposit Bonus</p>
             <p onclick="alert('Level Logic')"><i class="fas fa-layer-group"></i> Level Button</p>
             <p onclick="alert('Salary Logic')"><i class="fas fa-money-check-alt"></i> Monthly Salary</p>
+            <p id="nav-autoHistory" onclick="showSection('autoHistory')"><i class="fas fa-database"></i> Auto History</p>
         </div>
 
         <div class="vip-group">
@@ -100,8 +101,23 @@
         <div class="stats-grid">
             <div class="stat-card"><h4>Total Users</h4><h2><span id="statTotalUsers">0</span></h2></div>
             <div class="stat-card"><h4>Online Now</h4><h2><span id="statOnlineUsers" style="color: #28a745;">0</span></h2></div>
+            <div class="stat-card"><h4>Total Bonus</h4><h2>৳ <span id="statTotalBonus">0</span></h2></div>
             <div class="stat-card"><h4>Total Deposit</h4><h2>৳ <span id="totalDep">0</span></h2></div>
             <div class="stat-card"><h4>Total Withdraw</h4><h2>৳ <span id="totalWith">0</span></h2></div>
+            <div class="stat-card"><h4>Today Deposit (Count)</h4><h2><span id="todayDepCount">0</span> জন</h2></div>
+            <div class="stat-card"><h4>Today Withdraw (Count)</h4><h2><span id="todayWithCount">0</span> জন</h2></div>
+        </div>
+    </div>
+
+    <div id="autoHistory" class="section">
+        <div class="admin-card">
+            <h2>Daily Collection Auto History</h2>
+            <table>
+                <thead>
+                    <tr><th>Date</th><th>Total Members</th><th>Deposit (Total)</th><th>Withdraw (Total)</th><th>Time</th></tr>
+                </thead>
+                <tbody id="autoHistoryBody"></tbody>
+            </table>
         </div>
     </div>
 
@@ -167,7 +183,7 @@
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-    import { getFirestore, collection, onSnapshot, doc, updateDoc, getDoc, setDoc, query, where, deleteDoc, writeBatch, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    import { getFirestore, collection, onSnapshot, doc, updateDoc, getDoc, setDoc, query, where, deleteDoc, writeBatch, getDocs, orderBy } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
     const firebaseConfig = {
         apiKey: "AIzaSyCALYxA2M4BwIXq5KC3VMGsZpAFh8nL3fo",
@@ -202,7 +218,6 @@
 
                 await batch.commit();
 
-                // Save to stats history
                 const stats = {
                     date: todayStr,
                     total_members: totalUsers,
@@ -212,9 +227,27 @@
                 };
                 await setDoc(doc(db, "daily_stats_history", todayStr.replace(/\//g, "-")), stats);
                 await setDoc(resetDocRef, { date: todayStr });
-                console.log("Daily reset and stats archived.");
+                console.log("Stats archived.");
             } catch (error) { console.error("Reset Error:", error); }
         }
+    }
+
+    // --- FETCH AUTO HISTORY ---
+    function loadAutoHistory() {
+        onSnapshot(collection(db, "daily_stats_history"), (snapshot) => {
+            const body = document.getElementById('autoHistoryBody');
+            body.innerHTML = "";
+            snapshot.forEach(doc => {
+                const data = doc.data();
+                body.innerHTML += `<tr>
+                    <td>${data.date}</td>
+                    <td>${data.total_members}</td>
+                    <td>৳ ${data.total_deposit}</td>
+                    <td>৳ ${data.total_withdraw}</td>
+                    <td>${data.timestamp}</td>
+                </tr>`;
+            });
+        });
     }
 
     window.checkAdminLogin = function() {
@@ -238,9 +271,13 @@
         const activeNav = document.getElementById('nav-' + id);
         if(activeNav) activeNav.classList.add('active');
     }
-
-    // --- USER LIST & BLOCK LOGIC ---
+ // --- USER LIST & STATS ---
     onSnapshot(collection(db, "users"), (snapshot) => {
+        let totalBonus = 0;
+        snapshot.forEach(u => {
+            totalBonus += parseFloat(u.data().bonus || 0);
+        });
+        document.getElementById('statTotalBonus').innerText = totalBonus.toFixed(2);
         renderUserList(snapshot);
     });
 
@@ -257,10 +294,8 @@
             if(isOnline) onlineUsers++;
 
             userListBody.innerHTML += `<tr>
-                <td>
-                    ${isOnline ? '<span class="online-dot"></span> Online' : '<span class="offline-dot"></span> Offline'}
-                    ${u.status === 'blocked' ? '<span class="blocked-badge">Blocked</span>' : ''}
-                </td>
+                <td>${isOnline ? '<span class="online-dot"></span> Online' : '<span class="offline-dot"></span> Offline'}
+                ${u.status === 'blocked' ? '<span class="blocked-badge">Blocked</span>' : ''}</td>
                 <td><b>${u.userID || 'N/A'}</b></td><td>${child.id}</td>
                 <td>৳ ${parseFloat(u.balance || 0).toFixed(2)}</td>
                 <td>
@@ -275,9 +310,7 @@
 
     window.toggleBlock = async function(id, currentStatus) {
         const newStatus = currentStatus === 'blocked' ? 'active' : 'blocked';
-        if(confirm(`User ${newStatus === 'blocked' ? 'Block' : 'Unlock'} করবেন?`)) {
-            await updateDoc(doc(db, "users", id), { status: newStatus });
-        }
+        await updateDoc(doc(db, "users", id), { status: newStatus });
     }
 
     window.searchUser = function() {
@@ -289,10 +322,7 @@
     }
 
     window.deleteUser = async function(id) {
-        if(confirm("Are you sure you want to delete this user?")) {
-            await deleteDoc(doc(db, "users", id));
-            alert("User deleted.");
-        }
+        if(confirm("Delete this user?")) await deleteDoc(doc(db, "users", id));
     }
 
     function setupTransactions() {
@@ -300,26 +330,33 @@
             const depBody = document.getElementById('depositBody');
             const depSuccessBody = document.getElementById('depSuccessBody');
             depBody.innerHTML = ""; depSuccessBody.innerHTML = "";
-            let totalD = 0;
+            let totalD = 0, todayDCount = 0;
+            const today = new Date().toLocaleDateString();
 
             snapshot.forEach(child => {
                 const d = child.data();
+                // Fix: Get User ID from data
+                const displayID = d.userID || "N/A";
+
                 if(d.status === "Pending") {
-                    depBody.innerHTML += `<tr><td>${d.userID}</td><td>${d.senderNumber || d.sender_no}</td><td><code>${d.trxID}</code></td><td>৳${d.amount}</td><td>${d.method}</td>
+                    depBody.innerHTML += `<tr><td>${displayID}</td><td>${d.senderNumber || d.sender_no}</td><td><code>${d.trxID}</code></td><td>৳${d.amount}</td><td>${d.method}</td>
                         <td><button class="btn btn-success" onclick="approveDep('${child.id}','${d.user}',${d.amount})">Approve</button>
                         <button class="btn btn-danger" onclick="rejectDep('${child.id}')">Reject</button></td></tr>`;
                 } else if(d.status === "Success") {
                     totalD += parseFloat(d.amount);
                     depSuccessBody.innerHTML += `<tr><td>${d.user}</td><td>${d.amount}</td><td>${d.trxID}</td><td>${d.time}</td></tr>`;
+                    if(d.time && d.time.includes(today)) todayDCount++;
                 }
             });
             document.getElementById('totalDep').innerText = totalD.toFixed(2);
+            document.getElementById('todayDepCount').innerText = todayDCount;
         });
 
         onSnapshot(collection(db, "withdraws"), (snapshot) => {
             const withBody = document.getElementById('withdrawBody');
             const withLogBody = document.getElementById('withLogBody');
-            let totalW = 0;
+            let totalW = 0, todayWCount = 0;
+            const today = new Date().toLocaleDateString();
             withBody.innerHTML = ""; withLogBody.innerHTML = "";
 
             snapshot.forEach(child => {
@@ -329,11 +366,15 @@
                         <td><button class="btn btn-success" onclick="approveWith('${child.id}')">Approve</button>
                         <button class="btn btn-danger" onclick="rejectWith('${child.id}','${w.user}',${w.amount})">Reject</button></td></tr>`;
                 } else {
-                    if(w.status === "Approved") totalW += parseFloat(w.amount);
+                    if(w.status === "Approved") {
+                        totalW += parseFloat(w.amount);
+                        if(w.time && w.time.includes(today)) todayWCount++;
+                    }
                     withLogBody.innerHTML += `<tr><td>${w.user}</td><td>${w.amount}</td><td>${w.status}</td><td>${w.note || '-'}</td></tr>`;
                 }
             });
             document.getElementById('totalWith').innerText = totalW.toFixed(2);
+            document.getElementById('todayWithCount').innerText = todayWCount;
         });
     }
 
@@ -363,12 +404,10 @@
             if(snap.exists()){
                 await updateDoc(userRef, { balance: (parseFloat(snap.data().balance) || 0) + parseFloat(amt) });
                 await updateDoc(doc(db, "withdraws", id), { status: "Rejected", note: reason });
-                alert("Rejected & Refunded.");
             }
         }
-    }
-
-    window.updateNumbers = async function() {
+                   }
+     window.updateNumbers = async function() {
         await setDoc(doc(db, "admin_settings", "numbers"), { 
             bkash: document.getElementById('setBkash').value, 
             nagad: document.getElementById('setNagad').value, 
@@ -380,11 +419,11 @@
     if(localStorage.getItem("adminLoggedIn") === "true") {
         document.getElementById('loginOverlay').style.display = "none";
         checkAndAutoReset();
+        loadAutoHistory();
         setInterval(checkAndAutoReset, 300000);
     }
     setupTransactions();
 
 </script>
 </body>
-    </html>
-    
+</html>
