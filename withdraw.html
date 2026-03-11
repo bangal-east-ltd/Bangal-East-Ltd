@@ -35,7 +35,6 @@
         .input-group label { display: block; font-size: 13px; color: #666; margin-bottom: 5px; font-weight: 600; }
         .input-field { width: 100%; padding: 12px; border: 1.5px solid #eee; border-radius: 10px; font-size: 15px; outline: none; background: #fafafa; }
         
-        /* ডিজেবল ফিল্ডের জন্য স্টাইল */
         .input-field:disabled { background: #f2f2f2; color: #888; cursor: not-allowed; border: 1px solid #ddd; }
 
         .vat-info { font-size: 12px; color: #e67e00; margin-bottom: 10px; font-weight: bold; display: flex; justify-content: space-between; }
@@ -135,7 +134,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        import { getFirestore, doc, onSnapshot, updateDoc, collection, addDoc, query, where, getDocs, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+        import { getFirestore, doc, onSnapshot, updateDoc, collection, addDoc, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyCALYxA2M4BwIXq5KC3VMGsZpAFh8nL3fo",
@@ -154,6 +153,7 @@
 
         if (!loggedUser) window.location.replace("index.html");
 
+        // ভ্যাট কনফিগ রিয়েলটাইম আপডেট
         onSnapshot(doc(db, "admin_settings", "withdrawal_config"), (snap) => {
             if(snap.exists()){
                 const config = snap.data();
@@ -176,16 +176,13 @@
             const hour = now.getHours();
             const btn = document.getElementById("withdrawBtn");
             const notice = document.getElementById("timeNotice");
-
             if (hour >= 8 && hour < 20) {
                 btn.disabled = false;
-                notice.style.color = "#28a745";
-                notice.style.borderColor = "#28a745";
+                notice.style.color = "#28a745"; notice.style.borderColor = "#28a745";
                 notice.innerHTML = "<i class='fas fa-check-circle'></i> উইথড্র এখন চালু আছে (রাত ০৮:০০ PM পর্যন্ত)";
             } else {
                 btn.disabled = true;
-                notice.style.color = "#d9534f";
-                notice.style.borderColor = "#d9534f";
+                notice.style.color = "#d9534f"; notice.style.borderColor = "#d9534f";
                 notice.innerHTML = "<i class='fas fa-lock'></i> রাত ০৮:০০ PM উইথড্র বন্ধ হয়েছে। সকাল ০৮:০০ AM টায় আবার চালু হবে।";
             }
         }
@@ -194,18 +191,15 @@
         window.showModal = function(type, title, msg) {
             const modal = document.getElementById("customModal");
             const icon = document.getElementById("modalIcon");
-            icon.className = type === 'success' ? 'fas fa-check-circle success-icon' : 'fas fa-exclamation-triangle limit-icon';
+            icon.className = type === 'success' ? 'fas fa-check-circle' : 'fas fa-exclamation-triangle';
             icon.style.color = type === 'success' ? '#28a745' : '#d9534f';
             document.getElementById("modalTitle").innerText = title;
             document.getElementById("modalMsg").innerText = msg;
             modal.style.display = "flex";
         };
+        window.closeModal = function() { document.getElementById("customModal").style.display = "none"; };
 
-        window.closeModal = function() {
-            document.getElementById("customModal").style.display = "none";
-        };
-
-        // রিয়েলটাইম ইউজার ডেটা ও লক ম্যানেজমেন্ট
+        // --- রিয়েলটাইম ইউজার ডাটা এবং আনলক লজিক ---
         onSnapshot(doc(db, "users", loggedUser), (snapshot) => {
             if (snapshot.exists()) {
                 const data = snapshot.data();
@@ -229,16 +223,15 @@
                     select.innerHTML += `<option value="${data.withdrawNo2}">${data.withdrawNo2}</option>`;
                 }
 
-                // এডমিন লক লজিক প্রয়োগ
-                if (!data.withdrawNo1 || data.is_unlocked === true) {
-                    // যদি নম্বর না থাকে অথবা এডমিন আনলক করে দেয়
+                // এডমিন আনলক লজিক (নিখুঁত কন্ডিশন)
+                if (data.is_unlocked === true || !data.withdrawNo1) {
+                    // যদি এডমিন আনলক করে অথবা প্রথমবার নম্বর সেট করা হয়
                     n1Input.disabled = false;
                     n2Input.disabled = false;
                     sBtn.style.display = "block";
-                    sBtn.innerText = data.withdrawNo1 ? "Update & Re-Lock Numbers" : "Save & Lock Numbers";
                     lockMsg.style.display = "none";
                 } else {
-                    // নম্বর সেভ করা আছে এবং এডমিন লক খুলেনি
+                    // লক মোড
                     n1Input.disabled = true;
                     n2Input.disabled = true;
                     sBtn.style.display = "none";
@@ -251,18 +244,15 @@
             const n1 = document.getElementById("savedNo1").value;
             const n2 = document.getElementById("savedNo2").value;
             if (n1.length < 11) { alert("সঠিক নম্বর দিন!"); return; }
-            
             try {
-                // নম্বর সেভ করার পর অটোমেটিক লক (is_unlocked: false) করে দেওয়া হচ্ছে
+                // সেভ করার পর অটোমেটিক লক হয়ে যাবে (is_unlocked: false)
                 await updateDoc(doc(db, "users", loggedUser), { 
                     withdrawNo1: n1, 
                     withdrawNo2: n2 || "",
                     is_unlocked: false 
                 });
-                showModal('success', 'Save Success', 'আপনার নম্বরগুলো সফলভাবে সেভ ও লক করা হয়েছে।');
-            } catch (e) {
-                alert("Error: " + e.message);
-            }
+                showModal('success', 'Success', 'আপনার নম্বরগুলো সফলভাবে সেভ ও লক করা হয়েছে।');
+            } catch (e) { alert("Error: " + e.message); }
         };
 
         window.requestWithdraw = async function() {
@@ -274,53 +264,28 @@
             if (!receiverNo || isNaN(amount) || amount < 300 || amount > 50000) {
                 alert("ভুল তথ্য! সর্বনিম্ন ৩০০ থেকে সর্বোচ্চ ৫০,০০০ টাকা।"); return;
             }
-            if (amount > currentBal) {
-                alert("আপনার পর্যাপ্ত ব্যালেন্স নেই!"); return;
-            }
+            if (amount > currentBal) { alert("পর্যাপ্ত ব্যালেন্স নেই!"); return; }
 
             const today = new Date().toLocaleDateString();
-            const qCheck = query(
-                collection(db, "withdraws"), 
-                where("user", "==", loggedUser),
-                where("date", "==", today)
-            );
+            const qCheck = query(collection(db, "withdraws"), where("user", "==", loggedUser), where("date", "==", today));
             const checkSnap = await getDocs(qCheck);
-            let hasActiveWithdraw = false;
-            checkSnap.forEach(doc => {
-                const status = doc.data().status;
-                if(status === "Pending" || status === "Approved") hasActiveWithdraw = true;
-            });
-
-            if (hasActiveWithdraw) {
-                showModal('limit', '', 'আজকে একবার উইথড্র করেছেন। রিজেক্ট না হওয়া পর্যন্ত পুনরায় দিতে পারবেন না।');
-                return;
-            }
+            let active = false;
+            checkSnap.forEach(doc => { if(doc.data().status === "Pending" || doc.data().status === "Approved") active = true; });
+            if (active) { showModal('limit', '', 'আজকে একবার উইথড্র করেছেন।'); return; }
 
             const vat = (amount * currentVatPercent) / 100;
             const finalReceive = amount - vat;
-
             try {
                 await updateDoc(doc(db, "users", loggedUser), { balance: currentBal - amount });
                 await addDoc(collection(db, "withdraws"), {
-                    user: loggedUser,
-                    displayID: userDisplayID,
-                    amount: amount,
-                    vat_deducted: vat,
-                    net_receive: finalReceive,
-                    method: method,
-                    receiver_no: receiverNo,
-                    status: "Pending",
-                    timestamp: Date.now(),
-                    date: today,
-                    time: new Date().toLocaleTimeString()
+                    user: loggedUser, displayID: userDisplayID,
+                    amount: amount, vat_deducted: vat, net_receive: finalReceive,
+                    method: method, receiver_no: receiverNo, status: "Pending",
+                    timestamp: Date.now(), date: today, time: new Date().toLocaleTimeString()
                 });
-                
-                showModal('success', 'Withdrawal Success', `রিকোয়েস্ট সফল হয়েছে। ${currentVatPercent}% ভ্যাট কেটে আপনাকে ${finalReceive.toFixed(2)} টাকা পাঠানো হবে।`);
-                document.getElementById("amount").value = "";
-                calculateVat();
-            } catch (e) {
-                alert("Error: " + e.message);
-            }
+                showModal('success', 'Withdrawal Success', `রিকোয়েস্ট সফল। আপনাকে ${finalReceive.toFixed(2)} টাকা পাঠানো হবে।`);
+                document.getElementById("amount").value = ""; calculateVat();
+            } catch (e) { alert("Error: " + e.message); }
         };
 
         const qHist = query(collection(db, "withdraws"), where("user", "==", loggedUser));
@@ -330,21 +295,20 @@
             let items = [];
             snapshot.forEach(doc => items.push(doc.data()));
             items.sort((a,b) => b.timestamp - a.timestamp).forEach(data => {
-                const finalID = data.displayID || userDisplayID || loggedUser;
                 hist.innerHTML += `
                     <div class="history-item">
                         <div class="hist-row">
-                            <span class="label-text">ID: <span class="value-text">${finalID}</span></span>
+                            <span class="label-text">ID: <span class="value-text">${data.displayID || userDisplayID}</span></span>
                             <div class="status ${data.status}">${data.status}</div>
                         </div>
                         <div class="hist-row">
                             <span class="label-text">Method: <span class="value-text" style="color:#007bff;">${data.method}</span></span>
-                            <span class="label-text">Net Receive: <span class="value-text">৳ ${data.net_receive || data.amount}</span></span>
+                            <span class="label-text">Net Receive: ৳ ${data.net_receive || data.amount}</span>
                         </div>
                     </div>`;
             });
         });
     </script>
 </body>
-    </html>
-    
+</html>
+
