@@ -30,6 +30,10 @@
         .info-row { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 15px; }
         .info-label { font-weight: bold; color: #555; }
         .info-value { color: #8c3494; font-weight: 800; }
+
+        /* New Style for Switch and VAT */
+        .control-group { background: #fff5ff; padding: 15px; border-radius: 10px; border: 1px solid #e0b0e0; margin-top: 15px; }
+        .control-label { font-weight: bold; color: #8c3494; margin-bottom: 10px; display: block; }
     </style>
 </head>
 <body>
@@ -58,7 +62,19 @@
             </select>
         </div>
         <input type="text" id="setNumber" placeholder="নতুন নম্বর দিন (যেমন: 018XXXXXXXX)">
-        <button class="btn btn-add" onclick="updatePaymentInfo()">পেমেন্ট তথ্য আপডেট করুন</button>
+        
+        <div class="control-group">
+            <span class="control-label"><i class="fas fa-percent"></i> Withdrawal VAT & Global Lock</span>
+            <div style="display: flex; gap: 10px; align-items: center;">
+                <input type="number" id="vatPercent" placeholder="ভ্যাট (%) যেমন: 10" style="margin: 0;">
+                <select id="lockStatus" style="margin: 0; width: 200px;">
+                    <option value="true">Lock Enabled (True)</option>
+                    <option value="false">Lock Disabled (False)</option>
+                </select>
+            </div>
+        </div>
+        <br>
+        <button class="btn btn-add" onclick="updatePaymentInfo()">সব তথ্য আপডেট করুন</button>
     </div>
 
     <div class="card">
@@ -110,30 +126,41 @@
 
     let currentTargetUser = "";
 
-    // পেমেন্ট তথ্য আপডেট
+    // পেমেন্ট তথ্য, ভ্যাট এবং লক স্ট্যাটাস আপডেট
     window.updatePaymentInfo = async function() {
         const method = document.getElementById('setMethod').value;
         const type = document.getElementById('setType').value;
         const number = document.getElementById('setNumber').value;
-
-        if(!number) { alert("নম্বর দিন!"); return; }
+        const vat = document.getElementById('vatPercent').value;
+        const lock = document.getElementById('lockStatus').value === "true"; // স্ট্রিং থেকে বুলিয়ান কনভার্ট
 
         try {
-            await setDoc(doc(db, "admin_settings", "numbers"), {
-                [method]: number
-            }, { merge: true });
+            // নম্বর আপডেট
+            if(number) {
+                await setDoc(doc(db, "admin_settings", "numbers"), {
+                    [method]: number
+                }, { merge: true });
+            }
 
+            // টাইপ আপডেট
             await setDoc(doc(db, "admin_settings", "vip2_details"), {
                 [method + "_type"]: type
             }, { merge: true });
 
-            alert(method + " তথ্য সফলভাবে আপডেট হয়েছে!");
+            // ভ্যাট এবং গ্লোবাল লক আপডেট (এটি admin_settings -> withdrawal_config এ সেভ হবে)
+            await setDoc(doc(db, "admin_settings", "withdrawal_config"), {
+                vat_percentage: vat || 0,
+                is_lock_enabled: lock
+            }, { merge: true });
+
+            alert("সব তথ্য সফলভাবে আপডেট হয়েছে!");
             document.getElementById('setNumber').value = "";
         } catch (e) {
-            alert("আপডেট করতে ব্যর্থ হয়েছে!");
+            alert("আপডেট করতে ব্যর্থ হয়েছে! " + e.message);
         }
     }
 
+    // ডাটা রিয়েলটাইম লোড করা (বিদ্যমান লজিক)
     onSnapshot(doc(db, "admin_settings", "numbers"), (snapshot) => {
         if (snapshot.exists()) {
             const data = snapshot.data();
@@ -146,7 +173,16 @@
         }
     });
 
-    // --- SEARCH & UNLOCK LOGIC ---
+    // ভ্যাট এবং লক স্ট্যাটাস শুরুতে লোড করা
+    onSnapshot(doc(db, "admin_settings", "withdrawal_config"), (snap) => {
+        if(snap.exists()) {
+            const config = snap.data();
+            document.getElementById('vatPercent').value = config.vat_percentage || 0;
+            document.getElementById('lockStatus').value = config.is_lock_enabled ? "true" : "false";
+        }
+    });
+
+    // --- SEARCH & UNLOCK LOGIC (বিদ্যমান লজিক) ---
 
     window.searchUser = async function() {
         const userId = document.getElementById('searchUserID').value.trim();
@@ -204,3 +240,4 @@
 
 </body>
 </html>
+
