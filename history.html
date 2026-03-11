@@ -76,7 +76,7 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
         import { getFirestore, collection, query, where, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-        // আপনার অ্যাপের ফায়ারবেস কনফিগ
+        // ফায়ারবেস কনফিগ
         const firebaseConfig = {
             apiKey: "AIzaSyCALYxA2M4BwIXq5KC3VMGsZpAFh8nL3fo",
             authDomain: "bengal-east-company-limited.firebaseapp.com",
@@ -127,12 +127,12 @@
                     else if(m.includes("nagad")) methodClass = "card-nagad";
                     else if(m.includes("rocket")) methodClass = "card-rocket";
 
-                    // কার্ডে User ID যুক্ত করা হয়েছে
+                    // কার্ডে ডাটাবেজ থেকে User ID যুক্ত করা হলো
                     const cardHtml = `
                         <div class="history-card ${methodClass}">
                             <div class="info-row">
                                 <span class="label">User ID</span>
-                                <span class="value" style="color:#11998e;">${data.userID || 'N/A'}</span>
+                                <span class="value" style="color: #11998e; font-weight: 900;">${data.userID || 'N/A'}</span>
                             </div>
                             <div class="info-row">
                                 <span class="label">ID (TrxID)</span>
