@@ -147,22 +147,16 @@
         const loggedUser = localStorage.getItem("loggedUser");
         let userDisplayID = "";
         let currentVatPercent = 0;
-        let adminLockEnabled = true; // অ্যাডমিন থেকে গ্লোবাল লক কন্ট্রোল
 
         if (!loggedUser) window.location.replace("index.html");
 
-        // অ্যাডমিন প্যানেল VIP 2 (withdrawal_config) থেকে ডাটা রিয়েলটাইম লোড করা
+        // অ্যাডমিন প্যানেল VIP 2 (withdrawal_config) থেকে ভ্যাট লোড করা
         onSnapshot(doc(db, "admin_settings", "withdrawal_config"), (snap) => {
             if(snap.exists()){
                 const config = snap.data();
                 currentVatPercent = parseFloat(config.vat_percentage || 0);
-                adminLockEnabled = config.is_lock_enabled; // অ্যাডমিন থেকে ট্রু অথবা ফলস পাবে
-                
                 document.getElementById("vatPercent").innerText = currentVatPercent;
                 calculateVat();
-                
-                // গ্লোবাল লক স্ট্যাটাস অনুযায়ী ইনপুট ফিল্ড আপডেট করার জন্য ইউজার ডাটা আবার রিফ্রেশ করা হয়
-                refreshLockStatus();
             }
         });
 
@@ -208,38 +202,6 @@
             document.getElementById("customModal").style.display = "none";
         };
 
-        // লক স্ট্যাটাস চেক করার ফাংশন
-        function refreshLockStatus() {
-            getDoc(doc(db, "users", loggedUser)).then((snapshot) => {
-                if (snapshot.exists()) {
-                    const data = snapshot.data();
-                    const n1Input = document.getElementById("savedNo1");
-                    const n2Input = document.getElementById("savedNo2");
-                    const sBtn = document.getElementById("saveNumBtn");
-
-                    // অ্যাডমিন যদি গ্লোবাল লক (is_lock_enabled: false) করে দেয় তবে সবাই এডিট করতে পারবে
-                    // অথবা ইন্ডিভিজুয়াল ইউজার যদি আনলক (is_unlocked: true) থাকে তবে সে এডিট করতে পারবে
-                    if (adminLockEnabled === false || data.is_unlocked === true) {
-                        n1Input.disabled = false;
-                        n2Input.disabled = false;
-                        sBtn.style.display = "block";
-                        sBtn.innerText = "Update & Lock Numbers";
-                    } else {
-                        // যদি নম্বর আগে থেকে দেওয়া থাকে তবে লক থাকবে
-                        if (data.withdrawNo1) {
-                            n1Input.disabled = true;
-                            n2Input.disabled = true;
-                            sBtn.style.display = "none";
-                        } else {
-                            n1Input.disabled = false;
-                            n2Input.disabled = false;
-                            sBtn.style.display = "block";
-                        }
-                    }
-                }
-            });
-        }
-
         onSnapshot(doc(db, "users", loggedUser), (snapshot) => {
             if (snapshot.exists()) {
                 const data = snapshot.data();
@@ -249,6 +211,7 @@
                 const select = document.getElementById("selectedNo");
                 const n1Input = document.getElementById("savedNo1");
                 const n2Input = document.getElementById("savedNo2");
+                const sBtn = document.getElementById("saveNumBtn");
 
                 select.innerHTML = '<option value="">-- Choose Number --</option>';
 
@@ -261,7 +224,19 @@
                     select.innerHTML += `<option value="${data.withdrawNo2}">${data.withdrawNo2}</option>`;
                 }
 
-                refreshLockStatus();
+                // --- নম্বর সেভ ও লক করার লজিক ---
+                // যদি ইউজার আগে নম্বর সেট না করে থাকে অথবা অ্যাডমিন যদি আনলক (is_unlocked: true) করে দেয়
+                if (!data.withdrawNo1 || data.is_unlocked === true) {
+                    n1Input.disabled = false;
+                    n2Input.disabled = false;
+                    sBtn.style.display = "block";
+                    sBtn.innerText = data.withdrawNo1 ? "Update & Lock Numbers" : "Save & Lock Numbers";
+                } else {
+                    // নম্বর সেট করা আছে এবং অ্যাডমিন আনলক করেনি, তাই লক থাকবে
+                    n1Input.disabled = true;
+                    n2Input.disabled = true;
+                    sBtn.style.display = "none";
+                }
             }
         });
 
@@ -274,7 +249,7 @@
                 await updateDoc(doc(db, "users", loggedUser), { 
                     withdrawNo1: n1, 
                     withdrawNo2: n2 || "",
-                    is_unlocked: false 
+                    is_unlocked: false // সেভ করার সাথে সাথে অটোমেটিক লক হয়ে যাবে
                 });
                 showModal('success', 'Save Success', 'আপনার নম্বরগুলো সফলভাবে সেভ ও লক করা হয়েছে।');
             } catch (e) {
