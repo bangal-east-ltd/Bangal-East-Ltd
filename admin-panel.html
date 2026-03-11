@@ -17,6 +17,7 @@
         .sidebar nav p { padding: 12px; cursor: pointer; border-radius: 8px; transition: 0.3s; margin-bottom: 5px; display: flex; align-items: center; gap: 10px; }
         .sidebar nav p:hover { background: rgba(255,255,255,0.1); }
         .sidebar nav p.active { background: white; color: #11998e; font-weight: bold; }
+        
         .vip-group { margin-top: 15px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 10px; }
         .vip-title { font-size: 12px; text-transform: uppercase; opacity: 0.7; margin-bottom: 10px; padding-left: 10px; }
 
@@ -24,32 +25,43 @@
         .section { display: none; }
         .section.active { display: block; }
 
-        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 30px; }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-bottom: 30px; }
         .stat-card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); border-top: 4px solid #11998e; }
         .stat-card h4 { color: #666; font-size: 14px; margin-bottom: 10px; }
-        .stat-card h2 { color: #11998e; font-size: 24px; }
-        .stat-card.daily { border-top-color: #ff9800; }
+        .stat-card h2 { color: #11998e; font-size: 22px; }
 
         .admin-card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 5px 15px rgba(0,0,0,0.05); margin-bottom: 20px; overflow-x: auto;}
+        
+        .search-container { margin-bottom: 15px; display: flex; gap: 10px; }
+        .search-input { flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 8px; outline: none; }
+
         table { width: 100%; border-collapse: collapse; margin-top: 10px; }
         th, td { padding: 12px; border-bottom: 1px solid #eee; text-align: left; font-size: 13px; }
         th { background: #f8f9fa; color: #666; }
 
-        .btn { padding: 8px 15px; border: none; border-radius: 5px; cursor: pointer; font-size: 12px; font-weight: bold; }
-        .btn-success { background: #28a745; color: white; margin-right: 15px; } 
+        .btn { padding: 8px 12px; border: none; border-radius: 5px; cursor: pointer; font-size: 11px; font-weight: bold; transition: 0.2s; }
+        .btn-success { background: #28a745; color: white; margin-right: 5px; } 
         .btn-danger { background: #dc3545; color: white; }
-        
-        .input-group { margin-bottom: 15px; text-align: left; }
-        .input-group label { display: block; margin-bottom: 5px; font-weight: 600; font-size: 13px; }
-        .input-group input { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; outline: none; }
+        .btn-warning { background: #ffc107; color: #333; }
+        .btn-primary { background: #007bff; color: white; }
         
         .online-dot { height: 10px; width: 10px; background-color: #28a745; border-radius: 50%; display: inline-block; margin-right: 5px; }
         .offline-dot { height: 10px; width: 10px; background-color: #bbb; border-radius: 50%; display: inline-block; margin-right: 5px; }
-        
-        .preview-img { width: 100%; max-width: 300px; border-radius: 10px; margin-top: 10px; border: 2px solid #ddd; }
+        .blocked-badge { background: #fdeaea; color: #d93025; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; }
+
+        /* Undo Toast Style */
+        #undoToast {
+            position: fixed; bottom: 20px; right: 20px; background: #333; color: white;
+            padding: 15px 25px; border-radius: 8px; display: none; align-items: center; gap: 15px; z-index: 2000;
+        }
     </style>
 </head>
 <body>
+
+<div id="undoToast">
+    <span id="undoMsg">User deleted.</span>
+    <button class="btn btn-warning" onclick="performUndo()">Undo</button>
+</div>
 
 <div id="loginOverlay">
     <div class="login-box">
@@ -71,10 +83,21 @@
         <p id="nav-withdraws" onclick="showSection('withdraws')"><i class="fas fa-hand-holding-usd"></i> Withdrawals</p>
         
         <div class="vip-group">
-            <div class="vip-title">VIP Control</div>
+            <div class="vip-title">Main Control</div>
+            <p onclick="alert('Bonus logic needed')"><i class="fas fa-gift"></i> Bonus Button</p>
+            <p onclick="alert('Deposit Bonus logic')"><i class="fas fa-plus-circle"></i> Deposit Bonus</p>
+            <p onclick="alert('Level System')"><i class="fas fa-layer-group"></i> Level Button</p>
+            <p onclick="alert('Monthly Salary logic')"><i class="fas fa-money-check-alt"></i> Monthly Salary</p>
+        </div>
+
+        <div class="vip-group">
+            <div class="vip-title">VIP Management</div>
             <p onclick="window.location.href='vip1.html'"><i class="fas fa-gem"></i> VIP 1</p>
             <p onclick="window.location.href='vip2.html'"><i class="fas fa-gem"></i> VIP 2</p>
             <p onclick="window.location.href='vip3.html'"><i class="fas fa-gem"></i> VIP 3</p>
+            <p onclick="window.location.href='vip4.html'"><i class="fas fa-gem"></i> VIP 4</p>
+            <p onclick="window.location.href='vip5.html'"><i class="fas fa-gem"></i> VIP 5</p>
+            <p onclick="window.location.href='vip6.html'"><i class="fas fa-gem"></i> VIP 6</p>
         </div>
 
         <p id="nav-history" onclick="showSection('history')"><i class="fas fa-history"></i> Transactions</p>
@@ -89,25 +112,17 @@
         <div class="stats-grid">
             <div class="stat-card"><h4>Total Users</h4><h2><span id="statTotalUsers">0</span></h2></div>
             <div class="stat-card"><h4>Online Now</h4><h2><span id="statOnlineUsers" style="color: #28a745;">0</span></h2></div>
+            <div class="stat-card"><h4>Blocked Users</h4><h2><span id="statBlockedUsers" style="color: #dc3545;">0</span></h2></div>
             <div class="stat-card"><h4>Total Deposit</h4><h2>৳ <span id="totalDep">0</span></h2></div>
-            <div class="stat-card"><h4>Total Withdraw</h4><h2>৳ <span id="totalWith">0</span></h2></div>
-        </div>
-
-        <div style="display: flex; gap: 20px; flex-wrap: wrap; margin-top: 20px;">
-            <div class="admin-card" style="flex: 1; min-width: 300px;">
-                <h3>Withdrawal System Preview</h3>
-                <img src="8ad34e7e-26a9-419e-95d0-e5e7d2095d9b" alt="Withdraw System" class="preview-img">
-            </div>
-            <div class="admin-card" style="flex: 1; min-width: 300px;">
-                <h3>User ID Identification</h3>
-                <img src="1000031258.jpg" alt="User Identification" class="preview-img">
-            </div>
         </div>
     </div>
 
     <div id="users" class="section">
         <div class="admin-card">
-            <h2>Registered Users</h2>
+            <h2>User Management</h2>
+            <div class="search-container">
+                <input type="text" id="userSearch" class="search-input" placeholder="Search by Phone or User ID..." onkeyup="filterUsers()">
+            </div>
             <table>
                 <thead><tr><th>Status</th><th>User ID</th><th>Phone</th><th>Balance</th><th>Action</th></tr></thead>
                 <tbody id="userListBody"></tbody>
@@ -119,7 +134,7 @@
         <div class="admin-card">
             <h2>Pending Deposits</h2>
             <table>
-                <thead><tr><th>User ID</th><th>Sender Number</th><th>Transaction ID</th><th>Amount</th><th>Method</th><th>Action</th></tr></thead>
+                <thead><tr><th>User ID</th><th>Sender</th><th>TrxID</th><th>Amount</th><th>Action</th></tr></thead>
                 <tbody id="depositBody"></tbody>
             </table>
         </div>
@@ -129,7 +144,7 @@
         <div class="admin-card">
             <h2>Pending Withdrawals</h2>
             <table>
-                <thead><tr><th>User</th><th>Amount</th><th>Number</th><th>Method</th><th>Action</th></tr></thead>
+                <thead><tr><th>User</th><th>Amount</th><th>Number</th><th>Action</th></tr></thead>
                 <tbody id="withdrawBody"></tbody>
             </table>
         </div>
@@ -137,18 +152,9 @@
 
     <div id="history" class="section">
         <div class="admin-card">
-            <h3 style="color: green;">Successful Deposits</h3>
-            <table>
-                <thead><tr><th>User</th><th>Amount</th><th>TrxID</th><th>Time</th></tr></thead>
-                <tbody id="depSuccessBody"></tbody>
-            </table>
-        </div>
-        <div class="admin-card">
-            <h3 style="color: red;">Rejected Deposits</h3>
-            <table>
-                <thead><tr><th>User</th><th>Amount</th><th>Reason</th></tr></thead>
-                <tbody id="depRejectBody"></tbody>
-            </table>
+            <h3>Reset History Logs</h3>
+            <p style="font-size: 12px; color: #666;">পুরানো ডেলী রেকর্ডগুলো এখানে সংরক্ষিত হচ্ছে।</p>
+            <div id="resetLogsContainer" style="margin-top: 15px;"></div>
         </div>
     </div>
 
@@ -157,7 +163,6 @@
             <h2>Payment Settings</h2>
             <div class="input-group"><label>bKash</label><input type="text" id="setBkash"></div>
             <div class="input-group"><label>Nagad</label><input type="text" id="setNagad"></div>
-            <div class="input-group"><label>Rocket</label><input type="text" id="setRocket"></div>
             <button class="btn btn-success" onclick="updateNumbers()">Update Numbers</button>
         </div>
     </div>
@@ -166,7 +171,7 @@
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-    import { getFirestore, collection, onSnapshot, doc, updateDoc, getDoc, setDoc, query, where, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    import { getFirestore, collection, onSnapshot, doc, updateDoc, getDoc, setDoc, deleteDoc, writeBatch, getDocs, addDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
     const firebaseConfig = {
         apiKey: "AIzaSyCALYxA2M4BwIXq5KC3VMGsZpAFh8nL3fo",
@@ -180,6 +185,11 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
+    // --- Variables for Undo ---
+    let lastDeletedUser = null;
+    let undoTimeout = null;
+
+    // --- Authentication ---
     window.checkAdminLogin = function() {
         const pass = document.getElementById('adminPassInput').value;
         if(pass === "123456") {
@@ -201,169 +211,188 @@
         if(activeNav) activeNav.classList.add('active');
     }
 
+    // --- Auto Reset with History ---
+    async function checkAndAutoReset() {
+        const resetDocRef = doc(db, "admin_settings", "last_reset");
+        const resetSnap = await getDoc(resetDocRef);
+        const now = new Date();
+        const todayStr = now.toLocaleDateString();
+
+        if (!resetSnap.exists() || resetSnap.data().date !== todayStr) {
+            try {
+                const querySnapshot = await getDocs(collection(db, "users"));
+                const batch = writeBatch(db);
+                
+                // Collect summary data for History
+                let totalReg = 0, onlineNow = 0, blockedNow = 0;
+                
+                querySnapshot.forEach((userDoc) => {
+                    totalReg++;
+                    const u = userDoc.data();
+                    if(Date.now() - (u.lastSeen || 0) < 60000) onlineNow++;
+                    if(u.status === "Blocked") blockedNow++;
+
+                    const userRef = doc(db, "users", userDoc.id);
+                    batch.update(userRef, { today_reads: 0, today_writes: 0 });
+                });
+
+                await batch.commit();
+
+                // Save to reset_history
+                await addDoc(collection(db, "reset_history"), {
+                    date: todayStr,
+                    total_members: totalReg,
+                    active_members: onlineNow,
+                    blocked_members: blockedNow,
+                    timestamp: now.toLocaleString()
+                });
+
+                await setDoc(resetDocRef, { date: todayStr });
+                console.log("Auto reset done and history saved.");
+            } catch (e) { console.error(e); }
+        }
+    }
+
+    // --- User Management ---
+    let allUsersData = [];
     onSnapshot(collection(db, "users"), (snapshot) => {
+        allUsersData = [];
+        snapshot.forEach(doc => allUsersData.push({id: doc.id, ...doc.data()}));
+        renderUsers(allUsersData);
+    });
+
+    function renderUsers(users) {
         const userListBody = document.getElementById('userListBody');
         userListBody.innerHTML = "";
-        let totalUsers = 0, onlineUsers = 0;
+        let totalUsers = 0, onlineUsers = 0, blockedUsers = 0;
         const now = Date.now();
 
-        snapshot.forEach(child => {
-            const u = child.data();
+        users.forEach(u => {
             totalUsers++;
             const isOnline = (now - (u.lastSeen || 0) < 60000);
+            const isBlocked = (u.status === "Blocked");
             if(isOnline) onlineUsers++;
+            if(isBlocked) blockedUsers++;
 
             userListBody.innerHTML += `<tr>
-                <td>${isOnline ? '<span class="online-dot"></span> Online' : '<span class="offline-dot"></span> Offline'}</td>
-                <td><b>${u.userID || 'N/A'}</b></td><td>${child.id}</td>
+                <td>${isBlocked ? '<span class="blocked-badge">Blocked</span>' : (isOnline ? '<span class="online-dot"></span> Online' : '<span class="offline-dot"></span> Offline')}</td>
+                <td><b>${u.userID || 'N/A'}</b></td><td>${u.id}</td>
                 <td>৳ ${parseFloat(u.balance || 0).toFixed(2)}</td>
-                <td><button class="btn btn-danger" onclick="deleteUser('${child.id}')">Delete</button></td>
+                <td>
+                    ${isBlocked ? `<button class="btn btn-primary" onclick="toggleBlock('${u.id}', 'Active')">Unblock</button>` : `<button class="btn btn-warning" onclick="toggleBlock('${u.id}', 'Blocked')">Block</button>`}
+                    <button class="btn btn-danger" onclick="deleteUser('${u.id}')">Delete</button>
+                </td>
             </tr>`;
         });
         document.getElementById('statTotalUsers').innerText = totalUsers;
         document.getElementById('statOnlineUsers').innerText = onlineUsers;
-    });
+        document.getElementById('statBlockedUsers').innerText = blockedUsers;
+    }
 
+    window.filterUsers = function() {
+        const val = document.getElementById('userSearch').value.toLowerCase();
+        const filtered = allUsersData.filter(u => (u.userID?.toLowerCase().includes(val)) || (u.id.includes(val)));
+        renderUsers(filtered);
+    }
+
+    window.toggleBlock = async function(id, st) {
+        await updateDoc(doc(db, "users", id), { status: st });
+    }
+
+    // --- Delete with Undo Logic ---
     window.deleteUser = async function(id) {
-        if(confirm("Are you sure you want to delete this user?")) {
-            await deleteDoc(doc(db, "users", id));
-            alert("User deleted.");
+        const userSnap = await getDoc(doc(db, "users", id));
+        if(!userSnap.exists()) return;
+
+        lastDeletedUser = { id: id, data: userSnap.data() };
+        await deleteDoc(doc(db, "users", id));
+
+        // Show Undo Toast
+        const toast = document.getElementById('undoToast');
+        toast.style.display = 'flex';
+        
+        if(undoTimeout) clearTimeout(undoTimeout);
+        undoTimeout = setTimeout(() => {
+            toast.style.display = 'none';
+            lastDeletedUser = null;
+        }, 5000); // 5 seconds to undo
+    }
+
+    window.performUndo = async function() {
+        if(lastDeletedUser) {
+            await setDoc(doc(db, "users", lastDeletedUser.id), lastDeletedUser.data);
+            document.getElementById('undoToast').style.display = 'none';
+            lastDeletedUser = null;
+            alert("Delete Undone Successfully!");
         }
     }
 
+    // --- History Section Rendering ---
+    onSnapshot(collection(db, "reset_history"), (snapshot) => {
+        const container = document.getElementById('resetLogsContainer');
+        container.innerHTML = "";
+        snapshot.forEach(doc => {
+            const h = doc.data();
+            container.innerHTML += `<div class="admin-card" style="border-left: 4px solid #11998e; margin-bottom: 10px; padding: 10px;">
+                <p><b>Date: ${h.date}</b></p>
+                <p style="font-size: 12px;">Reg Members: ${h.total_members} | Active: ${h.active_members} | Blocked: ${h.blocked_members}</p>
+            </div>`;
+        });
+    });
+
+    // --- Transactions & Settings ---
     function setupTransactions() {
         onSnapshot(collection(db, "deposits"), (snapshot) => {
-            const depBody = document.getElementById('depositBody');
-            const depSuccessBody = document.getElementById('depSuccessBody');
-            const depRejectBody = document.getElementById('depRejectBody');
-            depBody.innerHTML = ""; depSuccessBody.innerHTML = ""; depRejectBody.innerHTML = "";
             let totalD = 0;
-
+            const body = document.getElementById('depositBody');
+            body.innerHTML = "";
             snapshot.forEach(child => {
                 const d = child.data();
                 if(d.status === "Pending") {
-                    depBody.innerHTML += `<tr>
-                        <td>${d.userID || 'N/A'}</td>
-                        <td>${d.senderNumber || d.sender_no || 'N/A'}</td>
-                        <td><code>${d.trxID}</code></td>
-                        <td>৳${d.amount}</td>
-                        <td>${d.method}</td>
-                        <td>
-                            <button class="btn btn-success" onclick="approveDep('${child.id}','${d.user}',${d.amount})">Approve</button>
-                            <button class="btn btn-danger" onclick="rejectDep('${child.id}')">Reject</button>
-                        </td>
-                    </tr>`;
-                } else if(d.status === "Success") {
-                    totalD += parseFloat(d.amount);
-                    depSuccessBody.innerHTML += `<tr><td>${d.user}</td><td>${d.amount}</td><td>${d.trxID}</td><td>${d.time}</td></tr>`;
-                } else if(d.status === "Rejected") {
-                    depRejectBody.innerHTML += `<tr><td>${d.user}</td><td>${d.amount}</td><td>${d.note || '-'}</td></tr>`;
-                }
+                    body.innerHTML += `<tr><td>${d.userID}</td><td>${d.senderNumber}</td><td>${d.trxID}</td><td>৳${d.amount}</td><td><button class="btn btn-success" onclick="approveDep('${child.id}','${d.user}',${d.amount})">Approve</button></td></tr>`;
+                } else if(d.status === "Success") totalD += parseFloat(d.amount);
             });
             document.getElementById('totalDep').innerText = totalD.toFixed(2);
         });
 
         onSnapshot(collection(db, "withdraws"), (snapshot) => {
-            const withBody = document.getElementById('withdrawBody');
-            let totalW = 0;
-            withBody.innerHTML = "";
-
+            const body = document.getElementById('withdrawBody');
+            body.innerHTML = "";
             snapshot.forEach(child => {
                 const w = child.data();
                 if(w.status === "Pending") {
-                    withBody.innerHTML += `<tr>
-                        <td>${w.user}</td>
-                        <td>৳${w.amount}</td>
-                        <td>${w.receiver_no || w.number}</td>
-                        <td>${w.method}</td>
-                        <td>
-                            <button class="btn btn-success" onclick="approveWith('${child.id}')">Approve</button>
-                            <button class="btn btn-danger" onclick="rejectWith('${child.id}','${w.user}',${w.amount})">Reject</button>
-                        </td>
-                    </tr>`;
-                } else if(w.status === "Approved") {
-                    totalW += parseFloat(w.amount);
+                    body.innerHTML += `<tr><td>${w.user}</td><td>৳${w.amount}</td><td>${w.receiver_no || w.number}</td><td><button class="btn btn-success" onclick="approveWith('${child.id}')">Approve</button></td></tr>`;
                 }
             });
-            document.getElementById('totalWith').innerText = totalW.toFixed(2);
         });
     }
 
     window.approveDep = async function(id, userId, amt) {
-        if(!confirm("Approve this deposit?")) return;
         const userRef = doc(db, "users", userId);
         const snap = await getDoc(userRef);
         if(snap.exists()){
-            const newBal = (parseFloat(snap.data().balance) || 0) + parseFloat(amt);
-            await updateDoc(userRef, { balance: newBal });
-            await updateDoc(doc(db, "deposits", id), { status: "Success", time: new Date().toLocaleString() });
-            alert("Deposit Approved!");
-        } else {
-            alert("User not found in 'users' collection.");
+            await updateDoc(userRef, { balance: (snap.data().balance || 0) + amt });
+            await updateDoc(doc(db, "deposits", id), { status: "Success" });
         }
     }
 
-    window.rejectDep = async function(id) {
-        let reason = prompt("ডিপোজিট রিজেক্ট করার কারণ লিখুন:");
-        if(reason !== null) {
-            await updateDoc(doc(db, "deposits", id), { 
-                status: "Rejected", 
-                note: reason || "No reason provided",
-                time: new Date().toLocaleString()
-            });
-            alert("ডিপোজিট বাতিল (Reject) করা হয়েছে।");
-        }
-    }
-
-    window.approveWith = async function(id) {
-        if(confirm("Confirm this withdrawal?")) {
-            await updateDoc(doc(db, "withdraws", id), { 
-                status: "Approved", 
-                processedAt: new Date().toLocaleString() 
-            });
-            alert("উইথড্র অ্যাপ্রুভ হয়েছে।");
-        }
-    }
-
-    window.rejectWith = async function(id, userId, amt) {
-        let reason = prompt("রিজেক্ট করার কারণ:");
-        if(reason !== null) {
-            const userRef = doc(db, "users", userId);
-            const snap = await getDoc(userRef);
-            if(snap.exists()){
-                const newBal = (parseFloat(snap.data().balance) || 0) + parseFloat(amt);
-                await updateDoc(userRef, { balance: newBal });
-                await updateDoc(doc(db, "withdraws", id), { 
-                    status: "Rejected", 
-                    note: reason || "No reason provided" 
-                });
-                alert("রিজেক্ট করা হয়েছে এবং টাকা ফেরত দেওয়া হয়েছে।");
-            }
-        }
-    }
+    window.approveWith = async function(id) { await updateDoc(doc(db, "withdraws", id), { status: "Approved" }); }
 
     window.updateNumbers = async function() {
         const b = document.getElementById('setBkash').value;
         const n = document.getElementById('setNagad').value;
-        const r = document.getElementById('setRocket').value;
-        await setDoc(doc(db, "admin_settings", "numbers"), { bkash: b, nagad: n, rocket: r });
-        alert("Numbers Updated!");
+        await setDoc(doc(db, "admin_settings", "numbers"), { bkash: b, nagad: n });
+        alert("Settings Updated!");
     }
-
-    onSnapshot(doc(db, "admin_settings", "numbers"), (s) => {
-        if(s.exists()){
-            const d = s.data();
-            document.getElementById('setBkash').value = d.bkash || "";
-            document.getElementById('setNagad').value = d.nagad || "";
-            document.getElementById('setRocket').value = d.rocket || "";
-        }
-    });
 
     if(localStorage.getItem("adminLoggedIn") === "true") {
         document.getElementById('loginOverlay').style.display = "none";
+        checkAndAutoReset();
+        setInterval(checkAndAutoReset, 300000);
     }
     setupTransactions();
 
 </script>
 </body>
 </html>
+
