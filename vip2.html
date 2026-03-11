@@ -75,7 +75,7 @@
     </div>
 
     <div class="card">
-        <h2><i class="fas fa-user-lock"></i> Unlock Withdraw Number</h2>
+        <h2><i class="fas fa-user-lock"></i> Permanent Unlock Manager</h2>
         <div class="search-box">
             <input type="text" id="searchUserID" placeholder="ইউজারের ডক আইডি (Document ID) দিন">
             <button class="btn btn-add" style="width: 120px;" onclick="searchUser()">Search</button>
@@ -87,18 +87,15 @@
                 <span class="info-value" id="resID">-</span>
             </div>
             <div class="info-row">
-                <span class="info-label">Number 1:</span>
+                <span class="info-label">Current No:</span>
                 <span class="info-value" id="resNo1">-</span>
-            </div>
-            <div class="info-row">
-                <span class="info-label">Number 2:</span>
-                <span class="info-value" id="resNo2">-</span>
             </div>
             <div class="info-row">
                 <span class="info-label">Status:</span>
                 <span id="resStatus" style="font-weight: bold;">-</span>
             </div>
-            <button id="unlockBtn" class="btn btn-unlock" onclick="unlockUserNumber()">Unlock Numbers</button>
+            <p style="font-size: 11px; color: #666; margin-top: 10px;">* আনলক করলে ইউজার যতক্ষণ না "Save & Lock" করবে ততক্ষণ এটি খোলা থাকবে।</p>
+            <button id="unlockBtn" class="btn btn-unlock" onclick="unlockUserNumber()">Unlock Now</button>
         </div>
     </div>
 </div>
@@ -127,9 +124,7 @@
         const method = document.getElementById('setMethod').value;
         const type = document.getElementById('setType').value;
         const number = document.getElementById('setNumber').value;
-
         if(!number) { alert("নম্বর দিন!"); return; }
-
         try {
             await setDoc(doc(db, "admin_settings", "numbers"), { [method]: number }, { merge: true });
             await setDoc(doc(db, "admin_settings", "vip2_details"), { [method + "_type"]: type }, { merge: true });
@@ -147,7 +142,7 @@
         } catch (e) { alert("ভ্যাট আপডেট ব্যর্থ! " + e.message); }
     }
 
-    // পেমেন্ট নম্বরের রিয়েলটাইম ডিসপ্লে
+    // ডাটা ডিসপ্লে লিসেনার
     onSnapshot(doc(db, "admin_settings", "numbers"), (snapshot) => {
         if (snapshot.exists()) {
             const data = snapshot.data();
@@ -167,7 +162,7 @@
         }
     });
 
-    // ইউজারের নম্বর আনলক লজিক (Search)
+    // ইউজার সার্চ
     window.searchUser = async function() {
         const userId = document.getElementById('searchUserID').value.trim();
         if(!userId) { alert("ID দিন!"); return; }
@@ -180,20 +175,22 @@
             currentTargetUser = userId;
             
             document.getElementById('resID').innerText = data.userID || userId;
-            document.getElementById('resNo1').innerText = data.withdrawNo1 || "Not Set";
-            document.getElementById('resNo2').innerText = data.withdrawNo2 || "Not Set";
+            document.getElementById('resNo1').innerText = data.withdrawNo1 || "None";
             
             const statusEl = document.getElementById('resStatus');
             const unlockBtn = document.getElementById('unlockBtn');
 
+            // লজিক: is_unlocked true থাকলে এটি আনলক অবস্থায় থাকবে
             if(data.is_unlocked === true) {
-                statusEl.innerText = "Status: Unlocked (Ready to Edit)";
+                statusEl.innerText = "OPEN (ইউজার এডিট করতে পারছে)";
                 statusEl.style.color = "#28a745";
-                unlockBtn.innerText = "Re-Unlock / Keep Open";
+                unlockBtn.disabled = true;
+                unlockBtn.innerText = "Already Unlocked";
             } else {
-                statusEl.innerText = "Status: Locked";
+                statusEl.innerText = "LOCKED (ইউজার এডিট করতে পারছে না)";
                 statusEl.style.color = "#d9534f";
-                unlockBtn.innerText = "Unlock Numbers";
+                unlockBtn.disabled = false;
+                unlockBtn.innerText = "Unlock Now";
             }
             display.style.display = "block";
         } else {
@@ -202,20 +199,19 @@
         }
     }
 
-    // ইউজারের নম্বর আনলক করা (Execution)
+    // আনলক লজিক (এটি ইউজারকে স্থায়ীভাবে এডিট করার সুযোগ দিবে যতক্ষণ না সে নিজে সেভ করছে)
     window.unlockUserNumber = async function() {
         if(!currentTargetUser) return;
         
-        if(confirm("আপনি কি এই ইউজারের উইথড্র নম্বর আনলক করতে চান? এর ফলে ইউজার আবার নম্বর এডিট করতে পারবে।")) {
-            try {
-                await updateDoc(doc(db, "users", currentTargetUser), { is_unlocked: true });
-                alert("ইউজার সফলভাবে আনলক হয়েছে!");
-                searchUser(); 
-            } catch (e) { alert("Error: " + e.message); }
-        }
+        try {
+            await updateDoc(doc(db, "users", currentTargetUser), { 
+                is_unlocked: true // ডাটাবেসে ট্রু করে দেওয়া হলো
+            });
+            alert("ইউজারকে সফলভাবে পারমিশন দেওয়া হয়েছে। সে এখন নম্বর এডিট করতে পারবে।");
+            searchUser(); 
+        } catch (e) { alert("Error: " + e.message); }
     }
 </script>
 
 </body>
 </html>
-
