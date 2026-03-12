@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - VIP 4 Control Panel</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f4f7fe; padding: 20px; }
+        .container { max-width: 900px; margin: 0 auto; }
+        .card { background: #fff; padding: 20px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); margin-bottom: 20px; }
+        .card h3 { margin-top: 0; color: #333; display: flex; align-items: center; gap: 10px; font-size: 18px; border-bottom: 1px solid #eee; padding-bottom: 10px; }
+        
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; font-size: 13px; margin-bottom: 5px; color: #666; font-weight: 600; }
+        input { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; outline: none; transition: 0.3s; }
+        input:focus { border-color: #2575fc; }
+        
+        button { cursor: pointer; border: none; border-radius: 8px; font-weight: bold; transition: 0.3s; }
+        .btn-main { background: #2575fc; color: white; width: 100%; padding: 12px; margin-top: 10px; }
+        .btn-main:hover { background: #1a5fdb; }
+        .btn-sub { background: #00c851; color: white; padding: 10px 20px; }
+        .btn-sub:hover { background: #00ae44; }
+        
+        .search-box { display: flex; gap: 10px; margin-top: 10px; }
+        .search-box input { flex: 1; }
+        
+        .status-badge { font-size: 12px; padding: 4px 8px; border-radius: 5px; margin-top: 10px; display: inline-block; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2 style="text-align:center; color:#2575fc;"> <i class="fas fa-tools"></i> Admin VIP 4 Dashboard</h2>
+
+    <div class="card">
+        <h3><i class="fas fa-percent"></i> Bonus & ROI Settings</h3>
+        <div class="grid">
+            <div class="form-group">
+                <label>Daily Referral Bonus (৳)</label>
+                <input type="number" id="admRefBonus" placeholder="Amount">
+            </div>
+            <div class="form-group">
+                <label>Daily ROI (%)</label>
+                <input type="number" id="admRoiPercent" placeholder="Percent">
+            </div>
+            <div class="form-group">
+                <label>Level 1 Bonus (%)</label>
+                <input type="number" id="admLevel1" placeholder="Level 1 %">
+            </div>
+            <div class="form-group">
+                <label>Monthly Salary (%)</label>
+                <input type="number" id="admSalary" placeholder="On Total Dep %">
+            </div>
+        </div>
+        <button class="btn-main" onclick="updateAllVip4()">Save Global Settings</button>
+    </div>
+
+    <div class="card">
+        <h3><i class="fas fa-gift"></i> Gift Code Generator</h3>
+        <div class="grid">
+            <div class="form-group">
+                <label>Unique Code</label>
+                <input type="text" id="newGiftCode" placeholder="Ex: FREE500">
+            </div>
+            <div class="form-group">
+                <label>Amount (৳)</label>
+                <input type="number" id="giftAmt" placeholder="Ex: 500">
+            </div>
+        </div>
+        <button class="btn-sub" onclick="saveGiftCode()">Generate & Save Code</button>
+    </div>
+
+    <div class="card">
+        <h3><i class="fas fa-wallet"></i> Deposit Target Rewards</h3>
+        <div class="grid">
+            <div class="form-group">
+                <label>Target Amount (৳)</label>
+                <input type="number" id="depTarget" placeholder="Ex: 1000">
+            </div>
+            <div class="form-group">
+                <label>Bonus Amount (৳)</label>
+                <input type="number" id="depBonus" placeholder="Ex: 100">
+            </div>
+        </div>
+        <button class="btn-sub" onclick="saveDepSettings()">Add/Update Target</button>
+    </div>
+
+    <div class="card">
+        <h3><i class="fas fa-dice"></i> Daily Betting Reward</h3>
+        <div class="grid">
+            <div class="form-group">
+                <label>Betting Target (৳)</label>
+                <input type="number" id="betTarget" placeholder="Ex: 5000">
+            </div>
+            <div class="form-group">
+                <label>Bonus (৳)</label>
+                <input type="number" id="betBonus" placeholder="Ex: 50">
+            </div>
+        </div>
+        <button class="btn-sub" onclick="saveBetSettings()">Set Betting Reward</button>
+    </div>
+
+    <div class="card">
+        <h3><i class="fas fa-user-shield"></i> User Control (Unlock Claims)</h3>
+        <p style="font-size: 12px; color: #888;">ইউজারের আইডি দিয়ে সার্চ করে কোনো ক্লেইম সমস্যা হলে তা ম্যানুয়ালি চেক করতে পারবেন।</p>
+        <div class="search-box">
+            <input type="text" id="userSearchId" placeholder="Enter User ID (Phone Number)">
+            <button class="btn-sub" style="background:#333;" onclick="searchUser()">Search</button>
+        </div>
+        <div id="userInfo" style="display:none; margin-top:15px; border-top:1px dashed #ccc; padding-top:10px;">
+            <p><strong>Name:</strong> <span id="uName">---</span></p>
+            <p><strong>Total Deposit:</strong> ৳<span id="uDep">0</span></p>
+            <button class="btn-main" style="background: #e67e22;" onclick="resetUserClaim()">Reset Claims (Enable Buttons)</button>
+        </div>
+    </div>
+
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getFirestore, doc, setDoc, updateDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyCALYxA2M4BwIXq5KC3VMGsZpAFh8nL3fo",
+        authDomain: "bengal-east-company-limited.firebaseapp.com",
+        projectId: "bengal-east-company-limited",
+        storageBucket: "bengal-east-company-limited.firebasestorage.app",
+        messagingSenderId: "653223286483",
+        appId: "1:653223286483:web:8e4ed0782ae807f8f02626"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    // Global VIP 4 Settings Update
+    window.updateAllVip4 = async () => {
+        const settings = {
+            ref_bonus: document.getElementById('admRefBonus').value,
+            roi_percent: document.getElementById('admRoiPercent').value,
+            level1_percent: document.getElementById('admLevel1').value,
+            salary_percent: document.getElementById('admSalary').value
+        };
+        await setDoc(doc(db, "admin_settings", "vip4_config"), settings, { merge: true });
+        alert("Success: Global VIP 4 Settings Updated!");
+    };
+
+    // Gift Code
+    window.saveGiftCode = async () => {
+        const code = document.getElementById('newGiftCode').value;
+        const amt = parseFloat(document.getElementById('giftAmt').value);
+        if(!code || isNaN(amt)) return alert("Please fill code and amount");
+        await updateDoc(doc(db, "admin_settings", "gift_codes"), { [code]: amt });
+        alert("Success: Gift Code Created!");
+    };
+    
+    // Deposit Target
+    window.saveDepSettings = async () => {
+        const target = document.getElementById('depTarget').value;
+        const bonus = document.getElementById('depBonus').value;
+        await updateDoc(doc(db, "admin_settings", "deposit_targets"), { [target]: bonus });
+        alert("Success: Deposit Target Saved!");
+    };
+
+    // Betting Reward
+    window.saveBetSettings = async () => {
+        const target = document.getElementById('betTarget').value;
+        const bonus = document.getElementById('betBonus').value;
+        await updateDoc(doc(db, "admin_settings", "betting_rewards"), { [target]: bonus });
+        alert("Success: Betting Reward Set!");
+    };
+
+    // User Search Logic
+    window.searchUser = async () => {
+        const id = document.getElementById('userSearchId').value;
+        const uSnap = await getDoc(doc(db, "users", id));
+        if(uSnap.exists()){
+            const data = uSnap.data();
+            document.getElementById('userInfo').style.display = "block";
+            document.getElementById('uName').innerText = data.name || "N/A";
+            document.getElementById('uDep').innerText = data.total_deposit || 0;
+        } else {
+            alert("User not found!");
+            document.getElementById('userInfo').style.display = "none";
+        }
+    };
+
+    // Reset User Claims (Manual Unlock)
+    window.resetUserClaim = async () => {
+        const id = document.getElementById('userSearchId').value;
+        if(confirm("Are you sure to reset claim history for this user?")){
+            await updateDoc(doc(db, "users", id), {
+                claimed_dep: [],
+                claimed_bet: [],
+                claimed_ref_target: []
+            });
+            alert("Claims Reset! User can claim again.");
+        }
+    };
+
+</script>
+</body>
+</html>
+
