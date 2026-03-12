@@ -17,7 +17,7 @@
         /* হেডার এবং ব্যাক বাটন */
         .header-gradient {
             background: linear-gradient(135deg, #11998e, #38ef7d);
-            height: 260px;
+            height: 280px;
             padding: 20px;
             color: white;
             border-bottom-left-radius: 40px;
@@ -72,13 +72,24 @@
             box-shadow: 0 2px 5px rgba(0,0,0,0.2);
         }
 
-        .welcome-text { text-align: center; font-size: 20px; font-weight: 700; margin-bottom: 15px; }
+        /* নাম সেট করার ইনপুট */
+        .name-container { text-align: center; margin-bottom: 15px; }
+        .name-input {
+            background: transparent;
+            border: none;
+            color: white;
+            font-size: 20px;
+            font-weight: 700;
+            text-align: center;
+            width: 80%;
+            border-bottom: 1px dashed rgba(255,255,255,0.5);
+            outline: none;
+        }
 
         /* আইডি সেকশন */
         .id-bar-wrapper {
             display: flex;
-            justify-content: flex-start;
-            padding-left: 10px;
+            justify-content: center;
         }
 
         .id-container {
@@ -101,7 +112,7 @@
             font-size: 11px; cursor: pointer;
         }
 
-        /* ব্যালেন্স কার্ড এবং রিফ্রেশ আইকন */
+        /* ব্যালেন্স কার্ড এবং স্ট্যাটাস */
         .balance-card {
             background: rgba(255, 255, 255, 0.95);
             backdrop-filter: blur(10px);
@@ -113,6 +124,18 @@
             box-shadow: 0 10px 40px rgba(0,0,0,0.08);
             border: 1px solid white;
         }
+
+        .status-tag {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 700;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+        }
+        .status-active { background: #e8f5e9; color: #2e7d32; }
+        .status-inactive { background: #ffebee; color: #c62828; }
 
         .balance-header {
             display: flex;
@@ -165,28 +188,10 @@
 
         #profileInput { display: none; }
 
-        /* Toast Notification Style */
         .copy-toast {
-            position: fixed;
-            bottom: 30px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: rgba(0, 0, 0, 0.8);
-            color: white;
-            padding: 8px 20px;
-            border-radius: 20px;
-            font-size: 14px;
-            font-weight: 600;
-            display: none;
-            z-index: 10000;
-            animation: fadeInOut 2s ease-in-out;
-        }
-
-        @keyframes fadeInOut {
-            0% { opacity: 0; bottom: 20px; }
-            20% { opacity: 1; bottom: 30px; }
-            80% { opacity: 1; bottom: 30px; }
-            100% { opacity: 0; bottom: 20px; }
+            position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.8); color: white; padding: 8px 20px;
+            border-radius: 20px; font-size: 14px; font-weight: 600; display: none; z-index: 10000;
         }
     </style>
 </head>
@@ -207,7 +212,9 @@
         </div>
         <input type="file" id="profileInput" accept="image/*" onchange="uploadImage(this)">
 
-        <h2 class="welcome-text" id="userName">স্বাগতম!</h2>
+        <div class="name-container">
+            <input type="text" id="nameInput" class="name-input" placeholder="আপনার নাম লিখুন" onblur="saveUserName()">
+        </div>
         
         <div class="id-bar-wrapper">
             <div class="id-container">
@@ -220,6 +227,7 @@
     </div>
 
     <div class="balance-card">
+        <div id="membershipStatus" class="status-tag">Checking...</div>
         <div class="balance-header">
             <div class="balance-label">স্মার্ট ব্যালেন্স</div>
             <i class="fas fa-sync-alt refresh-icon" onclick="fetchBalance()" title="Refresh Balance"></i>
@@ -233,7 +241,7 @@
             <span>Deposit</span>
             <i class="fas fa-chevron-right chevron"></i>
         </a>
-        <a href="withdraw.html" class="action-btn">
+        <a href="javascript:void(0)" class="action-btn" onclick="restrictedLink('withdraw.html')">
             <div class="btn-icon bg-withdraw"><i class="fas fa-money-bill-transfer"></i></div>
             <span>Withdraw</span>
             <i class="fas fa-chevron-right chevron"></i>
@@ -257,7 +265,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        import { getFirestore, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+        import { getFirestore, doc, onSnapshot, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
         const firebaseConfig = {
           apiKey: "AIzaSyCALYxA2M4BwIXq5KC3VMGsZpAFh8nL3fo",
@@ -265,37 +273,50 @@
           projectId: "bengal-east-company-limited",
           storageBucket: "bengal-east-company-limited.firebasestorage.app",
           messagingSenderId: "653223286483",
-          appId: "1:653223286483:web:8e4ed0782ae807f8f02626",
-          measurementId: "G-R7S444H8KT"
+          appId: "1:653223286483:web:8e4ed0782ae807f8f02626"
         };
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
         let currentUserID = "";
+        let isActive = false;
+        const loggedPhone = localStorage.getItem("loggedUser");
 
-        // রিয়েল-টাইম সিঙ্কিং লজিক
         window.onload = function() {
-            const loggedPhone = localStorage.getItem("loggedUser");
             if (loggedPhone) {
                 const savedImg = localStorage.getItem("userProfilePic");
                 if(savedImg) {
                     document.getElementById("profileDisplay").innerHTML = `<img src="${savedImg}" style="width:100%;height:100%;object-fit:cover;">`;
                 }
 
-                // onSnapshot ব্যবহার করা হয়েছে যাতে ডাটাবেসে টাকা বাড়লে সাথে সাথে সব পেজে আপডেট হয়
                 const docRef = doc(db, "users", loggedPhone);
                 onSnapshot(docRef, (snapshot) => {
                     if (snapshot.exists()) {
                         const userData = snapshot.data();
                         const balance = parseFloat(userData.balance || 0).toFixed(2);
+                        const totalDeposit = parseFloat(userData.total_deposit || 0);
                         currentUserID = userData.userID || "N/A";
 
-                        // বর্তমান পেজের ব্যালেন্স আপডেট
+                        // নাম সেট করা
+                        document.getElementById("nameInput").value = userData.name || "";
                         document.getElementById("userPhoneDisplay").innerText = currentUserID;
                         document.getElementById("userBalanceDisplay").innerText = balance;
 
-                        // গ্লোবাল মেমরিতে সেভ (অন্যান্য পেজের জন্য)
+                        // অ্যাক্টিভ মেম্বার চেক লজিক
+                        const statusTag = document.getElementById("membershipStatus");
+                        if (totalDeposit >= 100) {
+                            isActive = true;
+                            statusTag.innerText = "Active Member";
+                            statusTag.className = "status-tag status-active";
+                            localStorage.setItem("userActiveStatus", "active");
+                        } else {
+                            isActive = false;
+                            statusTag.innerText = "No Active (Min 100 Dep)";
+                            statusTag.className = "status-tag status-inactive";
+                            localStorage.setItem("userActiveStatus", "inactive");
+                        }
+
                         localStorage.setItem("userBalance", balance);
                         localStorage.setItem("userID", currentUserID);
                     }
@@ -305,10 +326,27 @@
             }
         };
 
+        // নাম ফায়ারবেসে সেভ করার ফাংশন
+        window.saveUserName = async function() {
+            const newName = document.getElementById("nameInput").value;
+            if (loggedPhone && newName !== "") {
+                const userRef = doc(db, "users", loggedPhone);
+                await updateDoc(userRef, { name: newName });
+            }
+        };
+
+        // রেস্ট্রিকটেড লিঙ্ক চেক (উইথড্র এবং অন্যান্য)
+        window.restrictedLink = function(url) {
+            if (isActive) {
+                window.location.href = url;
+            } else {
+                alert("আপনার অ্যাকাউন্টটি সক্রিয় নয়। বোনাস ক্লেইম বা উইথড্র করতে কমপক্ষে ১০০ টাকা ডিপোজিট থাকতে হবে।");
+            }
+        };
+
         window.fetchBalance = function() {
             const refreshBtn = document.querySelector('.refresh-icon');
             refreshBtn.classList.add('fa-spin');
-            // onSnapshot থাকার কারণে আলাদা করে Fetch করার প্রয়োজন নেই, তাও এনিমেশন দেখানোর জন্য রাখা হয়েছে
             setTimeout(() => { refreshBtn.classList.remove('fa-spin'); }, 1000);
         };
 
@@ -342,4 +380,3 @@
     </script>
 </body>
 </html>
-
