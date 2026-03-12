@@ -3,72 +3,64 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VIP 6 - Admin Advanced Control</title>
+    <title>Auto Reset & Platform Stats - Admin</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         :root { --primary: #008080; --bg: #f0f2f5; --white: #ffffff; }
         body { font-family: 'Segoe UI', Arial, sans-serif; background: var(--bg); margin: 0; padding: 20px; }
-        .container { max-width: 800px; margin: 0 auto; }
-        .card { background: var(--white); padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); margin-bottom: 20px; }
-        h2 { color: var(--primary); border-bottom: 2px solid #eee; padding-bottom: 10px; font-size: 18px; display: flex; align-items: center; gap: 10px; }
+        .container { max-width: 900px; margin: 0 auto; }
+        .card { background: var(--white); padding: 25px; border-radius: 15px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); margin-bottom: 25px; }
+        h2 { color: var(--primary); border-bottom: 2px solid #eee; padding-bottom: 12px; font-size: 20px; display: flex; align-items: center; gap: 10px; }
         
-        /* Reset Styles */
-        .reset-item { display: flex; align-items: center; padding: 12px; border-bottom: 1px solid #eee; }
-        .reset-item:last-child { border-bottom: none; }
-        .reset-item input { width: 18px; height: 18px; margin-right: 12px; cursor: pointer; }
-        .save-btn { background: var(--primary); color: white; border: none; padding: 12px; border-radius: 8px; cursor: pointer; width: 100%; font-weight: bold; margin-top: 15px; }
-
-        /* Stats Grid */
+        /* Reset List Styles */
+        .reset-list { list-style: none; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 10px; }
+        .reset-item { display: flex; align-items: center; padding: 12px; border: 1px solid #eee; border-radius: 8px; transition: 0.3s; }
+        .reset-item:hover { background: #f9f9f9; }
+        .reset-item input[type="checkbox"] { width: 18px; height: 18px; margin-right: 12px; cursor: pointer; }
+        .reset-item label { font-size: 15px; cursor: pointer; flex-grow: 1; color: #444; }
+        .save-btn { background: var(--primary); color: white; border: none; padding: 14px; border-radius: 8px; cursor: pointer; width: 100%; font-size: 16px; font-weight: bold; margin-top: 20px; box-shadow: 0 4px 10px rgba(0,128,128,0.2); }
+        
+        /* Stats Styles */
         .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-top: 15px; }
-        .stat-box { background: #e0f2f1; padding: 15px; border-radius: 10px; text-align: center; border: 1px solid #b2dfdb; }
-        .stat-box h3 { margin: 0; font-size: 13px; color: #555; text-transform: uppercase; }
-        .stat-box p { margin: 8px 0 0; font-size: 20px; font-weight: 800; color: var(--primary); }
-        .amount { color: #e74c3c !important; }
-
-        .notice { font-size: 12px; color: #666; background: #fff3e0; padding: 10px; border-radius: 6px; border-left: 4px solid #ff9800; margin-bottom: 15px; }
+        .stat-box { background: #ffffff; padding: 20px; border-radius: 12px; text-align: center; border: 1px solid #e0e0e0; transition: 0.3s; }
+        .stat-box:hover { transform: translateY(-3px); box-shadow: 0 5px 15px rgba(0,0,0,0.05); }
+        .stat-box h3 { margin: 0; font-size: 13px; color: #777; text-transform: uppercase; letter-spacing: 0.5px; }
+        .stat-box p { margin: 10px 0 0; font-size: 20px; font-weight: bold; color: var(--primary); }
+        .pending-val { color: #e67e22 !important; }
+        .notice { font-size: 12px; color: #666; background: #fff3e0; padding: 10px; border-radius: 6px; border-left: 4px solid #ff9800; margin-bottom: 20px; }
     </style>
 </head>
 <body>
 
 <div class="container">
     <div class="card">
-        <h2><i class="fas fa-history"></i> অটো-রিসেট ও ডেটা প্রোটেকশন</h2>
+        <h2><i class="fas fa-clock"></i> অটো রিসেট ও ডাটা প্রোটেকশন</h2>
         <div class="notice">
-            <i class="fas fa-info-circle"></i> <b>নিয়ম:</b> রাত ১২টার পর তারিখ পরিবর্তন হলে অটোমেটিক রিসেট শুরু হবে। যেসব অপশনে <b>টিক মার্ক</b> থাকবে, সেগুলো ডিলিট হবে না (সেভ থাকবে)। টিক মার্ক না থাকলে সেগুলো রিসেট হয়ে যাবে।
+            <i class="fas fa-info-circle"></i> <b>নিয়ম:</b> রাত ১২টার পর তারিখ পরিবর্তন হলে অটোমেটিক রিসেট কার্যকর হবে। যেসব অপশনে <b>টিক মার্ক</b> থাকবে, সেগুলো সেভ থাকবে। টিক মার্ক না থাকলে সেগুলো ডিলিট হয়ে যাবে।
         </div>
         
         <form id="resetControlForm">
-            <div class="reset-item">
-                <input type="checkbox" id="withdraw_history" name="noReset" value="withdraw_history">
-                <label for="withdraw_history">Withdrawal History (উইথড্র হিস্টোরি সেভ রাখুন)</label>
-            </div>
-            <div class="reset-item">
-                <input type="checkbox" id="deposit_history" name="noReset" value="deposit_history">
-                <label for="deposit_history">Deposit History (ডিপোজিট হিস্টোরি সেভ রাখুন)</label>
-            </div>
-            <div class="reset-item">
-                <input type="checkbox" id="auto_history" name="noReset" value="auto_history">
-                <label for="auto_history">Daily Collection Auto History (সেভ রাখুন)</label>
-            </div>
+            <ul class="reset-list">
+                <li class="reset-item"><input type="checkbox" id="withdraw_history" name="noReset" value="withdraw_history"><label for="withdraw_history">Withdrawal History (সেভ রাখুন)</label></li>
+                <li class="reset-item"><input type="checkbox" id="withdraw_pending" name="noReset" value="withdraw_pending"><label for="withdraw_pending">Withdrawal Pending (সেভ রাখুন)</label></li>
+                <li class="reset-item"><input type="checkbox" id="deposit_history" name="noReset" value="deposit_history"><label for="deposit_history">Deposit History (সেভ রাখুন)</label></li>
+                <li class="reset-item"><input type="checkbox" id="deposit_pending" name="noReset" value="deposit_pending"><label for="deposit_pending">Deposit Pending (সেভ রাখুন)</label></li>
+                <li class="reset-item"><input type="checkbox" id="auto_history" name="noReset" value="auto_history"><label for="auto_history">Auto History (সেভ রাখুন)</label></li>
+                <li class="reset-item"><input type="checkbox" id="transactions" name="noReset" value="transactions"><label for="transactions">Transactions (সেভ রাখুন)</label></li>
+            </ul>
             <button type="submit" class="save-btn">কনফিগারেশন সেভ করুন</button>
         </form>
     </div>
 
     <div class="card">
-        <h2><i class="fas fa-chart-line"></i> প্ল্যাটফর্ম স্ট্যাটিস্টিক্স</h2>
-        <div class="stats-grid" id="mainStats">
-            <div class="stat-box">
-                <h3>Total Deposit</h3>
-                <p id="totalDep">৳ 0</p>
-            </div>
-            <div class="stat-box">
-                <h3>Total Withdraw</h3>
-                <p id="totalWith" class="amount">৳ 0</p>
-            </div>
-            <div class="stat-box">
-                <h3>Total VIP Members</h3>
-                <p id="totalVip">0 জন</p>
-            </div>
+        <h2><i class="fas fa-chart-pie"></i> প্ল্যাটফর্ম পরিসংখ্যান (Real-time)</h2>
+        <div class="stats-grid">
+            <div class="stat-box"><h3>Total Deposit</h3><p id="totalDep">৳ 0</p></div>
+            <div class="stat-box"><h3>Total Withdraw</h3><p id="totalWith">৳ 0</p></div>
+            <div class="stat-box"><h3>Deposit Pending</h3><p id="depPen" class="pending-val">0</p></div>
+            <div class="stat-box"><h3>Withdraw Pending</h3><p id="withPen" class="pending-val">0</p></div>
+            <div class="stat-box"><h3>Total Transactions</h3><p id="totalTrans">0</p></div>
+            <div class="stat-box"><h3>Total VIP Members</h3><p id="totalVip">0</p></div>
         </div>
     </div>
 </div>
@@ -89,11 +81,11 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    // ১. রিসেট সেটিংস লোড ও সেভ
+    // --- ১. সেটিংস লোড ও সেভ ---
     async function initSettings() {
         const snap = await getDoc(doc(db, "admin_settings", "auto_reset_config"));
         if (snap.exists()) {
-            snap.data().noResetList.forEach(val => {
+            (snap.data().noResetList || []).forEach(val => {
                 const cb = document.getElementById(val);
                 if (cb) cb.checked = true;
             });
@@ -103,74 +95,85 @@
     document.getElementById('resetControlForm').addEventListener('submit', async (e) => {
         e.preventDefault();
         const checked = Array.from(document.querySelectorAll('input[name="noReset"]:checked')).map(cb => cb.value);
-        await setDoc(doc(db, "admin_settings", "auto_reset_config"), { 
-            noResetList: checked,
-            updateAt: new Date().toLocaleDateString() 
-        });
-        alert("সফলভাবে সেভ হয়েছে!");
+        try {
+            await setDoc(doc(db, "admin_settings", "auto_reset_config"), { noResetList: checked }, { merge: true });
+            alert("সফলভাবে আপডেট হয়েছে!");
+        } catch (err) { alert("Error: " + err.message); }
     });
 
-    // ২. স্ট্যাটিস্টিক্স লোড (Deposit & Withdraw)
-    async function fetchStats() {
-        // Deposit Calculation
+    // --- ২. পরিসংখ্যান ক্যালকুলেশন ---
+    async function fetchAllStats() {
+        // Deposits & Pending
         const depSnap = await getDocs(collection(db, "deposits"));
-        let depSum = 0;
-        depSnap.forEach(doc => depSum += Number(doc.data().amount || 0));
-        document.getElementById('totalDep').innerText = "৳ " + depSum;
+        let totalD = 0, penD = 0;
+        depSnap.forEach(d => {
+            totalD += Number(d.data().amount || 0);
+            if(d.data().status === "pending") penD++;
+        });
+        document.getElementById('totalDep').innerText = "৳ " + totalD;
+        document.getElementById('depPen').innerText = penD + " জন";
 
-        // Withdraw Calculation
+        // Withdraws & Pending
         const withSnap = await getDocs(collection(db, "withdraws"));
-        let withSum = 0;
-        withSnap.forEach(doc => withSum += Number(doc.data().amount || 0));
-        document.getElementById('totalWith').innerText = "৳ " + withSum;
+        let totalW = 0, penW = 0;
+        withSnap.forEach(d => {
+            totalW += Number(d.data().amount || 0);
+            if(d.data().status === "pending") penW++;
+        });
+        document.getElementById('totalWith').innerText = "৳ " + totalW;
+        document.getElementById('withPen').innerText = penW + " জন";
+
+        // Transactions
+        const transSnap = await getDocs(collection(db, "transactions"));
+        document.getElementById('totalTrans').innerText = transSnap.size;
 
         // VIP Members
         const vipSnap = await getDocs(query(collection(db, "users"), where("package", "!=", "Free")));
         document.getElementById('totalVip').innerText = vipSnap.size + " জন";
     }
 
-    // ৩. অটোমেটিক রিসেট লজিক (২৪ ঘণ্টা পর পর)
-    async function checkAndReset() {
+    // --- ৩. অটো-রিসেট কোর লজিক (২৪ ঘণ্টা অন্তর) ---
+    async function runAutoReset() {
         const today = new Date().toLocaleDateString();
         const configRef = doc(db, "admin_settings", "auto_reset_config");
         const configSnap = await getDoc(configRef);
 
-        if (configSnap.exists()) {
-            const lastReset = configSnap.data().lastResetDate;
-            if (lastReset !== today) {
-                // তারিখ পরিবর্তন হয়েছে, এখন রিসেট শুরু হবে
-                const noResetList = configSnap.data().noResetList || [];
+        if (configSnap.exists() && configSnap.data().lastResetDate !== today) {
+            const noResetList = configSnap.data().noResetList || [];
+            console.log("রিসেট শুরু হচ্ছে...");
 
-                // ১. উইথড্র হিস্টোরি রিসেট
-                if (!noResetList.includes("withdraw_history")) {
-                    const q = await getDocs(collection(db, "withdraws"));
-                    q.forEach(async (d) => await deleteDoc(doc(db, "withdraws", d.id)));
+            const collectionsToReset = [
+                { id: "withdraw_history", path: "withdraws", condition: (d) => d.status !== "pending" },
+                { id: "withdraw_pending", path: "withdraws", condition: (d) => d.status === "pending" },
+                { id: "deposit_history", path: "deposits", condition: (d) => d.status !== "pending" },
+                { id: "deposit_pending", path: "deposits", condition: (d) => d.status === "pending" },
+                { id: "auto_history", path: "daily_collection", condition: () => true },
+                { id: "transactions", path: "transactions", condition: () => true }
+            ];
+
+            for (const item of collectionsToReset) {
+                if (!noResetList.includes(item.id)) {
+                    const qSnap = await getDocs(collection(db, item.path));
+                    qSnap.forEach(async (docRef) => {
+                        if (item.condition(docRef.data())) {
+                            await deleteDoc(doc(db, item.path, docRef.id));
+                        }
+                    });
                 }
-
-                // ২. ডিপোজিট হিস্টোরি রিসেট
-                if (!noResetList.includes("deposit_history")) {
-                    const q = await getDocs(collection(db, "deposits"));
-                    q.forEach(async (d) => await deleteDoc(doc(db, "deposits", d.id)));
-                }
-
-                // ৩. অটো হিস্টোরি রিসেট
-                if (!noResetList.includes("auto_history")) {
-                    const q = await getDocs(collection(db, "daily_collection"));
-                    q.forEach(async (d) => await deleteDoc(doc(db, "daily_collection", d.id)));
-                }
-
-                // রিসেট সম্পন্ন হওয়ার পর তারিখ আপডেট
-                await setDoc(configRef, { lastResetDate: today }, { merge: true });
-                console.log("Auto-reset completed for " + today);
             }
+
+            await setDoc(configRef, { lastResetDate: today }, { merge: true });
+            console.log("আজকের রিসেট সম্পন্ন!");
         }
     }
 
     window.onload = () => {
         initSettings();
-        fetchStats();
-        checkAndReset(); // পেজ লোড হলেই তারিখ চেক করবে
+        fetchAllStats();
+        runAutoReset();
     };
 </script>
+
 </body>
 </html>
+
