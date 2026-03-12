@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Auto Reset Control & VIP Statistics - Admin</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root { --primary: #008080; --bg: #f0f2f5; --white: #ffffff; }
+        body { font-family: 'Segoe UI', Arial, sans-serif; background: var(--bg); margin: 0; padding: 20px; }
+        .container { max-width: 800px; margin: 0 auto; }
+        .card { background: var(--white); padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        h2 { color: var(--primary); border-bottom: 2px solid #eee; padding-bottom: 10px; font-size: 20px; }
+        
+        /* Reset Control Styles */
+        .reset-list { list-style: none; padding: 0; }
+        .reset-item { display: flex; align-items: center; padding: 12px; border-bottom: 1px solid #eee; transition: 0.3s; }
+        .reset-item:last-child { border-bottom: none; }
+        .reset-item:hover { background: #f9f9f9; }
+        .reset-item input[type="checkbox"] { width: 20px; height: 20px; margin-right: 15px; cursor: pointer; }
+        .reset-item label { font-size: 16px; cursor: pointer; flex-grow: 1; }
+        .save-btn { background: var(--primary); color: white; border: none; padding: 12px 25px; border-radius: 6px; cursor: pointer; width: 100%; font-size: 16px; font-weight: bold; margin-top: 15px; }
+        
+        /* Stats Styles */
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-top: 15px; }
+        .stat-box { background: #e0f2f1; padding: 15px; border-radius: 8px; text-align: center; border: 1px solid #b2dfdb; }
+        .stat-box h3 { margin: 0; font-size: 14px; color: #555; }
+        .stat-box p { margin: 5px 0 0; font-size: 22px; font-weight: bold; color: var(--primary); }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="card">
+        <h2><i class="fas fa-sync-alt"></i> অটো রিসেট নিয়ন্ত্রণ (পাস হিস্টোরি রক্ষা করুন)</h2>
+        <p style="font-size: 13px; color: #666; margin-bottom: 15px;">যে অপশনগুলো টিক মার্ক দিবেন, সেগুলো অটো-রিসেট হবে না।</p>
+        
+        <form id="resetControlForm">
+            <ul class="reset-list">
+                <li class="reset-item">
+                    <input type="checkbox" id="withdrawHistory" name="noReset" value="withdraw_history">
+                    <label for="withdrawHistory">Withdrawal History (উইথড্র হিস্টোরি)</label>
+                </li>
+                <li class="reset-item">
+                    <input type="checkbox" id="withdrawPending" name="noReset" value="withdraw_pending">
+                    <label for="withdrawPending">Withdrawal Pending (উইথড্র পেন্ডিং)</label>
+                </li>
+                <li class="reset-item">
+                    <input type="checkbox" id="depositHistory" name="noReset" value="deposit_history">
+                    <label for="depositHistory">Deposit History (ডিপোজিট হিস্টোরি)</label>
+                </li>
+                <li class="reset-item">
+                    <input type="checkbox" id="depositPending" name="noReset" value="deposit_pending">
+                    <label for="depositPending">Deposit Pending (ডিপোজিট পেন্ডিং)</label>
+                </li>
+                <li class="reset-item">
+                    <input type="checkbox" id="autoHistory" name="noReset" value="auto_history">
+                    <label for="autoHistory">Daily Collection Auto History</label>
+                </li>
+            </ul>
+            <button type="submit" class="save-btn">সেটিং আপডেট করুন</button>
+        </form>
+    </div>
+
+    <div class="card">
+        <h2><i class="fas fa-gem"></i> VIP প্যাকেজ পরিসংখ্যান</h2>
+        <div class="stats-grid" id="vipStats">
+            <div class="stat-box">
+                <h3>মোট VIP মেম্বার</h3>
+                <p id="totalVip">লোড হচ্ছে...</p>
+            </div>
+            </div>
+    </div>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getFirestore, doc, setDoc, getDoc, collection, getDocs, query, where } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyCALYxA2M4BwIXq5KC3VMGsZpAFh8nL3fo",
+        authDomain: "bengal-east-company-limited.firebaseapp.com",
+        projectId: "bengal-east-company-limited",
+        storageBucket: "bengal-east-company-limited.firebasestorage.app",
+        messagingSenderId: "653223286483",
+        appId: "1:653223286483:web:8e4ed0782ae807f8f02626"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    // ১. রিসেট সেটিং সেভ এবং লোড করা
+    const resetForm = document.getElementById('resetControlForm');
+
+    // সেটিং লোড করুন
+    async function loadResetSettings() {
+        const docRef = doc(db, "admin_settings", "auto_reset_config");
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+            const savedData = docSnap.data().noResetList || [];
+            savedData.forEach(val => {
+                const checkbox = document.querySelector(`input[value="${val}"]`);
+                if (checkbox) checkbox.checked = true;
+            });
+        }
+    }
+
+    // সেটিং আপডেট করুন
+    resetForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const checkedValues = Array.from(document.querySelectorAll('input[name="noReset"]:checked')).map(cb => cb.value);
+        try {
+            await setDoc(doc(db, "admin_settings", "auto_reset_config"), {
+                noResetList: checkedValues,
+                lastUpdated: new Date()
+            });
+            alert("সেটিং সফলভাবে আপডেট হয়েছে!");
+        } catch (error) {
+            alert("ত্রুটি: " + error.message);
+        }
+    });
+
+    // ২. VIP প্যাকেজ তথ্য সংগ্রহ
+    async function fetchVipStats() {
+        const statsGrid = document.getElementById('vipStats');
+        const usersRef = collection(db, "users");
+        
+        // সব ইউজার নিয়ে আসা যাদের প্যাকেজ আছে
+        const q = query(usersRef, where("package", "!=", "Free")); // assuming Free is default
+        const querySnapshot = await getDocs(q);
+        
+        let total = 0;
+        let packageCounts = {};
+
+        querySnapshot.forEach((doc) => {
+            const pkg = doc.data().package || "Unknown";
+            packageCounts[pkg] = (packageCounts[pkg] || 0) + 1;
+            total++;
+        });
+
+        document.getElementById('totalVip').innerText = total + " জন";
+
+        // ডাইনামিকভাবে প্রতিটি প্যাকেজের বক্স তৈরি
+        for (const [name, count] of Object.entries(packageCounts)) {
+            const box = document.createElement('div');
+            box.className = 'stat-box';
+            box.innerHTML = `<h3>${name}</h3><p>${count} জন</p>`;
+            statsGrid.appendChild(box);
+        }
+    }
+
+    window.onload = () => {
+        loadResetSettings();
+        fetchVipStats();
+    };
+</script>
+
+</body>
+</html>
+
