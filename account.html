@@ -294,30 +294,29 @@
                 onSnapshot(docRef, (snapshot) => {
                     if (snapshot.exists()) {
                         const userData = snapshot.data();
-                        const balance = parseFloat(userData.balance || 0).toFixed(2);
-                        const totalDeposit = parseFloat(userData.total_deposit || 0);
+                        const balance = parseFloat(userData.balance || 0);
                         currentUserID = userData.userID || "N/A";
 
-                        // নাম সেট করা
+                        // ডাটা প্রদর্শন
                         document.getElementById("nameInput").value = userData.name || "";
                         document.getElementById("userPhoneDisplay").innerText = currentUserID;
-                        document.getElementById("userBalanceDisplay").innerText = balance;
+                        document.getElementById("userBalanceDisplay").innerText = balance.toFixed(2);
 
-                        // অ্যাক্টিভ মেম্বার চেক লজিক
+                        // একাউন্টে ১০০ টাকা থাকলেই একটিভ দেখাবে (লজিক পরিবর্তন)
                         const statusTag = document.getElementById("membershipStatus");
-                        if (totalDeposit >= 100) {
+                        if (balance >= 100) {
                             isActive = true;
                             statusTag.innerText = "Active Member";
                             statusTag.className = "status-tag status-active";
                             localStorage.setItem("userActiveStatus", "active");
                         } else {
                             isActive = false;
-                            statusTag.innerText = "No Active (Min 100 Dep)";
+                            statusTag.innerText = "No Active (Min 100 Taka)";
                             statusTag.className = "status-tag status-inactive";
                             localStorage.setItem("userActiveStatus", "inactive");
                         }
 
-                        localStorage.setItem("userBalance", balance);
+                        localStorage.setItem("userBalance", balance.toFixed(2));
                         localStorage.setItem("userID", currentUserID);
                     }
                 });
@@ -326,7 +325,6 @@
             }
         };
 
-        // নাম ফায়ারবেসে সেভ করার ফাংশন
         window.saveUserName = async function() {
             const newName = document.getElementById("nameInput").value;
             if (loggedPhone && newName !== "") {
@@ -335,12 +333,11 @@
             }
         };
 
-        // রেস্ট্রিকটেড লিঙ্ক চেক (উইথড্র এবং অন্যান্য)
         window.restrictedLink = function(url) {
             if (isActive) {
                 window.location.href = url;
             } else {
-                alert("আপনার অ্যাকাউন্টটি সক্রিয় নয়। বোনাস ক্লেইম বা উইথড্র করতে কমপক্ষে ১০০ টাকা ডিপোজিট থাকতে হবে।");
+                alert("আপনার একাউন্টে পর্যাপ্ত ব্যালেন্স নেই। কমপক্ষে ১০০ টাকা থাকলে আপনার একাউন্ট সক্রিয় হবে এবং আপনি উইথড্র করতে পারবেন।");
             }
         };
 
