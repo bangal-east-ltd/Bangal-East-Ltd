@@ -54,7 +54,7 @@
             color: white; border: none; padding: 8px 15px; border-radius: 8px;
             font-size: 11px; font-weight: bold; cursor: pointer;
         }
-        .claim-btn:disabled { background: #cbd5e0; cursor: not-allowed; }
+        .claim-btn:disabled { background: #cbd5e0 !important; cursor: not-allowed; }
 
         .gift-box { background: white; padding: 15px; border-radius: 18px; display: flex; gap: 10px; margin-bottom: 20px; }
         .gift-box input { flex-grow: 1; border: 1px solid #ddd; padding: 10px; border-radius: 8px; outline: none; }
@@ -139,20 +139,20 @@
         const db = getFirestore(app);
         const loggedUser = localStorage.getItem("loggedUser");
 
-        // কনস্ট্যান্ট রিওয়ার্ড ডাটা
         const depRewards = [{ t: 1000, b: 100 }, { t: 2000, b: 250 }, { t: 5000, b: 600 }, { t: 10000, b: 1200 }, { t: 25000, b: 3500 }];
         const betRewards = [{ t: 1000, b: 20 }, { t: 5000, b: 120 }, { t: 10000, b: 300 }, { t: 50000, b: 1500 }, { t: 100000, b: 4000 }];
         const refTargets = [{ t: 10, b: 500 }, { t: 20, b: 1200 }, { t: 30, b: 2000 }, { t: 50, b: 4000 }, { t: 100, b: 10000 }];
 
         function renderDynamicLists(userData) {
             const balance = userData.balance || 0;
-            const isActive = balance >= 100;
+            // নতুন লজিক: ১০০ ডিপোজিট অথবা ১০০ ব্যালেন্স থাকলে একটিভ
+            const isActive = (userData.total_deposit >= 100 || balance >= 100);
 
-            // ১. একটিভ স্ট্যাটাস আপডেট (ব্যালেন্স ১০০ হলে একটিভ)
+            // ১. একটিভ স্ট্যাটাস আপডেট
             const statusTag = document.getElementById('activeStatus');
             statusTag.innerHTML = isActive ? 
-                `<span style="color:green; background:#e8f5e9">● Active Member</span>` : 
-                `<span style="color:red; background:#ffebee">● Not Active (Min 100 Balance)</span>`;
+                `<span style="color:white; background:green; padding:5px 15px; border-radius:15px;">● Active Member</span>` : 
+                `<span style="color:white; background:red; padding:5px 15px; border-radius:15px;">● Not Active (Min 100 Dep)</span>`;
 
             // ২. মেইন রিওয়ার্ড অ্যামাউন্ট প্রদর্শন
             document.getElementById('referAmt').innerText = "৳ " + (userData.refer_income || 0);
@@ -161,10 +161,21 @@
             document.getElementById('salaryAmt').innerText = "৳ " + (userData.monthly_salary || 0);
 
             // ৩. বাটন এনাবল/ডিজেবল লজিক
-            ['referBtn', 'levelBtn', 'roiBtn', 'salaryBtn'].forEach(id => {
-                const amt = parseFloat(document.getElementById(id).previousElementSibling.innerText.replace('৳ ', ''));
-                document.getElementById(id).disabled = !isActive || amt <= 0;
-            });
+            const updateBtnStatus = (btnId, amount) => {
+                const btn = document.getElementById(btnId);
+                if(amount > 0 && isActive) {
+                    btn.disabled = false;
+                    btn.style.background = "var(--success)";
+                } else {
+                    btn.disabled = true;
+                    btn.style.background = "#cbd5e0";
+                }
+            };
+
+            updateBtnStatus('referBtn', userData.refer_income || 0);
+            updateBtnStatus('levelBtn', userData.level_income || 0);
+            updateBtnStatus('roiBtn', userData.daily_roi || 0);
+            updateBtnStatus('salaryBtn', userData.monthly_salary || 0);
 
             // ৪. রেফারেল টার্গেট লিস্ট রেন্ডার
             let rHtml = '';
@@ -211,7 +222,6 @@
             });
         }
 
-        // মেইন ফিল্ড ক্লেইম (ROI, Referral, Level, Salary)
         window.claimFieldBonus = async (field) => {
             const ref = doc(db, "users", loggedUser);
             const snap = await getDoc(ref);
@@ -222,7 +232,6 @@
             }
         };
 
-        // টার্গেট ভিত্তিক বোনাস ক্লেইম
         window.claimTargetBonus = async (type, target, amount) => {
             const ref = doc(db, "users", loggedUser);
             const data = (await getDoc(ref)).data();
@@ -239,14 +248,11 @@
             alert("Reward Claimed!");
         };
 
-        // গিফট কোড ক্লেইম লজিক
         window.claimGift = async () => {
             const code = document.getElementById('giftInput').value;
             if(!code) return alert("Please enter a code");
-            
             const giftRef = doc(db, "admin_settings", "gift_codes");
             const gSnap = await getDoc(giftRef);
-            
             if(gSnap.exists() && gSnap.data()[code]) {
                 const amt = gSnap.data()[code];
                 await updateDoc(doc(db, "users", loggedUser), { balance: increment(amt) });
@@ -261,4 +267,3 @@
     </script>
 </body>
 </html>
-
