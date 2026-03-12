@@ -199,10 +199,12 @@
         };
         window.closeModal = function() { document.getElementById("customModal").style.display = "none"; };
 
-        // --- রিয়েলটাইম ইউজার ডাটা এবং আনলক লজিক ---
+        // --- রিয়েলটাইম ইউজার ডাটা এবং আনলক লজিক (আপডেট করা হয়েছে) ---
         onSnapshot(doc(db, "users", loggedUser), (snapshot) => {
             if (snapshot.exists()) {
                 const data = snapshot.data();
+                
+                // ব্যালেন্স এবং আইডি আপডেট
                 userDisplayID = data.userID || loggedUser;
                 document.getElementById("userBalance").innerText = parseFloat(data.balance || 0).toFixed(2);
                 
@@ -223,18 +225,17 @@
                     select.innerHTML += `<option value="${data.withdrawNo2}">${data.withdrawNo2}</option>`;
                 }
 
-                // এডমিন আনলক লজিক (নিখুঁত কন্ডিশন)
+                // --- নম্বর পরিবর্তনের লজিক ---
                 if (data.is_unlocked === true || !data.withdrawNo1) {
-                    // যদি এডমিন আনলক করে অথবা প্রথমবার নম্বর সেট করা হয়
                     n1Input.disabled = false;
                     n2Input.disabled = false;
-                    sBtn.style.display = "block";
+                    sBtn.style.display = "block"; 
                     lockMsg.style.display = "none";
-                } else {
-                    // লক মোড
+                } 
+                else {
                     n1Input.disabled = true;
                     n2Input.disabled = true;
-                    sBtn.style.display = "none";
+                    sBtn.style.display = "none"; 
                     lockMsg.style.display = "block";
                 }
             }
