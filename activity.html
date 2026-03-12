@@ -16,12 +16,8 @@
         .header { display: flex; align-items: center; gap: 15px; margin-bottom: 20px; color: #333; }
         .stats-summary {
             background: var(--grad);
-            color: white;
-            padding: 25px;
-            border-radius: 25px;
-            margin-bottom: 25px;
-            display: grid;
-            grid-template-columns: 1fr 1fr;
+            color: white; padding: 25px; border-radius: 25px;
+            margin-bottom: 25px; display: grid; grid-template-columns: 1fr 1fr;
             box-shadow: 0 10px 20px rgba(37, 117, 252, 0.3);
         }
         .stat-small { text-align: center; }
@@ -34,24 +30,21 @@
 
         .roadmap-container { padding: 5px; }
         .roadmap-item {
-            background: white;
-            border-radius: 18px;
-            padding: 15px;
-            margin-bottom: 12px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.03);
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            border-left: 5px solid #2575fc;
+            background: white; border-radius: 18px; padding: 15px;
+            margin-bottom: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.03);
+            display: flex; align-items: center; gap: 12px; border-left: 5px solid #2575fc;
         }
         .icon-box { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
         .content { flex-grow: 1; }
         .content h3 { margin: 0; font-size: 13px; color: #333; }
-        .content p { margin: 2px 0 0; font-size: 10px; color: #888; }
+        .content p { margin: 2px 0 0; font-size: 11px; color: #666; }
         
+        /* Progress Bar Style */
+        .prog-bar-bg { width: 100%; height: 6px; background: #eee; border-radius: 10px; margin-top: 8px; overflow: hidden; }
+        .prog-fill { height: 100%; background: var(--grad); border-radius: 10px; transition: 0.5s; }
+
         .claim-btn {
-            background: var(--success);
-            color: white; border: none; padding: 8px 15px; border-radius: 8px;
+            background: var(--success); color: white; border: none; padding: 8px 15px; border-radius: 8px;
             font-size: 11px; font-weight: bold; cursor: pointer;
         }
         .claim-btn:disabled { background: #cbd5e0 !important; cursor: not-allowed; }
@@ -85,7 +78,7 @@
     <div class="roadmap-container">
         <div class="roadmap-item" style="border-left-color: #3498db;">
             <div class="icon-box" style="background:#e1f5fe; color:#3498db;"><i class="fas fa-user-plus"></i></div>
-            <div class="content"><h3>Daily Referral</h3><p>নতুন একটিভ মেম্বার রেফার বোনাস</p></div>
+            <div class="content"><h3>Daily Referral</h3><p>নতুন মেম্বার বোনাস</p></div>
             <div><span class="amt-display" id="referAmt">৳ 0</span><button class="claim-btn" id="referBtn" onclick="claimFieldBonus('refer_income')">Claim</button></div>
         </div>
         <div class="roadmap-item" style="border-left-color: #9b59b6;">
@@ -115,16 +108,9 @@
     <div class="sec-title"><i class="fas fa-dice"></i> Daily Betting Rewards</div>
     <div class="roadmap-container" id="bettingList"></div>
 
-    <div class="sec-title"><i class="fas fa-calendar-check"></i> Monthly Rank Salary</div>
-    <div class="roadmap-item" style="border-left-color: #e91e63;">
-        <div class="icon-box" style="background: #fce4ec; color: #e91e63;"><i class="fas fa-money-bill-wave"></i></div>
-        <div class="content"><h3>Monthly Salary</h3><p>র‍্যাঙ্ক অনুযায়ী মাসিক স্যালারি</p></div>
-        <div><span class="amt-display" id="salaryAmt">৳ 0</span><button class="claim-btn" id="salaryBtn" onclick="claimFieldBonus('monthly_salary')">Claim</button></div>
-    </div>
-
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        import { getFirestore, doc, onSnapshot, updateDoc, increment, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+        import { getFirestore, doc, onSnapshot, updateDoc, increment, getDoc, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyCALYxA2M4BwIXq5KC3VMGsZpAFh8nL3fo",
@@ -139,75 +125,67 @@
         const db = getFirestore(app);
         const loggedUser = localStorage.getItem("loggedUser");
 
-        const depRewards = [{ t: 1000, b: 100 }, { t: 2000, b: 250 }, { t: 5000, b: 600 }, { t: 10000, b: 1200 }, { t: 25000, b: 3500 }];
-        const betRewards = [{ t: 1000, b: 20 }, { t: 5000, b: 120 }, { t: 10000, b: 300 }, { t: 50000, b: 1500 }, { t: 100000, b: 4000 }];
         const refTargets = [{ t: 10, b: 500 }, { t: 20, b: 1200 }, { t: 30, b: 2000 }, { t: 50, b: 4000 }, { t: 100, b: 10000 }];
+        const depRewards = [{ t: 1000, b: 100 }, { t: 2000, b: 250 }, { t: 5000, b: 600 }, { t: 10000, b: 1200 }];
 
-        function renderDynamicLists(userData) {
+        // টিমের এক্টিভ মেম্বার গণনার জন্য ফাংশন (Promotion Center এর মত লজিক)
+        async function getActiveReferralCount(myUID) {
+            const snap = await getDocs(collection(db, "users"));
+            const users = snap.docs.map(d => d.data());
+            let activeCount = 0;
+
+            function checkRefs(parentID) {
+                const refs = users.filter(u => String(u.referrerID) === String(parentID));
+                refs.forEach(u => {
+                    if (u.total_deposit >= 100 || u.balance >= 100) activeCount++;
+                    // level 1 এর বাইরেও চাইলে এখানে লুপ চালানো যায়, আপাতত সরাসরি রেফারেল ধরা হচ্ছে
+                });
+            }
+            checkRefs(myUID);
+            return activeCount;
+        }
+
+        async function renderDynamicLists(userData) {
             const balance = userData.balance || 0;
-            // নতুন লজিক: ১০০ ডিপোজিট অথবা ১০০ ব্যালেন্স থাকলে একটিভ
             const isActive = (userData.total_deposit >= 100 || balance >= 100);
+            const activeRefs = await getActiveReferralCount(userData.userID);
 
-            // ১. একটিভ স্ট্যাটাস আপডেট
-            const statusTag = document.getElementById('activeStatus');
-            statusTag.innerHTML = isActive ? 
+            // স্ট্যাটাস আপডেট
+            document.getElementById('activeStatus').innerHTML = isActive ? 
                 `<span style="color:white; background:green; padding:5px 15px; border-radius:15px;">● Active Member</span>` : 
-                `<span style="color:white; background:red; padding:5px 15px; border-radius:15px;">● Not Active (Min 100 Dep)</span>`;
+                `<span style="color:white; background:red; padding:5px 15px; border-radius:15px;">● Not Active</span>`;
 
-            // ২. মেইন রিওয়ার্ড অ্যামাউন্ট প্রদর্শন
+            // মেইন রিওয়ার্ডস ভ্যালু
             document.getElementById('referAmt').innerText = "৳ " + (userData.refer_income || 0);
             document.getElementById('levelAmt').innerText = "৳ " + (userData.level_income || 0);
             document.getElementById('roiAmt').innerText = "৳ " + (userData.daily_roi || 0);
-            document.getElementById('salaryAmt').innerText = "৳ " + (userData.monthly_salary || 0);
 
-            // ৩. বাটন এনাবল/ডিজেবল লজিক
-            const updateBtnStatus = (btnId, amount) => {
-                const btn = document.getElementById(btnId);
-                if(amount > 0 && isActive) {
-                    btn.disabled = false;
-                    btn.style.background = "var(--success)";
-                } else {
-                    btn.disabled = true;
-                    btn.style.background = "#cbd5e0";
-                }
-            };
-
-            updateBtnStatus('referBtn', userData.refer_income || 0);
-            updateBtnStatus('levelBtn', userData.level_income || 0);
-            updateBtnStatus('roiBtn', userData.daily_roi || 0);
-            updateBtnStatus('salaryBtn', userData.monthly_salary || 0);
-
-            // ৪. রেফারেল টার্গেট লিস্ট রেন্ডার
+            // রেফারেল টার্গেট রেন্ডার (প্রগ্রেস বার সহ)
             let rHtml = '';
             refTargets.forEach(item => {
                 const claimed = (userData.claimed_ref_target || []).includes(item.t);
-                const activeRefs = userData.active_referrals || 0; 
+                const progress = Math.min((activeRefs / item.t) * 100, 100);
                 rHtml += `
                 <div class="roadmap-item" style="border-left-color: #6a11cb;">
                     <div class="icon-box" style="background:#f3e5f5; color:#6a11cb;"><i class="fas fa-user-check"></i></div>
-                    <div class="content"><h3>${item.t} Active Referrals</h3><p>Bonus: ৳${item.b} (Progress: ${activeRefs}/${item.t})</p></div>
+                    <div class="content">
+                        <h3>${item.t} Active Referrals</h3>
+                        <p>Bonus: ৳${item.b} (Progress: ${activeRefs}/${item.t})</p>
+                        <div class="prog-bar-bg"><div class="prog-fill" style="width: ${progress}%"></div></div>
+                    </div>
                     <button class="claim-btn" ${(!isActive || claimed || activeRefs < item.t) ? 'disabled' : ''} 
                     onclick="claimTargetBonus('ref', ${item.t}, ${item.b})">${claimed ? 'Done' : 'Claim'}</button>
                 </div>`;
             });
             document.getElementById('refTargetList').innerHTML = rHtml;
 
-            // ৫. ডিপোজিট টার্গেট লিস্ট রেন্ডার
+            // ডিপোজিট টার্গেট রেন্ডার
             let dHtml = '';
             depRewards.forEach(item => {
                 const claimed = (userData.claimed_dep || []).includes(item.t);
                 dHtml += `<div class="roadmap-item" style="border-left-color: #2196f3;"><div class="icon-box" style="background:#e3f2fd; color:#2196f3;"><i class="fas fa-wallet"></i></div><div class="content"><h3>Dep ${item.t} Bonus</h3><p>Get ৳${item.b} Bonus</p></div><button class="claim-btn" ${(!isActive || claimed || userData.total_deposit < item.t) ? 'disabled' : ''} onclick="claimTargetBonus('dep', ${item.t}, ${item.b})">${claimed ? 'Done' : 'Claim'}</button></div>`;
             });
             document.getElementById('depositList').innerHTML = dHtml;
-
-            // ৬. বেটিং রিওয়ার্ড লিস্ট রেন্ডার
-            let bHtml = '';
-            const today = new Date().toLocaleDateString();
-            betRewards.forEach(item => {
-                const claimed = userData.last_bet_reset === today && (userData.claimed_bet || []).includes(item.t);
-                bHtml += `<div class="roadmap-item" style="border-left-color: #e67e22;"><div class="icon-box" style="background:#fff3e0; color:#e67e22;"><i class="fas fa-gamepad"></i></div><div class="content"><h3>Bet ${item.t} Bonus</h3><p>Daily Reward: ৳${item.b}</p></div><button class="claim-btn" ${(!isActive || claimed || userData.today_bet < item.t) ? 'disabled' : ''} onclick="claimTargetBonus('bet', ${item.t}, ${item.b})">${claimed ? 'Done' : 'Claim'}</button></div>`;
-            });
-            document.getElementById('bettingList').innerHTML = bHtml;
         }
 
         function sync() {
@@ -236,34 +214,14 @@
             const ref = doc(db, "users", loggedUser);
             const data = (await getDoc(ref)).data();
             let updateObj = { balance: increment(amount) };
-            
+            if (type === 'ref') updateObj.claimed_ref_target = Array.from(new Set([...(data.claimed_ref_target || []), target]));
             if (type === 'dep') updateObj.claimed_dep = Array.from(new Set([...(data.claimed_dep || []), target]));
-            else if (type === 'bet') { 
-                updateObj.last_bet_reset = new Date().toLocaleDateString(); 
-                updateObj.claimed_bet = Array.from(new Set([...(data.claimed_bet || []), target])); 
-            }
-            else if (type === 'ref') updateObj.claimed_ref_target = Array.from(new Set([...(data.claimed_ref_target || []), target]));
-            
             await updateDoc(ref, updateObj);
             alert("Reward Claimed!");
-        };
-
-        window.claimGift = async () => {
-            const code = document.getElementById('giftInput').value;
-            if(!code) return alert("Please enter a code");
-            const giftRef = doc(db, "admin_settings", "gift_codes");
-            const gSnap = await getDoc(giftRef);
-            if(gSnap.exists() && gSnap.data()[code]) {
-                const amt = gSnap.data()[code];
-                await updateDoc(doc(db, "users", loggedUser), { balance: increment(amt) });
-                alert("Gift Claimed Successfully: ৳" + amt);
-                document.getElementById('giftInput').value = "";
-            } else { 
-                alert("Invalid or Expired Code!"); 
-            }
         };
 
         window.onload = sync;
     </script>
 </body>
 </html>
+ূ
