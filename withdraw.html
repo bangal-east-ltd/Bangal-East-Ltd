@@ -153,7 +153,6 @@
 
         if (!loggedUser) window.location.replace("index.html");
 
-        // ভ্যাট কনফিগ রিয়েলটাইম আপডেট
         onSnapshot(doc(db, "admin_settings", "withdrawal_config"), (snap) => {
             if(snap.exists()){
                 const config = snap.data();
@@ -199,12 +198,11 @@
         };
         window.closeModal = function() { document.getElementById("customModal").style.display = "none"; };
 
-        // --- রিয়েলটাইম ইউজার ডাটা এবং আনলক লজিক (আপডেট করা হয়েছে) ---
+        // --- রিয়েলটাইম ইউজার ডাটা এবং ১০০% সমাধান লজিক ---
         onSnapshot(doc(db, "users", loggedUser), (snapshot) => {
             if (snapshot.exists()) {
                 const data = snapshot.data();
                 
-                // ব্যালেন্স এবং আইডি আপডেট
                 userDisplayID = data.userID || loggedUser;
                 document.getElementById("userBalance").innerText = parseFloat(data.balance || 0).toFixed(2);
                 
@@ -214,29 +212,25 @@
                 const lockMsg = document.getElementById("lockStatusMsg");
                 const select = document.getElementById("selectedNo");
 
-                // নম্বর ড্রপডাউন আপডেট
-                select.innerHTML = '<option value="">-- Choose Number --</option>';
-                if (data.withdrawNo1) {
-                    n1Input.value = data.withdrawNo1;
-                    select.innerHTML += `<option value="${data.withdrawNo1}">${data.withdrawNo1}</option>`;
-                }
-                if (data.withdrawNo2) {
-                    n2Input.value = data.withdrawNo2;
-                    select.innerHTML += `<option value="${data.withdrawNo2}">${data.withdrawNo2}</option>`;
-                }
+                n1Input.value = data.withdrawNo1 || "";
+                n2Input.value = data.withdrawNo2 || "";
 
-                // --- নম্বর পরিবর্তনের লজিক ---
+                select.innerHTML = '<option value="">-- Choose Number --</option>';
+                if (data.withdrawNo1) select.innerHTML += `<option value="${data.withdrawNo1}">${data.withdrawNo1}</option>`;
+                if (data.withdrawNo2) select.innerHTML += `<option value="${data.withdrawNo2}">${data.withdrawNo2}</option>`;
+
+                // আপনি যেভাবে চেয়েছিলেন ঠিক সেভাবে এডমিন আনলক লজিক যুক্ত করা হয়েছে
                 if (data.is_unlocked === true || !data.withdrawNo1) {
                     n1Input.disabled = false;
                     n2Input.disabled = false;
                     sBtn.style.display = "block"; 
-                    lockMsg.style.display = "none";
+                    lockMsg.style.display = "none"; 
                 } 
                 else {
                     n1Input.disabled = true;
                     n2Input.disabled = true;
                     sBtn.style.display = "none"; 
-                    lockMsg.style.display = "block";
+                    lockMsg.style.display = "block"; 
                 }
             }
         });
@@ -246,7 +240,6 @@
             const n2 = document.getElementById("savedNo2").value;
             if (n1.length < 11) { alert("সঠিক নম্বর দিন!"); return; }
             try {
-                // সেভ করার পর অটোমেটিক লক হয়ে যাবে (is_unlocked: false)
                 await updateDoc(doc(db, "users", loggedUser), { 
                     withdrawNo1: n1, 
                     withdrawNo2: n2 || "",
@@ -312,4 +305,3 @@
     </script>
 </body>
 </html>
-
