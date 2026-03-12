@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Activity & Rewards - Premium</title>
+    <title>Activity & Rewards - Referral Targets</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         :root {
@@ -14,7 +14,6 @@
         }
         body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; padding: 15px; padding-bottom: 50px; }
         
-        /* Header & Stats Card (New Color) */
         .header { display: flex; align-items: center; gap: 15px; margin-bottom: 20px; color: #333; }
         .stats-summary {
             background: var(--grad);
@@ -30,10 +29,8 @@
         .stat-small span { font-size: 12px; opacity: 0.9; }
         .stat-small h4 { margin: 8px 0 0; font-size: 20px; }
 
-        /* Section Title */
         .sec-title { font-size: 16px; font-weight: bold; margin: 20px 0 10px; color: #444; display: flex; align-items: center; gap: 8px; }
 
-        /* Roadmap Item */
         .roadmap-container { padding: 5px; }
         .roadmap-item {
             background: white;
@@ -56,13 +53,13 @@
             color: white; border: none; padding: 7px 15px; border-radius: 8px;
             font-size: 11px; font-weight: bold; cursor: pointer;
         }
-        .claim-btn:disabled { background: #cbd5e0; }
+        .claim-btn:disabled { background: #cbd5e0; cursor: not-allowed; }
 
-        /* Gift Code Input */
         .gift-box { background: white; padding: 15px; border-radius: 18px; display: flex; gap: 10px; margin-bottom: 20px; }
         .gift-box input { flex-grow: 1; border: 1px solid #ddd; padding: 10px; border-radius: 8px; outline: none; }
 
         .active-tag { font-size: 10px; background: #fff3e0; color: #ff8c00; padding: 2px 8px; border-radius: 10px; margin-bottom: 10px; display: inline-block; }
+        .amt-display { font-weight: bold; color: #2575fc; font-size: 14px; margin-right: 5px; }
     </style>
 </head>
 <body>
@@ -85,28 +82,42 @@
 
     <div id="activeStatus" class="active-tag">Status: Checking...</div>
 
-    <div class="sec-title"><i class="fas fa-gift"></i> Gift Code Claim</div>
-    <div class="gift-box">
-        <input type="text" id="giftCodeInput" placeholder="Enter Gift Code">
-        <button class="claim-btn" style="background: var(--grad);" onclick="claimGift()">Submit</button>
+    <div class="sec-title"><i class="fas fa-stars"></i> Main Rewards</div>
+    <div class="roadmap-container">
+        <div class="roadmap-item" style="border-left-color: #3498db;">
+            <div class="icon-box" style="background:#e1f5fe; color:#3498db;"><i class="fas fa-user-plus"></i></div>
+            <div class="content"><h3>Daily Referral</h3><p>সরাসরি রেফার কমিশন</p></div>
+            <div><span class="amt-display" id="referAmt">৳ 0</span><button class="claim-btn" id="referBtn" onclick="claimFieldBonus('refer_income')">Claim</button></div>
+        </div>
+        <div class="roadmap-item" style="border-left-color: #9b59b6;">
+            <div class="icon-box" style="background:#f3e5f5; color:#9b59b6;"><i class="fas fa-users"></i></div>
+            <div class="content"><h3>Level Income</h3><p>টিম লেভেল বোনাস</p></div>
+            <div><span class="amt-display" id="levelAmt">৳ 0</span><button class="claim-btn" id="levelBtn" onclick="claimFieldBonus('level_income')">Claim</button></div>
+        </div>
+        <div class="roadmap-item" style="border-left-color: #2ecc71;">
+            <div class="icon-box" style="background:#e8f5e9; color:#2ecc71;"><i class="fas fa-chart-line"></i></div>
+            <div class="content"><h3>Daily ROI</h3><p>প্রতিদিনের স্বয়ংক্রিয় মুনাফা</p></div>
+            <div><span class="amt-display" id="roiAmt">৳ 0</span><button class="claim-btn" id="roiBtn" onclick="claimFieldBonus('daily_roi')">Claim</button></div>
+        </div>
     </div>
 
-    <div class="sec-title"><i class="fas fa-wallet"></i> First & Second Deposit Bonus</div>
-    <div class="roadmap-container" id="depositList">
-        </div>
+    <div class="sec-title"><i class="fas fa-users-cog"></i> Referral Target Rewards</div>
+    <div class="roadmap-container" id="refTargetList"></div>
+
+    <div class="sec-title"><i class="fas fa-gift"></i> Gift Code Claim</div>
+    <div class="gift-box"><input type="text" id="giftCodeInput" placeholder="Enter Gift Code"><button class="claim-btn" style="background: var(--grad);" onclick="claimGift()">Submit</button></div>
+
+    <div class="sec-title"><i class="fas fa-wallet"></i> Deposit Target Rewards</div>
+    <div class="roadmap-container" id="depositList"></div>
 
     <div class="sec-title"><i class="fas fa-dice"></i> Daily Betting Rewards</div>
-    <div class="roadmap-container" id="bettingList">
-        </div>
+    <div class="roadmap-container" id="bettingList"></div>
 
     <div class="sec-title"><i class="fas fa-calendar-check"></i> Monthly Rank Salary</div>
-    <div class="roadmap-item" style="border-left-color: #9b59b6;">
-        <div class="icon-box" style="background: #f3e5f5; color: #9b59b6;"><i class="fas fa-money-bill-wave"></i></div>
-        <div class="content">
-            <h3>Monthly Salary</h3>
-            <p id="salaryDesc">আপনার র‍্যাঙ্ক অনুযায়ী স্যালারি ক্লেইম করুন</p>
-        </div>
-        <button class="claim-btn" id="salaryBtn" onclick="claimMonthlySalary()">Claim</button>
+    <div class="roadmap-item" style="border-left-color: #e91e63;">
+        <div class="icon-box" style="background: #fce4ec; color: #e91e63;"><i class="fas fa-money-bill-wave"></i></div>
+        <div class="content"><h3>Monthly Salary</h3><p id="salaryDesc">আপনার র‍্যাঙ্ক অনুযায়ী মাসিক স্যালারি</p></div>
+        <div><span class="amt-display" id="salaryAmt">৳ 0</span><button class="claim-btn" id="salaryBtn" onclick="claimFieldBonus('monthly_salary')">Claim</button></div>
     </div>
 
     <script type="module">
@@ -126,93 +137,91 @@
         const db = getFirestore(app);
         const loggedUser = localStorage.getItem("loggedUser");
 
-        // বোনাস সেটিংস
-        const depRewards = [
-            { t: 1000, b: 100 }, { t: 2000, b: 250 }, { t: 5000, b: 600 }, 
-            { t: 10000, b: 1200 }, { t: 25000, b: 3500 }
-        ];
-        const betRewards = [
-            { t: 1000, b: 20 }, { t: 5000, b: 120 }, { t: 10000, b: 300 }, 
-            { t: 50000, b: 1500 }, { t: 100000, b: 4000 }
-        ];
+        const depRewards = [{ t: 1000, b: 100 }, { t: 2000, b: 250 }, { t: 5000, b: 600 }, { t: 10000, b: 1200 }, { t: 25000, b: 3500 }];
+        const betRewards = [{ t: 1000, b: 20 }, { t: 5000, b: 120 }, { t: 10000, b: 300 }, { t: 50000, b: 1500 }, { t: 100000, b: 4000 }];
+        const refTargets = [{ t: 10, b: 500 }, { t: 20, b: 1200 }, { t: 30, b: 2000 }, { t: 50, b: 4000 }, { t: 100, b: 10000 }];
 
-        // ডাটা রেন্ডার করা
-        function renderLists(userData) {
+        function renderDynamicLists(userData) {
             const isActive = userData.total_deposit >= 100;
             document.getElementById('activeStatus').innerHTML = isActive ? 
                 `<span style="color:green"><i class="fas fa-check-circle"></i> Active Member</span>` : 
                 `<span style="color:red"><i class="fas fa-times-circle"></i> Not Active (Min 100 Dep)</span>`;
 
+            document.getElementById('referAmt').innerText = "৳ " + (userData.refer_income || 0);
+            document.getElementById('levelAmt').innerText = "৳ " + (userData.level_income || 0);
+            document.getElementById('roiAmt').innerText = "৳ " + (userData.daily_roi || 0);
+            document.getElementById('salaryAmt').innerText = "৳ " + (userData.monthly_salary || 0);
+
+            ['referBtn', 'levelBtn', 'roiBtn', 'salaryBtn'].forEach(id => {
+                document.getElementById(id).disabled = !isActive || parseFloat(document.getElementById(id).previousElementSibling.innerText.replace('৳ ', '')) <= 0;
+            });
+
+            // Referral Target Bonus List
+            let rHtml = '';
+            refTargets.forEach(item => {
+                const claimed = (userData.claimed_ref_target || []).includes(item.t);
+                const activeRefs = userData.active_referrals || 0; 
+                rHtml += `
+                <div class="roadmap-item" style="border-left-color: #6a11cb;">
+                    <div class="icon-box" style="background:#f3e5f5; color:#6a11cb;"><i class="fas fa-user-check"></i></div>
+                    <div class="content"><h3>${item.t} Active Referrals</h3><p>Bonus: ৳${item.b} (Progress: ${activeRefs}/${item.t})</p></div>
+                    <button class="claim-btn" ${(!isActive || claimed || activeRefs < item.t) ? 'disabled' : ''} 
+                    onclick="claimTargetBonus('ref', ${item.t}, ${item.b})">${claimed ? 'Done' : 'Claim'}</button>
+                </div>`;
+            });
+            document.getElementById('refTargetList').innerHTML = rHtml;
+
             // Deposit Bonus
             let dHtml = '';
             depRewards.forEach(item => {
                 const claimed = (userData.claimed_dep || []).includes(item.t);
-                dHtml += `
-                <div class="roadmap-item">
-                    <div class="icon-box" style="background:#e3f2fd; color:#2196f3;"><i class="fas fa-coins"></i></div>
-                    <div class="content"><h3>Dep ${item.t} Bonus</h3><p>Get ৳${item.b} Bonus</p></div>
-                    <button class="claim-btn" ${(!isActive || claimed || userData.total_deposit < item.t) ? 'disabled' : ''} 
-                    onclick="claimBonus('dep', ${item.t}, ${item.b})">${claimed ? 'Done' : 'Claim'}</button>
-                </div>`;
+                dHtml += `<div class="roadmap-item"><div class="icon-box" style="background:#e3f2fd; color:#2196f3;"><i class="fas fa-coins"></i></div><div class="content"><h3>Dep ${item.t} Bonus</h3><p>Get ৳${item.b} Bonus</p></div><button class="claim-btn" ${(!isActive || claimed || userData.total_deposit < item.t) ? 'disabled' : ''} onclick="claimTargetBonus('dep', ${item.t}, ${item.b})">${claimed ? 'Done' : 'Claim'}</button></div>`;
             });
             document.getElementById('depositList').innerHTML = dHtml;
 
             // Betting Bonus
             let bHtml = '';
+            const today = new Date().toLocaleDateString();
             betRewards.forEach(item => {
-                const today = new Date().toLocaleDateString();
-                const lastReset = userData.last_bet_reset || "";
-                const claimed = lastReset === today && (userData.claimed_bet || []).includes(item.t);
-                
-                bHtml += `
-                <div class="roadmap-item" style="border-left-color: #e67e22;">
-                    <div class="icon-box" style="background:#fff3e0; color:#e67e22;"><i class="fas fa-gamepad"></i></div>
-                    <div class="content"><h3>Bet ${item.t} Bonus</h3><p>Daily Reward: ৳${item.b}</p></div>
-                    <button class="claim-btn" ${(!isActive || claimed || userData.today_bet < item.t) ? 'disabled' : ''} 
-                    onclick="claimBonus('bet', ${item.t}, ${item.b})">${claimed ? 'Done' : 'Claim'}</button>
-                </div>`;
+                const claimed = userData.last_bet_reset === today && (userData.claimed_bet || []).includes(item.t);
+                bHtml += `<div class="roadmap-item" style="border-left-color: #e67e22;"><div class="icon-box" style="background:#fff3e0; color:#e67e22;"><i class="fas fa-gamepad"></i></div><div class="content"><h3>Bet ${item.t} Bonus</h3><p>Daily Reward: ৳${item.b}</p></div><button class="claim-btn" ${(!isActive || claimed || userData.today_bet < item.t) ? 'disabled' : ''} onclick="claimTargetBonus('bet', ${item.t}, ${item.b})">${claimed ? 'Done' : 'Claim'}</button></div>`;
             });
             document.getElementById('bettingList').innerHTML = bHtml;
         }
 
-        // রিয়েল টাইম সিঙ্ক
         function sync() {
             onSnapshot(doc(db, "users", loggedUser), (snap) => {
                 if (snap.exists()) {
                     const d = snap.data();
                     document.getElementById('mainBalance').innerText = "৳ " + (d.balance || 0).toFixed(2);
                     document.getElementById('userRank').innerText = d.rank || "General";
-                    renderLists(d);
+                    renderDynamicLists(d);
                 }
             });
         }
 
-        // বোনাস ক্লেইম ফাংশন
-        window.claimBonus = async (type, target, amount) => {
+        window.claimFieldBonus = async (field) => {
             const ref = doc(db, "users", loggedUser);
-            if (type === 'dep') {
-                await updateDoc(ref, { balance: increment(amount), claimed_dep: Array.from(new Set([...((await getDoc(ref)).data().claimed_dep || []), target])) });
-            } else if (type === 'bet') {
-                const today = new Date().toLocaleDateString();
-                await updateDoc(ref, { 
-                    balance: increment(amount), 
-                    last_bet_reset: today,
-                    claimed_bet: Array.from(new Set([...((await getDoc(ref)).data().claimed_bet || []), target])) 
-                });
-            }
-            alert("Reward Claimed: ৳" + amount);
+            const snap = await getDoc(ref);
+            const amount = snap.data()[field] || 0;
+            if(amount > 0) { await updateDoc(ref, { balance: increment(amount), [field]: 0 }); alert("Claimed Successfully!"); }
         };
 
-        // গিফট কোড ক্লেইম
-        window.claimGift = async () => {
-            const code = document.getElementById('giftCodeInput').value;
-            if(!code) return;
-            // এখানে গিফট কোড ভ্যালিডেশন লজিক থাকবে (অ্যাডমিন প্যানেল থেকে সেট করা)
-            alert("Invalid or Expired Code!");
-        }
+        window.claimTargetBonus = async (type, target, amount) => {
+            const ref = doc(db, "users", loggedUser);
+            const data = (await getDoc(ref)).data();
+            let updateObj = { balance: increment(amount) };
+            
+            if (type === 'dep') updateObj.claimed_dep = Array.from(new Set([...(data.claimed_dep || []), target]));
+            else if (type === 'bet') { updateObj.last_bet_reset = new Date().toLocaleDateString(); updateObj.claimed_bet = Array.from(new Set([...(data.claimed_bet || []), target])); }
+            else if (type === 'ref') updateObj.claimed_ref_target = Array.from(new Set([...(data.claimed_ref_target || []), target]));
+            
+            await updateDoc(ref, updateObj);
+            alert("Reward Claimed!");
+        };
 
+        window.claimGift = async () => { alert("Invalid or Expired Code!"); };
         window.onload = sync;
     </script>
 </body>
 </html>
-
