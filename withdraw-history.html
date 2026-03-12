@@ -115,16 +115,15 @@
                     let status = data.status || 'Pending';
                     let statusClass = status.toLowerCase();
                     
-                    // এডমিন নোট চেক করার উন্নত লজিক
-                    let adminComment = data.admin_note || data.note || ""; 
-                    
-                    // Extra elements based on status
+                    // আপনার দেওয়া নতুন লজিক এখানে যুক্ত করা হয়েছে
                     let statusFooter = "";
                     if(status === "Pending") {
                         statusFooter = `<div class="pending-notice"><i class="fas fa-clock"></i> ২৪ ঘন্টার মধ্যে আপনার ওয়ালেট টাকা পোঁছে যাবে।</div>`;
-                    } else if(status === "Rejected" && adminComment) {
-                        // এখানে এডমিন কমেন্টটি দেখা যাবে
-                        statusFooter = `<div class="admin-comment"><b>Admin:</b> ${adminComment}</div>`;
+                    } else if(status === "Rejected") {
+                        // রিজেক্ট হলে নির্দিষ্ট মেসেজ এবং এডমিন নোট থাকলে সেটিও দেখাবে
+                        let rejectMsg = "দয়া করে অন্য ওয়ালেট ব্যবহার করুন";
+                        let adminNote = data.admin_note ? `<br><b>Admin:</b> ${data.admin_note}` : "";
+                        statusFooter = `<div class="admin-comment"><i class="fas fa-exclamation-circle"></i> ${rejectMsg}${adminNote}</div>`;
                     }
 
                     const cardHtml = `
