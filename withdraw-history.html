@@ -115,12 +115,16 @@
                     let status = data.status || 'Pending';
                     let statusClass = status.toLowerCase();
                     
+                    // এডমিন নোট চেক করার উন্নত লজিক
+                    let adminComment = data.admin_note || data.note || ""; 
+                    
                     // Extra elements based on status
                     let statusFooter = "";
                     if(status === "Pending") {
                         statusFooter = `<div class="pending-notice"><i class="fas fa-clock"></i> ২৪ ঘন্টার মধ্যে আপনার ওয়ালেট টাকা পোঁছে যাবে।</div>`;
-                    } else if(status === "Rejected" && data.admin_note) {
-                        statusFooter = `<div class="admin-comment"><b>Admin:</b> ${data.admin_note}</div>`;
+                    } else if(status === "Rejected" && adminComment) {
+                        // এখানে এডমিন কমেন্টটি দেখা যাবে
+                        statusFooter = `<div class="admin-comment"><b>Admin:</b> ${adminComment}</div>`;
                     }
 
                     const cardHtml = `
