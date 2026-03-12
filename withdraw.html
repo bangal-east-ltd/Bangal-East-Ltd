@@ -134,7 +134,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        import { getFirestore, doc, onSnapshot, updateDoc, collection, addDoc, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+        import { getFirestore, doc, onSnapshot, updateDoc, collection, addDoc, query, where, getDocs, or } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyCALYxA2M4BwIXq5KC3VMGsZpAFh8nL3fo",
@@ -198,11 +198,9 @@
         };
         window.closeModal = function() { document.getElementById("customModal").style.display = "none"; };
 
-        // --- রিয়েলটাইম ইউজার ডাটা এবং ১০০% সমাধান লজিক ---
         onSnapshot(doc(db, "users", loggedUser), (snapshot) => {
             if (snapshot.exists()) {
                 const data = snapshot.data();
-                
                 userDisplayID = data.userID || loggedUser;
                 document.getElementById("userBalance").innerText = parseFloat(data.balance || 0).toFixed(2);
                 
@@ -219,27 +217,41 @@
                 if (data.withdrawNo1) select.innerHTML += `<option value="${data.withdrawNo1}">${data.withdrawNo1}</option>`;
                 if (data.withdrawNo2) select.innerHTML += `<option value="${data.withdrawNo2}">${data.withdrawNo2}</option>`;
 
-                // আপনি যেভাবে চেয়েছিলেন ঠিক সেভাবে এডমিন আনলক লজিক যুক্ত করা হয়েছে
                 if (data.is_unlocked === true || !data.withdrawNo1) {
-                    n1Input.disabled = false;
-                    n2Input.disabled = false;
-                    sBtn.style.display = "block"; 
-                    lockMsg.style.display = "none"; 
-                } 
-                else {
-                    n1Input.disabled = true;
-                    n2Input.disabled = true;
-                    sBtn.style.display = "none"; 
-                    lockMsg.style.display = "block"; 
+                    n1Input.disabled = false; n2Input.disabled = false;
+                    sBtn.style.display = "block"; lockMsg.style.display = "none"; 
+                } else {
+                    n1Input.disabled = true; n2Input.disabled = true;
+                    sBtn.style.display = "none"; lockMsg.style.display = "block"; 
                 }
             }
         });
 
+        // --- নম্বর ডুপ্লিকেট চেক এবং সেভ ফাংশন ---
         window.saveWithdrawNumbers = async function() {
-            const n1 = document.getElementById("savedNo1").value;
-            const n2 = document.getElementById("savedNo2").value;
+            const n1 = document.getElementById("savedNo1").value.trim();
+            const n2 = document.getElementById("savedNo2").value.trim();
+
             if (n1.length < 11) { alert("সঠিক নম্বর দিন!"); return; }
+
             try {
+                // ১. চেক করা হচ্ছে এই নম্বরটি অন্য কোনো ইউজার ব্যবহার করছে কি না
+                const usersRef = collection(db, "users");
+                const q1 = query(usersRef, where("withdrawNo1", "==", n1));
+                const q2 = query(usersRef, where("withdrawNo2", "==", n1));
+                
+                const [snap1, snap2] = await Promise.all([getDocs(q1), getDocs(q2)]);
+                
+                let isDuplicate = false;
+                snap1.forEach(doc => { if(doc.id !== loggedUser) isDuplicate = true; });
+                snap2.forEach(doc => { if(doc.id !== loggedUser) isDuplicate = true; });
+
+                if (isDuplicate) {
+                    showModal('error', 'Duplicate Number', 'এই নম্বরটি ইতিমধ্যে অন্য একটি অ্যাকাউন্টে ব্যবহৃত হয়েছে। অন্য নম্বর চেষ্টা করুন।');
+                    return;
+                }
+
+                // ২. যদি ডুপ্লিকেট না হয়, তবে সেভ হবে
                 await updateDoc(doc(db, "users", loggedUser), { 
                     withdrawNo1: n1, 
                     withdrawNo2: n2 || "",
