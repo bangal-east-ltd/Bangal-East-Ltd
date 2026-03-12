@@ -128,20 +128,23 @@
         const refTargets = [{ t: 10, b: 500 }, { t: 20, b: 1200 }, { t: 30, b: 2000 }, { t: 50, b: 4000 }, { t: 100, b: 10000 }];
         const depRewards = [{ t: 1000, b: 100 }, { t: 2000, b: 250 }, { t: 5000, b: 600 }, { t: 10000, b: 1200 }];
 
-        // টিমের এক্টিভ মেম্বার গণনার জন্য ফাংশন (Promotion Center এর মত লজিক)
+        // টিমের এক্টিভ মেম্বার গণনার জন্য আপডেট করা ফাংশন
         async function getActiveReferralCount(myUID) {
             const snap = await getDocs(collection(db, "users"));
             const users = snap.docs.map(d => d.data());
             let activeCount = 0;
 
-            function checkRefs(parentID) {
-                const refs = users.filter(u => String(u.referrerID) === String(parentID));
-                refs.forEach(u => {
-                    if (u.total_deposit >= 100 || u.balance >= 100) activeCount++;
-                    // level 1 এর বাইরেও চাইলে এখানে লুপ চালানো যায়, আপাতত সরাসরি রেফারেল ধরা হচ্ছে
-                });
-            }
-            checkRefs(myUID);
+            const myRefs = users.filter(u => String(u.referrerID) === String(myUID));
+            
+            myRefs.forEach(u => {
+                const dep = parseFloat(u.totalDeposit || u.total_deposit || 0);
+                const bal = parseFloat(u.balance || 0);
+                
+                if (dep >= 100 || bal >= 100) {
+                    activeCount++;
+                }
+            });
+            
             return activeCount;
         }
 
@@ -150,17 +153,14 @@
             const isActive = (userData.total_deposit >= 100 || balance >= 100);
             const activeRefs = await getActiveReferralCount(userData.userID);
 
-            // স্ট্যাটাস আপডেট
             document.getElementById('activeStatus').innerHTML = isActive ? 
                 `<span style="color:white; background:green; padding:5px 15px; border-radius:15px;">● Active Member</span>` : 
                 `<span style="color:white; background:red; padding:5px 15px; border-radius:15px;">● Not Active</span>`;
 
-            // মেইন রিওয়ার্ডস ভ্যালু
             document.getElementById('referAmt').innerText = "৳ " + (userData.refer_income || 0);
             document.getElementById('levelAmt').innerText = "৳ " + (userData.level_income || 0);
             document.getElementById('roiAmt').innerText = "৳ " + (userData.daily_roi || 0);
 
-            // রেফারেল টার্গেট রেন্ডার (প্রগ্রেস বার সহ)
             let rHtml = '';
             refTargets.forEach(item => {
                 const claimed = (userData.claimed_ref_target || []).includes(item.t);
@@ -179,7 +179,6 @@
             });
             document.getElementById('refTargetList').innerHTML = rHtml;
 
-            // ডিপোজিট টার্গেট রেন্ডার
             let dHtml = '';
             depRewards.forEach(item => {
                 const claimed = (userData.claimed_dep || []).includes(item.t);
@@ -224,4 +223,3 @@
     </script>
 </body>
 </html>
-ূ
