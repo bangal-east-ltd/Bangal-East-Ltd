@@ -35,6 +35,34 @@
     <h2 style="text-align:center; color:#2575fc;"> <i class="fas fa-tools"></i> Admin VIP 4 Dashboard</h2>
 
     <div class="card">
+        <h3><i class="fas fa-users-cog"></i> Referral Target Reward Settings</h3>
+        <p style="font-size: 12px; color: #888; margin-bottom: 15px;">কতজন একটিভ রেফার হলে কত টাকা বোনাস পাবে তা এখান থেকে সেট করুন।</p>
+        <div class="grid">
+            <div class="form-group">
+                <label>10 Active Referrals Bonus (৳)</label>
+                <input type="number" id="amt10" placeholder="Ex: 500">
+            </div>
+            <div class="form-group">
+                <label>20 Active Referrals Bonus (৳)</label>
+                <input type="number" id="amt20" placeholder="Ex: 1200">
+            </div>
+            <div class="form-group">
+                <label>30 Active Referrals Bonus (৳)</label>
+                <input type="number" id="amt30" placeholder="Ex: 2000">
+            </div>
+            <div class="form-group">
+                <label>50 Active Referrals Bonus (৳)</label>
+                <input type="number" id="amt50" placeholder="Ex: 4000">
+            </div>
+            <div class="form-group">
+                <label>100 Active Referrals Bonus (৳)</label>
+                <input type="number" id="amt100" placeholder="Ex: 10000">
+            </div>
+        </div>
+        <button class="btn-main" style="background: #6a11cb;" onclick="updateReferralRewards()">Save Referral Rewards</button>
+    </div>
+
+    <div class="card">
         <h3><i class="fas fa-percent"></i> Bonus & ROI Settings</h3>
         <div class="grid">
             <div class="form-group">
@@ -133,6 +161,25 @@
 
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
+
+    // Referral Rewards Update (নতুন লজিক)
+    window.updateReferralRewards = async () => {
+        const rewardData = {
+            10: Number(document.getElementById('amt10').value) || 0,
+            20: Number(document.getElementById('amt20').value) || 0,
+            30: Number(document.getElementById('amt30').value) || 0,
+            50: Number(document.getElementById('amt50').value) || 0,
+            100: Number(document.getElementById('amt100').value) || 0
+        };
+
+        try {
+            // এটি Firestore-এ settings/referral_rewards পথে ডেটা সেভ করবে
+            await setDoc(doc(db, "admin_settings", "referral_rewards"), rewardData);
+            alert("Success: Referral Rewards Updated!");
+        } catch (e) {
+            alert("Error: " + e.message);
+        }
+    };
 
     // Global VIP 4 Settings Update
     window.updateAllVip4 = async () => {
