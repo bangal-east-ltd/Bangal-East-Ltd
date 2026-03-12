@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Activity & Rewards - Premium</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root {
+            --grad: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+            --secondary: #00d2ff;
+            --success: #00c851;
+            --bg: #f0f2f5;
+        }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; padding: 15px; padding-bottom: 50px; }
+        
+        /* Header & Stats Card (New Color) */
+        .header { display: flex; align-items: center; gap: 15px; margin-bottom: 20px; color: #333; }
+        .stats-summary {
+            background: var(--grad);
+            color: white;
+            padding: 25px;
+            border-radius: 25px;
+            margin-bottom: 25px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            box-shadow: 0 10px 20px rgba(37, 117, 252, 0.3);
+        }
+        .stat-small { text-align: center; }
+        .stat-small span { font-size: 12px; opacity: 0.9; }
+        .stat-small h4 { margin: 8px 0 0; font-size: 20px; }
+
+        /* Section Title */
+        .sec-title { font-size: 16px; font-weight: bold; margin: 20px 0 10px; color: #444; display: flex; align-items: center; gap: 8px; }
+
+        /* Roadmap Item */
+        .roadmap-container { padding: 5px; }
+        .roadmap-item {
+            background: white;
+            border-radius: 18px;
+            padding: 15px;
+            margin-bottom: 15px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.03);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border-left: 5px solid #2575fc;
+        }
+        .icon-box { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
+        .content { flex-grow: 1; }
+        .content h3 { margin: 0; font-size: 13px; color: #333; }
+        .content p { margin: 2px 0 0; font-size: 10px; color: #888; }
+        
+        .claim-btn {
+            background: var(--success);
+            color: white; border: none; padding: 7px 15px; border-radius: 8px;
+            font-size: 11px; font-weight: bold; cursor: pointer;
+        }
+        .claim-btn:disabled { background: #cbd5e0; }
+
+        /* Gift Code Input */
+        .gift-box { background: white; padding: 15px; border-radius: 18px; display: flex; gap: 10px; margin-bottom: 20px; }
+        .gift-box input { flex-grow: 1; border: 1px solid #ddd; padding: 10px; border-radius: 8px; outline: none; }
+
+        .active-tag { font-size: 10px; background: #fff3e0; color: #ff8c00; padding: 2px 8px; border-radius: 10px; margin-bottom: 10px; display: inline-block; }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <i class="fas fa-arrow-left" onclick="history.back()"></i>
+        <h2>Rewards & Activity</h2>
+    </div>
+
+    <div class="stats-summary">
+        <div class="stat-small">
+            <span>মূল ব্যালেন্স</span>
+            <h4 id="mainBalance">৳ 0.00</h4>
+        </div>
+        <div class="stat-small">
+            <span>বর্তমান র‍্যাঙ্ক</span>
+            <h4 id="userRank">General</h4>
+        </div>
+    </div>
+
+    <div id="activeStatus" class="active-tag">Status: Checking...</div>
+
+    <div class="sec-title"><i class="fas fa-gift"></i> Gift Code Claim</div>
+    <div class="gift-box">
+        <input type="text" id="giftCodeInput" placeholder="Enter Gift Code">
+        <button class="claim-btn" style="background: var(--grad);" onclick="claimGift()">Submit</button>
+    </div>
+
+    <div class="sec-title"><i class="fas fa-wallet"></i> First & Second Deposit Bonus</div>
+    <div class="roadmap-container" id="depositList">
+        </div>
+
+    <div class="sec-title"><i class="fas fa-dice"></i> Daily Betting Rewards</div>
+    <div class="roadmap-container" id="bettingList">
+        </div>
+
+    <div class="sec-title"><i class="fas fa-calendar-check"></i> Monthly Rank Salary</div>
+    <div class="roadmap-item" style="border-left-color: #9b59b6;">
+        <div class="icon-box" style="background: #f3e5f5; color: #9b59b6;"><i class="fas fa-money-bill-wave"></i></div>
+        <div class="content">
+            <h3>Monthly Salary</h3>
+            <p id="salaryDesc">আপনার র‍্যাঙ্ক অনুযায়ী স্যালারি ক্লেইম করুন</p>
+        </div>
+        <button class="claim-btn" id="salaryBtn" onclick="claimMonthlySalary()">Claim</button>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getFirestore, doc, onSnapshot, updateDoc, increment, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCALYxA2M4BwIXq5KC3VMGsZpAFh8nL3fo",
+            authDomain: "bengal-east-company-limited.firebaseapp.com",
+            projectId: "bengal-east-company-limited",
+            storageBucket: "bengal-east-company-limited.firebasestorage.app",
+            messagingSenderId: "653223286483",
+            appId: "1:653223286483:web:8e4ed0782ae807f8f02626"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const loggedUser = localStorage.getItem("loggedUser");
+
+        // বোনাস সেটিংস
+        const depRewards = [
+            { t: 1000, b: 100 }, { t: 2000, b: 250 }, { t: 5000, b: 600 }, 
+            { t: 10000, b: 1200 }, { t: 25000, b: 3500 }
+        ];
+        const betRewards = [
+            { t: 1000, b: 20 }, { t: 5000, b: 120 }, { t: 10000, b: 300 }, 
+            { t: 50000, b: 1500 }, { t: 100000, b: 4000 }
+        ];
+
+        // ডাটা রেন্ডার করা
+        function renderLists(userData) {
+            const isActive = userData.total_deposit >= 100;
+            document.getElementById('activeStatus').innerHTML = isActive ? 
+                `<span style="color:green"><i class="fas fa-check-circle"></i> Active Member</span>` : 
+                `<span style="color:red"><i class="fas fa-times-circle"></i> Not Active (Min 100 Dep)</span>`;
+
+            // Deposit Bonus
+            let dHtml = '';
+            depRewards.forEach(item => {
+                const claimed = (userData.claimed_dep || []).includes(item.t);
+                dHtml += `
+                <div class="roadmap-item">
+                    <div class="icon-box" style="background:#e3f2fd; color:#2196f3;"><i class="fas fa-coins"></i></div>
+                    <div class="content"><h3>Dep ${item.t} Bonus</h3><p>Get ৳${item.b} Bonus</p></div>
+                    <button class="claim-btn" ${(!isActive || claimed || userData.total_deposit < item.t) ? 'disabled' : ''} 
+                    onclick="claimBonus('dep', ${item.t}, ${item.b})">${claimed ? 'Done' : 'Claim'}</button>
+                </div>`;
+            });
+            document.getElementById('depositList').innerHTML = dHtml;
+
+            // Betting Bonus
+            let bHtml = '';
+            betRewards.forEach(item => {
+                const today = new Date().toLocaleDateString();
+                const lastReset = userData.last_bet_reset || "";
+                const claimed = lastReset === today && (userData.claimed_bet || []).includes(item.t);
+                
+                bHtml += `
+                <div class="roadmap-item" style="border-left-color: #e67e22;">
+                    <div class="icon-box" style="background:#fff3e0; color:#e67e22;"><i class="fas fa-gamepad"></i></div>
+                    <div class="content"><h3>Bet ${item.t} Bonus</h3><p>Daily Reward: ৳${item.b}</p></div>
+                    <button class="claim-btn" ${(!isActive || claimed || userData.today_bet < item.t) ? 'disabled' : ''} 
+                    onclick="claimBonus('bet', ${item.t}, ${item.b})">${claimed ? 'Done' : 'Claim'}</button>
+                </div>`;
+            });
+            document.getElementById('bettingList').innerHTML = bHtml;
+        }
+
+        // রিয়েল টাইম সিঙ্ক
+        function sync() {
+            onSnapshot(doc(db, "users", loggedUser), (snap) => {
+                if (snap.exists()) {
+                    const d = snap.data();
+                    document.getElementById('mainBalance').innerText = "৳ " + (d.balance || 0).toFixed(2);
+                    document.getElementById('userRank').innerText = d.rank || "General";
+                    renderLists(d);
+                }
+            });
+        }
+
+        // বোনাস ক্লেইম ফাংশন
+        window.claimBonus = async (type, target, amount) => {
+            const ref = doc(db, "users", loggedUser);
+            if (type === 'dep') {
+                await updateDoc(ref, { balance: increment(amount), claimed_dep: Array.from(new Set([...((await getDoc(ref)).data().claimed_dep || []), target])) });
+            } else if (type === 'bet') {
+                const today = new Date().toLocaleDateString();
+                await updateDoc(ref, { 
+                    balance: increment(amount), 
+                    last_bet_reset: today,
+                    claimed_bet: Array.from(new Set([...((await getDoc(ref)).data().claimed_bet || []), target])) 
+                });
+            }
+            alert("Reward Claimed: ৳" + amount);
+        };
+
+        // গিফট কোড ক্লেইম
+        window.claimGift = async () => {
+            const code = document.getElementById('giftCodeInput').value;
+            if(!code) return;
+            // এখানে গিফট কোড ভ্যালিডেশন লজিক থাকবে (অ্যাডমিন প্যানেল থেকে সেট করা)
+            alert("Invalid or Expired Code!");
+        }
+
+        window.onload = sync;
+    </script>
+</body>
+</html>
+
