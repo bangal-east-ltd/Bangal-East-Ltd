@@ -5,18 +5,19 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Referral Target Rewards</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
     <style>
         * { margin:0; padding:0; box-sizing:border-box; font-family: 'Segoe UI', sans-serif; }
         body { background: #f4f7f6; color: #333; padding: 20px; }
         .container { max-width: 500px; margin: 0 auto; }
         
-        .header { background: #6a11cb; color: white; padding: 20px; text-align: center; border-radius: 15px; margin-bottom: 20px; }
-        
+        /* Header Style */
+        .header { background: #6a11cb; color: white; padding: 20px; text-align: center; border-radius: 15px; margin-bottom: 20px; position: relative; }
+        .back-btn { position: absolute; left: 15px; top: 22px; color: white; text-decoration: none; }
+
         .team-section { background: white; border-radius: 15px; padding: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.05); }
         .reward-item { display: flex; align-items: center; gap: 15px; padding: 15px; border: 1px solid #f0f0f0; border-radius: 12px; margin-bottom: 12px; }
         
@@ -25,117 +26,88 @@
         .progress-container { width: 100%; height: 6px; background: #eee; border-radius: 10px; overflow: hidden; margin-top: 5px; }
         .progress-bar { height: 100%; background: linear-gradient(90deg, #6a11cb, #2575fc); width: 0%; transition: 0.5s; }
         
-        .claim-btn { width: 75px; padding: 8px 0; border-radius: 8px; border: none; font-size: 11px; font-weight: bold; cursor: pointer; transition: 0.3s; }
+        .claim-btn { width: 75px; padding: 8px 0; border-radius: 8px; border: none; font-size: 11px; font-weight: bold; cursor: pointer; }
         .btn-locked { background: #e0e0e0; color: #999; cursor: not-allowed; }
-        .btn-ready { background: #6a11cb; color: white; box-shadow: 0 4px 10px rgba(106, 17, 203, 0.3); }
-        .btn-done { background: #e8f5e9; color: #2e7d32; cursor: default; }
+        .btn-ready { background: #6a11cb; color: white; }
+        .btn-done { background: #e8f5e9; color: #2e7d32; }
     </style>
 </head>
 <body>
 
 <div class="container">
     <div class="header">
-        <h2><i class="fas fa-gift"></i> রেফারেল রিওয়ার্ডস</h2>
+        <a href="index.html" class="back-btn"><i class="fas fa-arrow-left"></i></a>
+        <h2><i class="fas fa-users"></i> রিওয়ার্ডস সেন্টার</h2>
     </div>
 
     <div class="team-section">
-        <h3 style="color: #6a11cb; margin-bottom: 15px;"><i class="fas fa-users"></i> Referral Target Rewards</h3>
+        <h3 style="color: #6a11cb; margin-bottom: 15px; font-size: 16px;">Referral Target Rewards</h3>
         
         <div id="rewardList">
-            <p style="text-align:center; padding:20px;">লোড হচ্ছে...</p>
+            <p style="text-align:center;">লোড হচ্ছে...</p>
         </div>
     </div>
 </div>
 
 <script>
-    // আপনার ফায়ারবেস কনফিগ (মূল ফাইল থেকে কপি করুন)
+    // আপনার ফায়ারবেস কনফিগ এখানে দিন
     const firebaseConfig = {
-        apiKey: "AIzaSyCALYxA2M4BwIXq5KC3VMGsZpAFh8nL3fo",
-        authDomain: "bengal-east-company-limited.firebaseapp.com",
-        projectId: "bengal-east-company-limited",
-        storageBucket: "bengal-east-company-limited.firebasestorage.app",
-        messagingSenderId: "653223286483",
-        appId: "1:653223286483:web:8e4ed0782ae807f8f02626"
+        // আপনার কনফিগ ডাটা...
     };
-    firebase.initializeApp(firebaseConfig);
+    if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
     const db = firebase.firestore();
     const userPhone = localStorage.getItem("loggedUser");
 
-    // রিওয়ার্ড ডাটা সেটআপ
+    // রিওয়ার্ড ডাটাবেস
     const targets = [
         { id: "ref_10", goal: 10, bonus: 500, title: "10 Active Referrals", icon: "fa-user-plus" },
         { id: "ref_20", goal: 20, bonus: 1200, title: "20 Active Referrals", icon: "fa-users-cog" },
-        { id: "ref_50", goal: 50, bonus: 4000, title: "50 Active Referrals", icon: "fa-crown" },
-        { id: "ref_100", goal: 100, bonus: 10000, title: "100 Active Referrals", icon: "fa-gem" }
+        { id: "ref_50", goal: 50, bonus: 4000, title: "50 Active Referrals", icon: "fa-crown" }
     ];
 
-    async function loadRewards() {
+    async function fetchRewards() {
         if (!userPhone) return;
+        const userDoc = await db.collection("users").doc(userPhone).get();
+        const userData = userDoc.data();
+        const activeCount = userData.active_referrals || 0;
+        const claimed = userData.claimed_rewards || [];
 
-        try {
-            // ইউজারের ডাটা এবং এক্টিভ রেফারেল সংখ্যা আনা
-            const userDoc = await db.collection("users").doc(userPhone).get();
-            const userData = userDoc.data();
-            
-            // ধরে নিচ্ছি আপনি 'active_referrals' নামে একটি ফিল্ডে সংখ্যাটি রাখেন
-            // যদি না থাকে, তবে অলরেডি থাকা ফাংশন দিয়ে গুনে নিতে হবে
-            const activeCount = userData.active_referrals || 0;
-            const claimedRewards = userData.claimed_rewards || [];
+        const listDiv = document.getElementById("rewardList");
+        listDiv.innerHTML = "";
 
-            const listBody = document.getElementById("rewardList");
-            listBody.innerHTML = "";
+        targets.forEach(t => {
+            const isClaimed = claimed.includes(t.id);
+            const canClaim = activeCount >= t.goal && !isClaimed;
+            const progress = (activeCount / t.goal) * 100;
 
-            targets.forEach(t => {
-                const isClaimed = claimedRewards.includes(t.id);
-                const progress = Math.min((activeCount / t.goal) * 100, 100);
-                const canClaim = activeCount >= t.goal && !isClaimed;
-
-                let btnHTML = "";
-                if (isClaimed) {
-                    btnHTML = `<button class="claim-btn btn-done">Done</button>`;
-                } else if (canClaim) {
-                    btnHTML = `<button class="claim-btn btn-ready" onclick="claimReward('${t.id}', ${t.bonus})">Claim</button>`;
-                } else {
-                    btnHTML = `<button class="claim-btn btn-locked" disabled>Claim</button>`;
-                }
-
-                listBody.innerHTML += `
-                    <div class="reward-item">
-                        <div class="reward-icon"><i class="fas ${t.icon}"></i></div>
-                        <div style="flex: 1;">
-                            <h4 style="font-size: 13px;">${t.title}</h4>
-                            <p style="font-size: 11px; color: #777;">Bonus: ৳${t.bonus} (${activeCount}/${t.goal})</p>
-                            <div class="progress-container">
-                                <div class="progress-bar" style="width: ${progress}%"></div>
-                            </div>
+            listDiv.innerHTML += `
+                <div class="reward-item">
+                    <div class="reward-icon"><i class="fas ${t.icon}"></i></div>
+                    <div style="flex: 1;">
+                        <h4 style="font-size: 13px;">${t.title}</h4>
+                        <p style="font-size: 10px; color: #777;">Bonus: ৳${t.bonus} (${activeCount}/${t.goal})</p>
+                        <div class="progress-container">
+                            <div class="progress-bar" style="width: ${progress > 100 ? 100 : progress}%"></div>
                         </div>
-                        ${btnHTML}
                     </div>
-                `;
-            });
-
-        } catch (e) { console.error(e); }
+                    ${isClaimed ? '<button class="claim-btn btn-done" disabled>Done</button>' : 
+                      canClaim ? `<button class="claim-btn btn-ready" onclick="claim('${t.id}', ${t.bonus})">Claim</button>` :
+                      '<button class="claim-btn btn-locked" disabled>Claim</button>'}
+                </div>`;
+        });
     }
 
-    async function claimReward(rewardID, amount) {
-        const userRef = db.collection("users").doc(userPhone);
-
-        try {
-            await userRef.update({
-                balance: firebase.firestore.FieldValue.increment(amount),
-                claimed_rewards: firebase.firestore.FieldValue.arrayUnion(rewardID)
-            });
-
-            Swal.fire({ icon: 'success', title: 'অভিনন্দন!', text: `আপনি ৳${amount} বোনাস পেয়েছেন!`, timer: 2000, showConfirmButton: false });
-            loadRewards();
-        } catch (e) {
-            Swal.fire({ icon: 'error', title: 'দুঃখিত', text: 'ক্লেইম সফল হয়নি।' });
-        }
+    async function claim(id, amt) {
+        // ক্লেইম করার লজিক...
+        await db.collection("users").doc(userPhone).update({
+            balance: firebase.firestore.FieldValue.increment(amt),
+            claimed_rewards: firebase.firestore.FieldValue.arrayUnion(id)
+        });
+        Swal.fire("সফল!", "বোনাস যোগ হয়েছে।", "success");
+        fetchRewards();
     }
 
-    loadRewards();
+    fetchRewards();
 </script>
-
 </body>
 </html>
-
