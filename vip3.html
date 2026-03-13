@@ -24,6 +24,7 @@
         .config-group label { font-size: 12px; font-weight: bold; color: #666; }
         .config-group input { padding: 10px; border: 1px solid #ddd; border-radius: 8px; outline: none; font-weight: bold; }
 
+        /* লিডারবোর্ড বা নতুন ইউজার দেখানোর গ্রিড */
         .team-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; margin-bottom: 30px; }
         .team-card { background: var(--white); padding: 20px; border-radius: 15px; border-top: 5px solid var(--primary); box-shadow: 0 4px 10px rgba(0,0,0,0.03); }
         .team-card h4 { color: #555; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
@@ -68,13 +69,13 @@
                 <input type="number" id="l3_comm" value="2">
             </div>
             <div class="config-group">
-                <label>Daily ROI Return (%)</label>
+                <label>Daily Return (%)</label>
                 <input type="number" id="daily_ret" value="5">
             </div>
-            <button class="btn btn-primary" id="distBtn" onclick="distributeDailyCommission()">কমিশন পাঠান (অটো মোড)</button>
+            <button class="btn btn-primary" onclick="distributeDailyCommission()">কমিশন পাঠান (Daily)</button>
         </div>
 
-        <h3 style="margin-bottom: 15px; font-size: 16px;"><i class="fas fa-users-cog"></i> লিডার বোর্ড রিপোর্ট</h3>
+        <h3 style="margin-bottom: 15px; font-size: 16px;"><i class="fas fa-crown"></i> লিডার বোর্ড রিপোর্ট</h3>
         <div class="team-grid" id="topTeams"></div>
 
         <div class="data-card">
@@ -118,14 +119,16 @@
     }
 
     function renderUI() {
+        // প্রতিটি ইউজারের টিম মেম্বার গণনা
         allUsers.forEach(u => {
             u.myTeamCount = allUsers.filter(x => String(x.referrerID) === String(u.userID)).length;
         });
 
+        // লিডারবোর্ড আপডেট (সবচেয়ে বেশি মেম্বার আছে এমন ৩ জন)
         const sortedTeams = [...allUsers].sort((a,b) => b.myTeamCount - a.myTeamCount).slice(0, 3);
         document.getElementById('topTeams').innerHTML = sortedTeams.map(t => `
             <div class="team-card">
-                <h4><i class="fas fa-crown" style="color:#ffa000"></i> ID: ${t.userID}</h4>
+                <h4><i class="fas fa-crown" style="color:#ffa000"></i> ID: ${t.userID || 'undefined'} (Top Leader)</h4>
                 <div class="count">${t.myTeamCount} Members</div>
                 <div class="detail">Total Invest: ৳${t.totalDeposit || 0}</div>
             </div>
@@ -136,12 +139,16 @@
 
     function renderTable(data) {
         document.getElementById('userList').innerHTML = data.map(u => {
-            const isActive = (u["Vip package"] && u["Vip package"] !== "") || (u.totalDeposit > 0);
+            const totalDep = parseFloat(u.totalDeposit || 0);
+            const mainBal = parseFloat(u.balance || 0);
+            // ১০০ টাকা শর্তে একটিভ/ইনএকটিভ দেখানো
+            const isActive = (totalDep >= 100 || mainBal >= 100);
+            
             return `
             <tr>
-                <td><b>${u.userID}</b></td>
+                <td><b>${u.userID || 'undefined'}</b></td>
                 <td>${u.phone}</td>
-                <td>৳${u.totalDeposit || 0}</td>
+                <td>৳${totalDep}</td>
                 <td><i class="fas fa-users"></i> ${u.myTeamCount}</td>
                 <td><span class="status-pill ${isActive ? 'active' : 'inactive'}">
                     ${isActive ? 'Active' : 'Inactive'}
@@ -151,59 +158,54 @@
         `}).join('');
     }
 
-    // অটো ডিস্ট্রিবিউশন লজিক (তারিখ অনুযায়ী)
+    // আপনার নতুন অটো ডিস্ট্রিবিউশন ফাংশন
     async function distributeDailyCommission() {
-        const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD ফরম্যাট
-        
-        // অ্যাডমিন থেকে পারসেন্টেজ ইনপুট নেওয়া
+        const today = new Date().toISOString().split('T')[0];
+        const roiPercent = parseFloat(document.getElementById('daily_ret').value) / 100;
         const l1 = parseFloat(document.getElementById('l1_comm').value) / 100;
         const l2 = parseFloat(document.getElementById('l2_comm').value) / 100;
         const l3 = parseFloat(document.getElementById('l3_comm').value) / 100;
-        const roiPercent = parseFloat(document.getElementById('daily_ret').value) / 100;
 
-        if(!confirm(`আপনি কি ${today} তারিখের ইনকাম পাঠাতে চান?`)) return;
+        if(!confirm(`${today} তারিখের ইনকাম সকল যোগ্য ইউজারদের পাঠাতে চান?`)) return;
 
         const batch = db.batch();
-        let count = 0;
+        let qualifiedCount = 0;
 
-        for (let user of allUsers) {
-            const deposit = parseFloat(user.totalDeposit || 0);
-            if(deposit <= 0) continue;
-
-            // ১. ইউজারকে ROI দেওয়া (daily_roi ফিল্ডে)
-            const myRoi = deposit * roiPercent;
-            const userRef = db.collection("users").doc(user.phone);
+        allUsers.forEach(user => {
+            const totalDep = parseFloat(user.totalDeposit || 0);
+            const mainBal = parseFloat(user.balance || 0);
             
-            batch.update(userRef, {
-                daily_roi: firebase.firestore.FieldValue.increment(myRoi),
-                last_income_date: today // তারিখ সেভ রাখা হলো যাতে ডুপ্লিকেট না হয়
-            });
+            // ১০০ টাকা শর্ত চেক (সব ইউজারের জন্য)
+            if (totalDep >= 100 || mainBal >= 100) {
+                const myRoi = totalDep * roiPercent;
+                const userRef = db.collection("users").doc(user.phone);
+                
+                batch.update(userRef, {
+                    daily_roi: firebase.firestore.FieldValue.increment(myRoi),
+                    last_dist_date: today
+                });
 
-            // ২. আপলাইনদের কমিশন প্রদান (level_income ফিল্ডে)
-            await calculateTeamComm(user.referrerID, myRoi, 1, l1, l2, l3, batch);
-            count++;
-        }
+                // টিম কমিশন ডিস্ট্রিবিউট করা
+                distributeTeamComm(user.referrerID, myRoi, 1, l1, l2, l3, batch);
+                qualifiedCount++;
+            }
+        });
 
         await batch.commit();
-        alert(`${count} জন মেম্বারকে সফলভাবে ইনকাম পাঠানো হয়েছে!`);
-        loadAdminData();
+        alert(`মোট ${qualifiedCount} জন ইউজারের অ্যাকাউন্টে ইনকাম পাঠানো হয়েছে!`);
+        loadAdminData(); 
     }
 
-    async function calculateTeamComm(refID, baseAmount, level, l1, l2, l3, batch) {
+    async function distributeTeamComm(refID, amount, level, l1, l2, l3, batch) {
         if(!refID || level > 3) return;
-        
         const refUser = allUsers.find(u => String(u.userID) === String(refID));
         if(refUser) {
-            let commPercent = (level === 1) ? l1 : (level === 2 ? l2 : l3);
-            const commAmount = baseAmount * commPercent;
-
+            let comm = (level === 1) ? (amount * l1) : (level === 2 ? amount * l2 : amount * l3);
             const refRef = db.collection("users").doc(refUser.phone);
             batch.update(refRef, {
-                level_income: firebase.firestore.FieldValue.increment(commAmount)
+                level_income: firebase.firestore.FieldValue.increment(comm)
             });
-            
-            // পরবর্তী লেভেল (রিকাসিভ কল)
-            await calculateTeamComm(refUser.referrerID, baseAmount, level + 1, l1, l2, l3, batch);
+            distributeTeamComm(refUser.referrerID, amount, level + 1, l1, l2, l3, batch);
         }
     }
 
