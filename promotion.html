@@ -87,7 +87,7 @@
             
             <table>
                 <thead>
-                    <tr><th>আইডি</th><th>ব্যালেন্স</th><th>স্ট্যাটাস</th></tr>
+                    <tr><th>আইডি</th><th>ডিপোজিট</th><th>স্ট্যাটাস</th></tr>
                 </thead>
                 <tbody id="teamBody">
                     <tr><td colspan="3" style="text-align:center; padding: 20px;">লোড হচ্ছে...</td></tr>
@@ -131,7 +131,6 @@
         } catch (e) { console.error(e); }
     }
 
-    // আপডেট করা fetchTeam ফাংশন
     async function fetchTeam(myUID) {
         allTeamData = [];
         let totalTeamDep = 0;
@@ -145,17 +144,18 @@
             const refs = users.filter(u => String(u.referrerID) === String(parentID));
             
             refs.forEach(u => {
-                const currentBal = parseFloat(u.balance || 0); 
-                const dep = parseFloat(u.total_deposit || 0); 
+                // ব্যালেন্সের বদলে টোটাল ডিপোজিট চেক করা হচ্ছে
+                const totalDeposit = parseFloat(u.total_deposit || 0); 
                 
-                const isActive = currentBal >= 100; // ১০০ বা তার বেশি হলে Active
+                // যদি মেম্বারের টোটাল ডিপোজিট ১০০ বা তার বেশি হয়, তবে সে Active
+                const isActive = totalDeposit >= 100;
                 
                 if(isActive) activeCount++;
-                totalTeamDep += dep;
+                totalTeamDep += totalDeposit;
 
                 allTeamData.push({
                     id: u.userID,
-                    bal: currentBal, // ব্যালেন্স ডাটা নেওয়া হচ্ছে
+                    deposit: totalDeposit, // ব্যালেন্সের জায়গায় ডিপোজিট ডাটা রাখা হলো
                     status: isActive ? 'Active' : 'Inactive',
                     level: level
                 });
@@ -181,7 +181,6 @@
         renderTable(allTeamData.filter(x => x.level === level));
     }
 
-    // আপডেট করা renderTable ফাংশন
     function renderTable(data) {
         const body = document.getElementById('teamBody');
         if(data.length === 0) {
@@ -192,7 +191,7 @@
         body.innerHTML = data.map(u => `
             <tr>
                 <td><b>${u.id}</b></td>
-                <td>৳${u.bal.toFixed(2)}</td>
+                <td>৳${u.deposit.toFixed(2)}</td>
                 <td><span class="status-badge ${u.status === 'Active' ? 'active-user' : 'inactive-user'}">${u.status}</span></td>
             </tr>
         `).join('');
