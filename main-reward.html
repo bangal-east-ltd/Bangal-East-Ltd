@@ -3,110 +3,56 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Main Rewards - Bangal East</title>
+    <title>Main Rewards - Bengal East</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        :root {
-            --grad: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
-            --bg: #f0f2f5;
-            --success: #00c851;
-            --danger: #ff4444;
-        }
-        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; padding: 15px; }
-        .header { display: flex; align-items: center; gap: 15px; margin-bottom: 20px; }
-        
-        .status-card {
-            background: white; padding: 10px 15px; border-radius: 12px;
-            margin-bottom: 15px; display: flex; justify-content: space-between;
-            align-items: center; font-size: 13px; font-weight: bold;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-        }
-        .active-dot { color: var(--success); }
-        .inactive-dot { color: var(--danger); }
-
-        .stats-summary { 
-            background: var(--grad); color: white; padding: 25px; 
-            border-radius: 20px; margin-bottom: 25px; display: grid; 
-            grid-template-columns: 1fr 1fr; box-shadow: 0 10px 20px rgba(37, 117, 252, 0.2); 
-        }
-        .stat-box { text-align: center; }
-        .stat-box h4 { margin: 8px 0 0; font-size: 18px; }
-
-        .reward-card {
-            background: white; border-radius: 18px; padding: 15px;
-            margin-bottom: 12px; display: flex; align-items: center; gap: 15px;
-            border-left: 5px solid #2575fc;
-        }
-        .content { flex-grow: 1; }
-        .content h3 { margin: 0; font-size: 14px; }
-        .amount-side { text-align: right; }
-        .amt-text { display: block; font-weight: bold; color: #2575fc; font-size: 15px; }
-        
-        .claim-btn {
-            background: var(--success); color: white; border: none;
-            padding: 8px 15px; border-radius: 8px; font-size: 12px;
-            font-weight: bold; cursor: pointer; margin-top: 5px; min-width: 80px;
-            transition: 0.3s;
-        }
-        .claim-btn:disabled { background: #cbd5e0; cursor: not-allowed; }
+        :root { --primary: #11998e; --grad: linear-gradient(135deg, #11998e, #38ef7d); }
+        body { font-family: 'Segoe UI', sans-serif; background: #f4f7f6; margin: 0; padding: 15px; }
+        .header { background: var(--grad); color: white; padding: 20px; text-align: center; border-radius: 15px; margin-bottom: 20px; }
+        .reward-card { background: white; border-radius: 15px; padding: 20px; margin-bottom: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.05); display: flex; justify-content: space-between; align-items: center; border-left: 5px solid #11998e; }
+        .reward-info h3 { margin: 0; font-size: 16px; color: #333; }
+        .reward-info p { margin: 5px 0 0; font-size: 18px; font-weight: bold; color: var(--primary); }
+        .claim-btn { background: var(--grad); color: white; border: none; padding: 10px 20px; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.3s; }
+        .claim-btn:disabled { background: #ccc; cursor: not-allowed; }
         .claim-btn:active { transform: scale(0.95); }
     </style>
 </head>
 <body>
 
     <div class="header">
-        <i class="fas fa-arrow-left" onclick="history.back()" style="cursor:pointer"></i>
-        <h2>Main Rewards</h2>
+        <h2><i class="fas fa-hand-holding-usd"></i> Main Rewards</h2>
+        <p id="totalBalance">ব্যালেন্স: ৳ 0.00</p>
     </div>
 
-    <div id="memberStatus" class="status-card">
-        <span>Account Status: <span style="color:gray">Loading...</span></span>
-    </div>
-
-    <div class="stats-summary">
-        <div class="stat-box"><span>মূল ব্যালেন্স</span><h4 id="mainBalance">৳ 0.00</h4></div>
-        <div class="stat-box"><span>Active Team</span><h4 id="activeTeamCount">0</h4></div>
-    </div>
-
-    <div class="reward-container">
-        <div class="reward-card">
-            <div class="content">
-                <h3>Referral Income</h3>
-                <p style="font-size: 10px; color: #666;">সরাসরি রেফার বোনাস</p>
-            </div>
-            <div class="amount-side">
-                <span class="amt-text" id="referAmt">৳ 0.00</span>
-                <button class="claim-btn" id="refBtn" onclick="claimFieldBonus('refer_income', 'refBtn')">Claim</button>
-            </div>
+    <div class="reward-card">
+        <div class="reward-info">
+            <h3>Refer Bonus</h3>
+            <p id="refer_income">৳ 0.00</p>
         </div>
-
-        <div class="reward-card" style="border-left-color: #9b59b6;">
-            <div class="content">
-                <h3>Level Income (L1-L3)</h3>
-                <p style="font-size: 10px; color: #666;">টিম লেভেল ইনকাম</p>
-            </div>
-            <div class="amount-side">
-                <span class="amt-text" id="levelAmt">৳ 0.00</span>
-                <button class="claim-btn" id="levelBtn" onclick="claimFieldBonus('level_income', 'levelBtn')">Claim</button>
-            </div>
-        </div>
-
-        <div class="reward-card" style="border-left-color: #2ecc71;">
-            <div class="content">
-                <h3>Daily ROI Income</h3>
-                <p style="font-size: 10px; color: #666;">প্রতিদিনের ইনভেস্ট ইনকাম</p>
-            </div>
-            <div class="amount-side">
-                <span class="amt-text" id="roiAmt">৳ 0.00</span>
-                <button class="claim-btn" id="roiBtn" onclick="claimFieldBonus('daily_roi', 'roiBtn')">Claim</button>
-            </div>
-        </div>
+        <button class="claim-btn" onclick="claimReward('refer_income')">Claim</button>
     </div>
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        import { getFirestore, doc, onSnapshot, updateDoc, increment, getDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    <div class="reward-card">
+        <div class="reward-info">
+            <h3>Level Income</h3>
+            <p id="level_income">৳ 0.00</p>
+        </div>
+        <button class="claim-btn" onclick="claimReward('level_income')">Claim</button>
+    </div>
 
+    <div class="reward-card">
+        <div class="reward-info">
+            <h3>Daily ROI Income</h3>
+            <p id="daily_roi">৳ 0.00</p>
+        </div>
+        <button class="claim-btn" onclick="claimReward('daily_roi')">Claim</button>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+
+    <script>
+        // Firebase কনফিগারেশন আপনার আগের কোড থেকে দিন
         const firebaseConfig = {
             apiKey: "AIzaSyCALYxA2M4BwIXq5KC3VMGsZpAFh8nL3fo",
             authDomain: "bengal-east-company-limited.firebaseapp.com",
@@ -115,103 +61,42 @@
             messagingSenderId: "653223286483",
             appId: "1:653223286483:web:8e4ed0782ae807f8f02626"
         };
-
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
         const loggedUser = localStorage.getItem("loggedUser");
 
-        // একটিভ টিম মেম্বার খোঁজার লজিক (ব্যালেন্স ১০০+)
-        async function getActiveTeam(uid) {
-            try {
-                const q = query(collection(db, "users"), where("referrerID", "==", uid));
-                const snap = await getDocs(q);
-                let activeCount = 0;
-                snap.forEach(d => {
-                    const balance = Number(d.data().balance) || 0;
-                    if(balance >= 100) activeCount++;
-                });
-                return activeCount;
-            } catch (e) { return 0; }
-        }
-
-        function sync() {
-            if(!loggedUser) { window.location.href = "login.html"; return; }
-
-            // ইউজারের তথ্য রিয়েল-টাইম দেখা
-            onSnapshot(doc(db, "users", loggedUser), async (snap) => {
-                if (snap.exists()) {
-                    const d = snap.data();
-                    const balance = Number(d.balance) || 0;
-                    const isActive = balance >= 100; // ১০০ এর উপরে হলে Active
-
-                    document.getElementById('mainBalance').innerText = "৳ " + balance.toFixed(2);
-                    document.getElementById('referAmt').innerText = "৳ " + (Number(d.refer_income) || 0).toFixed(2);
-                    document.getElementById('levelAmt').innerText = "৳ " + (Number(d.level_income) || 0).toFixed(2);
-                    document.getElementById('roiAmt').innerText = "৳ " + (Number(d.daily_roi) || 0).toFixed(2);
-                    
-                    const activeCount = await getActiveTeam(d.userID);
-                    document.getElementById('activeTeamCount').innerText = activeCount;
-
-                    const statusDiv = document.getElementById('memberStatus');
-                    if(isActive) {
-                        statusDiv.innerHTML = `<span>Status: <span class="active-dot">● Active</span></span> <span>Qualified: Yes</span>`;
-                        toggleButtons(false); 
-                    } else {
-                        statusDiv.innerHTML = `<span>Status: <span class="inactive-dot">● Inactive</span></span> <span style="color:red">ব্যালেন্স ১০০৳ এর নিচে</span>`;
-                        toggleButtons(true);
-                    }
+        function loadRewards() {
+            if(!loggedUser) return;
+            db.collection("users").doc(loggedUser).onSnapshot(doc => {
+                if(doc.exists) {
+                    const data = doc.data();
+                    document.getElementById('totalBalance').innerText = "ব্যালেন্স: ৳ " + (data.balance || 0).toFixed(2);
+                    document.getElementById('refer_income').innerText = "৳ " + (data.refer_income || 0).toFixed(2);
+                    document.getElementById('level_income').innerText = "৳ " + (data.level_income || 0).toFixed(2);
+                    document.getElementById('daily_roi').innerText = "৳ " + (data.daily_roi || 0).toFixed(2);
                 }
             });
         }
 
-        function toggleButtons(disabled) {
-            ['refBtn', 'levelBtn', 'roiBtn'].forEach(id => {
-                const el = document.getElementById(id);
-                if (el) {
-                    el.disabled = disabled;
-                    el.style.opacity = disabled ? "0.5" : "1";
-                }
-            });
-        }
+        async function claimReward(field) {
+            const userRef = db.collection("users").doc(loggedUser);
+            const snap = await userRef.get();
+            const amount = parseFloat(snap.data()[field] || 0);
 
-        // ক্লেইম করার মেইন সিস্টেম
-        window.claimFieldBonus = async (field, btnId) => {
-            const btn = document.getElementById(btnId);
-            const originalText = btn.innerText;
-            
-            // ডাটাবেস চেক করা হচ্ছে
-            btn.disabled = true;
-            btn.innerText = "অপেক্ষা করুন...";
-
-            try {
-                const userRef = doc(db, "users", loggedUser);
-                const userSnap = await getDoc(userRef);
-                
-                if (userSnap.exists()) {
-                    const userData = userSnap.data();
-                    const amountToClaim = Number(userData[field]) || 0;
-
-                    if (amountToClaim > 0) {
-                        // মূল ব্যালেন্সে টাকা যোগ হচ্ছে এবং বোনাস জিরো হচ্ছে
-                        await updateDoc(userRef, {
-                            balance: increment(amountToClaim),
-                            [field]: 0
-                        });
-                        alert(`অভিনন্দন! আপনি সফলভাবে ৳${amountToClaim.toFixed(2)} ক্লেইম করেছেন।`);
-                    } else {
-                        alert("ক্লেইম করার মতো পর্যাপ্ত ব্যালেন্স নেই।");
-                    }
-                }
-            } catch (error) {
-                console.error(error);
-                alert("ক্লেইম করতে সমস্যা হয়েছে। আবার চেষ্টা করুন।");
-            } finally {
-                btn.disabled = false;
-                btn.innerText = originalText;
+            if(amount > 0) {
+                try {
+                    await userRef.update({
+                        balance: firebase.firestore.FieldValue.increment(amount),
+                        [field]: 0
+                    });
+                    alert("Claim Successful!");
+                } catch(e) { alert("Error claiming reward"); }
+            } else {
+                alert("No amount to claim!");
             }
-        };
+        }
 
-        window.onload = sync;
+        loadRewards();
     </script>
 </body>
 </html>
