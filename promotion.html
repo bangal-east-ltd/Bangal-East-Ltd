@@ -138,7 +138,8 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
-    const userPhone = localStorage.getItem("userPhone");
+    // পরিবর্তন ১: "userPhone" এর বদলে "loggedUser" ব্যবহার করা হয়েছে
+    const userPhone = localStorage.getItem("loggedUser"); 
     let allTeamData = [];
     let currentLevel = 1;
 
@@ -150,7 +151,6 @@
             if (userSnap.exists) {
                 const userData = userSnap.data();
                 
-                // ড্যাশবোর্ড আপডেট
                 document.getElementById('myBalanceDisplay').innerText = "৳ " + (parseFloat(userData.balance) || 0).toFixed(2);
                 document.getElementById('levelIncomeDisplay').innerText = "৳ " + (parseFloat(userData.level_income) || 0).toFixed(2);
                 document.getElementById('roiIncomeDisplay').innerText = "৳ " + (parseFloat(userData.daily_roi) || 0).toFixed(2);
@@ -177,15 +177,15 @@
             const refs = users.filter(u => String(u.referrerID) === String(parentID));
             
             refs.forEach(u => {
-                // ৫৬৫৬০ সমস্যার সমাধান: 'Vip package' এবং 'totalDeposit' উভয় ফিল্ড চেক করা হচ্ছে
                 const pkg = u["Vip package"];
                 const deposit = parseFloat(u.totalDeposit || 0);
-                const isActive = (pkg && pkg !== "") || deposit > 0;
+                
+                // পরিবর্তন ২: isActive শর্তটি আপডেট করা হয়েছে (Status active অথবা Deposit থাকলে Active)
+                const isActive = (u.status === "active") || (deposit > 0);
                 
                 if(isActive) activeCount++;
                 totalActiveDeposit += deposit;
 
-                // কমিশন লজিক (অ্যাডমিন প্যানেলের পারসেন্টেজ অনুযায়ী এখানে হিসাব দেখানো হচ্ছে)
                 let commission = 0;
                 if(level === 1) commission = deposit * 0.10;
                 else if(level === 2) commission = deposit * 0.05;
@@ -213,7 +213,6 @@
         filterTeam(1);
     }
 
-    // ক্লেইম করার লজিক
     async function claimMoney(field) {
         if(!confirm("আপনি কি এই ব্যালেন্সটি মেইন ব্যালেন্সে নিতে চান?")) return;
         
