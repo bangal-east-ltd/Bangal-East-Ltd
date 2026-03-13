@@ -10,8 +10,10 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
     
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    
     <style>
-        /* CSS অংশ অপরিবর্তিত রাখা হয়েছে */
+        /* আপনার দেওয়া CSS অংশ */
         * { margin:0; padding:0; box-sizing:border-box; font-family: 'Segoe UI', sans-serif; }
         body { background: #f4f7f6; color: #333; padding-bottom: 30px; }
         .header { background: #11998e; color: white; padding: 20px; text-align: center; border-radius: 0 0 20px 20px; position: sticky; top: 0; z-index: 100; }
@@ -38,15 +40,9 @@
         .status-badge { padding: 3px 8px; border-radius: 10px; font-size: 10px; font-weight: bold; }
         .active-user { background: #e8f5e9; color: #2e7d32; }
         .inactive-user { background: #ffebee; color: #c62828; }
-        #toast { visibility: hidden; min-width: 200px; background: #333; color: #fff; text-align: center; border-radius: 8px; padding: 12px; position: fixed; left: 50%; bottom: 30px; transform: translateX(-50%); z-index: 1000;}
-        #toast.show { visibility: visible; animation: fadein 0.5s, fadeout 0.5s 2.5s; }
-        @keyframes fadein { from {bottom: 0; opacity: 0;} to {bottom: 30px; opacity: 1;} }
-        @keyframes fadeout { from {bottom: 30px; opacity: 1;} to {bottom: 0; opacity: 0;} }
     </style>
 </head>
 <body>
-
-    <div id="toast">লিঙ্ক কপি হয়েছে!</div>
 
     <div class="header">
         <h2><i class="fas fa-bullhorn"></i> Promotion Center</h2>
@@ -120,6 +116,7 @@
     </div>
 
 <script>
+    // Firebase Config (আপনার দেওয়া)
     const firebaseConfig = {
         apiKey: "AIzaSyCALYxA2M4BwIXq5KC3VMGsZpAFh8nL3fo",
         authDomain: "bengal-east-company-limited.firebaseapp.com",
@@ -157,7 +154,6 @@
         let activeCount = 0;
         let totalRoiCalc = 0; 
 
-        // এডমিন কন্ট্রোল থেকে রেট নিয়ে আসা
         let L1_Rate = 0.10, L2_Rate = 0.05, L3_Rate = 0.02;
         try {
             const adminSnap = await db.collection("settings").doc("commission_rates").get();
@@ -182,22 +178,15 @@
                 const userStatus = String(u.status || "").toLowerCase();
                 const pkg = u["Vip package"] || "";
                 const hasPackage = (pkg && pkg !== "");
-
                 const isActive = (userStatus === "active") || (deposit > 0) || (hasPackage) || (balance >= 100);
                 
                 if(isActive) activeCount++;
                 totalActiveDeposit += deposit;
 
-                // --- আপনার দেওয়া ডাইনামিক প্যাকেজ ভ্যালু লজিক শুরু ---
                 let packageValue = deposit; 
-
                 if (packageValue === 0 && hasPackage) {
                     const priceMatch = pkg.match(/\d+/); 
-                    if (priceMatch) {
-                        packageValue = parseFloat(priceMatch[0]);
-                    } else {
-                        packageValue = 0; 
-                    }
+                    if (priceMatch) packageValue = parseFloat(priceMatch[0]);
                 }
 
                 let commission = 0;
@@ -206,7 +195,6 @@
                 else if(level === 3) commission = packageValue * L3_Rate;
 
                 totalRoiCalc += commission;
-                // --- ডাইনামিক লজিক শেষ ---
 
                 allTeamData.push({
                     id: u.userID,
@@ -226,21 +214,53 @@
         filterTeam(1);
     }
 
-    // বাকি ফাংশনগুলো (claimMoney, filterTeam, renderTable, searchMember) অপরিবর্তিত রাখা হয়েছে
+    // --- ক্লেইম করার আপডেট ফাংশন (SweetAlert2 এবং তারিখ চেক সহ) ---
     async function claimMoney(field) {
-        if(!confirm("আপনি কি এই ব্যালেন্সটি মেইন ব্যালেন্সে নিতে চান?")) return;
         const userRef = db.collection("users").doc(userPhone);
+        const today = new Date().toLocaleDateString('en-GB'); 
+
         try {
             const doc = await userRef.get();
-            const amount = parseFloat(doc.data()[field] || 0);
-            if(amount <= 0) { alert("ব্যালেন্স নেই।"); return; }
-            await userRef.update({
-                balance: firebase.firestore.FieldValue.increment(amount),
-                [field]: 0
+            const userData = doc.data();
+            const lastClaimDate = userData.last_claim_date || ""; 
+            const amount = parseFloat(userData[field] || 0);
+
+            if (amount <= 0) {
+                Swal.fire({ icon: 'error', title: 'দুঃখিত', text: 'আপনার ক্লেইম করার মতো কোনো ব্যালেন্স নেই!', confirmButtonColor: '#11998e' });
+                return;
+            }
+
+            if (lastClaimDate === today) {
+                Swal.fire({ icon: 'warning', title: 'সীমাবদ্ধতা', text: 'আপনি আজ ইতিমধ্যে ক্লেইম করেছেন। পরবর্তী ক্লেইমের জন্য আগামীকাল পর্যন্ত অপেক্ষা করুন।', confirmButtonColor: '#11998e' });
+                return;
+            }
+
+            // সাধারণ confirm এর বদলে সুন্দর পপ-আপ
+            const result = await Swal.fire({
+                title: 'ব্যালেন্স ক্লেইম',
+                text: "আপনি কি এই ব্যালেন্সটি মেইন ব্যালেন্সে নিতে চান?",
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#11998e',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'হ্যাঁ, নিন',
+                cancelButtonText: 'বাতিল'
             });
-            alert("সফলভাবে যোগ হয়েছে!");
-            loadPromotionData(); 
-        } catch (e) { alert("সমস্যা হয়েছে।"); }
+
+            if (result.isConfirmed) {
+                await userRef.update({
+                    balance: firebase.firestore.FieldValue.increment(amount),
+                    [field]: 0,
+                    last_claim_date: today 
+                });
+
+                Swal.fire({ icon: 'success', title: 'সফল', text: 'ব্যালেন্সটি সফলভাবে যোগ হয়েছে!', showConfirmButton: false, timer: 2000 });
+                loadPromotionData(); 
+            }
+
+        } catch (e) {
+            Swal.fire({ icon: 'error', title: 'ভুল', text: 'ক্লেইম করতে সমস্যা হয়েছে। আবার চেষ্টা করুন।', confirmButtonColor: '#11998e' });
+        }
     }
 
     function filterTeam(level, btn) {
@@ -273,12 +293,11 @@
         renderTable(allTeamData.filter(u => u.level === currentLevel && String(u.id).includes(val)));
     }
 
+    // লিঙ্ক কপির জন্য সুন্দর পপ-আপ
     window.copyLink = function() {
         const link = document.getElementById('displayLink').innerText;
         navigator.clipboard.writeText(link).then(() => {
-            const t = document.getElementById('toast');
-            t.className = "show";
-            setTimeout(() => { t.className = ""; }, 3000);
+            Swal.fire({ icon: 'success', title: 'কপি হয়েছে!', text: 'রেফারেল লিঙ্ক ক্লিপবোর্ডে কপি করা হয়েছে।', timer: 1500, showConfirmButton: false });
         });
     }
 
