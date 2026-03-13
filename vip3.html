@@ -33,6 +33,8 @@
         
         .btn { padding: 10px 20px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.2s; }
         .btn-primary { background: var(--primary); color: white; width: 100%; margin-top: 10px; }
+        .btn-approve { background: #e8f5e9; color: #2e7d32; font-size: 11px; }
+        .btn-reject { background: #ffebee; color: #c62828; font-size: 11px; margin-left: 5px; }
         
         .status-pill { padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: bold; }
         .active { background: #e8f5e9; color: #2e7d32; }
@@ -47,6 +49,24 @@
     </div>
 
     <div class="container">
+
+        <h3 style="margin-bottom: 15px; font-size: 16px;"><i class="fas fa-wallet"></i> পেন্ডিং ডিপোজিট রিকোয়েস্ট</h3>
+        <div class="data-card">
+            <table>
+                <thead>
+                    <tr>
+                        <th>ইউজার আইডি</th>
+                        <th>পরিমাণ (৳)</th>
+                        <th>ট্রানজেকশন আইডি</th>
+                        <th>তারিখ</th>
+                        <th>অ্যাকশন</th>
+                    </tr>
+                </thead>
+                <tbody id="pendingDepositList">
+                    <tr><td colspan="5" style="text-align: center;">ডাটা লোড হচ্ছে...</td></tr>
+                </tbody>
+            </table>
+        </div>
         
         <h3 style="margin-bottom: 15px; font-size: 16px;"><i class="fas fa-percentage"></i> কমিশন ও অটো ইনকাম সেটআপ</h3>
         <div class="config-card">
@@ -78,7 +98,6 @@
     </div>
 
 <script>
-    // Firebase Config
     const firebaseConfig = {
         apiKey: "AIzaSyCALYxA2M4BwIXq5KC3VMGsZpAFh8nL3fo",
         authDomain: "bengal-east-company-limited.firebaseapp.com",
@@ -92,37 +111,88 @@
 
     let allUsers = [];
 
-    // ডাটা লোড করা এবং রিয়েল-টাইম আপডেট মনিটর করা
     function loadAdminData() {
-        // use onSnapshot for real-time updates directly from Firebase
+        // রিয়েল-টাইম মেম্বার লিস্ট আপডেট
         db.collection("users").onSnapshot(snap => {
             allUsers = snap.docs.map(doc => ({ phone: doc.id, ...doc.data() }));
             renderTable(allUsers);
         });
+
+        // রিয়েল-টাইম পেন্ডিং ডিপোজিট আপডেট
+        db.collection("deposits").where("status", "==", "PENDING").onSnapshot(snap => {
+            renderPendingDeposits(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+        });
     }
 
-    // টেবিল রেন্ডার করা (সরাসরি Firebase ডাটা অনুযায়ী)
+    function renderPendingDeposits(deposits) {
+        const list = document.getElementById('pendingDepositList');
+        if (deposits.length === 0) {
+            list.innerHTML = '<tr><td colspan="5" style="text-align: center;">কোনো পেন্ডিং ডিপোজিট নেই</td></tr>';
+            return;
+        }
+        list.innerHTML = deposits.map(d => `
+            <tr>
+                <td><b>${d.userID}</b></td>
+                <td>৳${d.amount}</td>
+                <td>${d.trxID}</td>
+                <td>${d.date}</td>
+                <td>
+                    <button class="btn btn-approve" onclick="approveDeposit('${d.id}', '${d.userPhone}', ${d.amount})">Accept</button>
+                    <button class="btn btn-reject" onclick="rejectDeposit('${d.id}')">Reject</button>
+                </td>
+            </tr>
+        `).join('');
+    }
+
+    // ডিপোজিট অ্যাপ্রুভ করার লজিক (স্মার্ট ব্যালেন্স ও ইনভেস্টমেন্ট একইসাথে আপডেট হবে)
+    async function approveDeposit(docID, userPhone, amount) {
+        if(!confirm(`আপনি কি ৳${amount} অ্যাপ্রুভ করতে চান? এটি ইউজারের স্মার্ট ব্যালেন্স ও ইনভেস্টমেন্টে সমপরিমাণ যুক্ত হবে।`)) return;
+
+        try {
+            const batch = db.batch();
+            const userRef = db.collection("users").doc(userPhone);
+            const depRef = db.collection("deposits").doc(docID);
+
+            batch.update(userRef, {
+                balance: firebase.firestore.FieldValue.increment(amount),
+                totalDeposit: firebase.firestore.FieldValue.increment(amount)
+            });
+
+            batch.update(depRef, { status: "SUCCESS" });
+
+            await batch.commit();
+            alert("সফলভাবে অ্যাপ্রুভ হয়েছে! ইউজার ব্যালেন্স ও ইনভেস্টমেন্ট উভয়ই আপডেট হয়েছে।");
+        } catch (error) {
+            console.error("Error approving deposit: ", error);
+            alert("অ্যাপ্রুভ করতে সমস্যা হয়েছে। আবার চেষ্টা করুন।");
+        }
+    }
+
+    async function rejectDeposit(docID) {
+        if(!confirm("আপনি কি এই রিকোয়েস্টটি রিজেক্ট করতে চান?")) return;
+        await db.collection("deposits").doc(docID).update({ status: "REJECTED" });
+    }
+
     function renderTable(data) {
         const body = document.getElementById('userList');
         body.innerHTML = data.map(u => {
             const mainBal = parseFloat(u.balance || 0);
             const totalDep = parseFloat(u.totalDeposit || 0);
-            
-            // আপনার শর্ত: ১০০ টাকা বা তার বেশি থাকলে Active
             const isActive = (totalDep >= 100 || mainBal >= 100);
             
             return `
             <tr>
                 <td><b>${u.userID || 'N/A'}</b></td>
                 <td>${u.phone}</td>
-                <td>৳${mainBal.toFixed(2)}</td> <td>৳${totalDep.toFixed(2)}</td> <td><span class="status-pill ${isActive ? 'active' : 'inactive'}">
+                <td>৳${mainBal.toFixed(2)}</td> 
+                <td>৳${totalDep.toFixed(2)}</td> 
+                <td><span class="status-pill ${isActive ? 'active' : 'inactive'}">
                     ${isActive ? 'Active' : 'Inactive'}
                 </span></td>
             </tr>
         `}).join('');
     }
 
-    // অটো ইনকাম ডিস্ট্রিবিউশন
     async function distributeDailyCommission() {
         const today = new Date().toISOString().split('T')[0];
         const roiPercent = parseFloat(document.getElementById('daily_ret').value) / 100;
@@ -137,7 +207,6 @@
 
         allUsers.forEach(user => {
             const totalDep = parseFloat(user.totalDeposit || 0);
-            // ১০০ টাকার শর্ত মেনে ইনকাম ডিস্ট্রিবিউশন
             if (totalDep >= 100) {
                 const myRoi = totalDep * roiPercent;
                 batch.update(db.collection("users").doc(user.phone), {
@@ -167,10 +236,9 @@
 
     function searchMember() {
         const val = document.getElementById('uSearch').value.toLowerCase();
-        renderTable(allUsers.filter(u => String(u.userID).includes(val) || u.phone.includes(val)));
+        const filtered = allUsers.filter(u => String(u.userID).includes(val) || u.phone.includes(val));
+        renderTable(filtered);
     }
-
-    // editUser ফাংশন ডিলিট করা হয়েছে
 
     loadAdminData();
 </script>
