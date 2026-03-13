@@ -14,9 +14,18 @@
         body { background: #f4f7f6; color: #333; padding-bottom: 30px; }
         .header { background: #11998e; color: white; padding: 20px; text-align: center; border-radius: 0 0 20px 20px; position: sticky; top: 0; z-index: 100; }
         .container { padding: 15px; max-width: 600px; margin: 0 auto; }
+        
+        /* ক্লেইম সেকশন ডিজাইন */
+        .reward-container { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
+        .income-card { background: white; padding: 15px; border-radius: 15px; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.05); border-top: 4px solid #11998e; }
+        .income-card h4 { font-size: 12px; color: #666; margin-bottom: 5px; }
+        .income-card h2 { font-size: 18px; color: #11998e; margin-bottom: 10px; }
+        .claim-btn { background: #11998e; color: white; border: none; padding: 8px 12px; border-radius: 8px; font-size: 11px; cursor: pointer; font-weight: bold; width: 100%; transition: 0.3s; }
+        .claim-btn:active { transform: scale(0.95); background: #0e867d; }
+
         .refer-card { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.05); margin-bottom: 20px; text-align: center; }
         .refer-link-box { display: flex; background: #f8f9fa; border: 1.5px dashed #11998e; padding: 12px; border-radius: 10px; justify-content: space-between; align-items: center; gap: 10px; margin-top: 10px; }
-        .refer-link-box span { font-weight: bold; color: #11998e; font-size: 12px; word-break: break-all; text-align: left; }
+        .refer-link-box span { font-weight: bold; color: #11998e; font-size: 11px; word-break: break-all; text-align: left; }
         .copy-btn { background: #11998e; color: white; border: none; padding: 10px 15px; border-radius: 8px; cursor: pointer; font-size: 12px; font-weight: bold; }
         
         .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
@@ -27,16 +36,18 @@
         .level-btn { padding: 8px 18px; background: #f0f0f0; border-radius: 20px; font-size: 12px; cursor: pointer; border: none; font-weight: 600; }
         .level-btn.active { background: #11998e; color: white; }
         
-        .search-box { width: 100%; padding: 10px; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 8px; outline: none; }
+        .search-box { width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 10px; outline: none; background: #fff; }
 
         table { width: 100%; border-collapse: collapse; }
-        th, td { padding: 12px 5px; font-size: 12px; border-bottom: 1px solid #f4f7f6; text-align: center; }
+        th, td { padding: 12px 5px; font-size: 11px; border-bottom: 1px solid #f4f7f6; text-align: center; }
         .status-badge { padding: 3px 8px; border-radius: 10px; font-size: 10px; font-weight: bold; }
         .active-user { background: #e8f5e9; color: #2e7d32; }
         .inactive-user { background: #ffebee; color: #c62828; }
 
-        #toast { visibility: hidden; min-width: 200px; background: #333; color: #fff; text-align: center; border-radius: 8px; padding: 12px; position: fixed; left: 50%; bottom: 30px; transform: translateX(-50%); }
+        #toast { visibility: hidden; min-width: 200px; background: #333; color: #fff; text-align: center; border-radius: 8px; padding: 12px; position: fixed; left: 50%; bottom: 30px; transform: translateX(-50%); z-index: 1000;}
         #toast.show { visibility: visible; animation: fadein 0.5s, fadeout 0.5s 2.5s; }
+        @keyframes fadein { from {bottom: 0; opacity: 0;} to {bottom: 30px; opacity: 1;} }
+        @keyframes fadeout { from {bottom: 30px; opacity: 1;} to {bottom: 0; opacity: 0;} }
     </style>
 </head>
 <body>
@@ -48,6 +59,19 @@
     </div>
 
     <div class="container">
+        <div class="reward-container">
+            <div class="income-card">
+                <h4>টিম লেভেল ইনকাম</h4>
+                <h2 id="levelIncomeDisplay">৳ 0.00</h2>
+                <button class="claim-btn" onclick="claimMoney('level_income')">Claim</button>
+            </div>
+            <div class="income-card">
+                <h4>ROI ইনকাম</h4>
+                <h2 id="roiIncomeDisplay">৳ 0.00</h2>
+                <button class="claim-btn" onclick="claimMoney('daily_roi')">Claim</button>
+            </div>
+        </div>
+
         <div class="refer-card">
             <h4>আপনার রেফারেল লিঙ্ক</h4>
             <div class="refer-link-box">
@@ -58,15 +82,15 @@
 
         <div class="stats-grid">
             <div class="stat-item">
-                <p style="font-size: 11px; color: #888;">মোট টিম / কমিশন</p>
+                <p style="font-size: 11px; color: #888;">মোট টিম / টিম ROI</p>
                 <h3 id="totalTeam">0 / ৳ 0</h3>
             </div>
             <div class="stat-item">
-                <p style="font-size: 11px; color: #888;">টিম ডিপোজিট</p>
+                <p style="font-size: 11px; color: #888;">টিম প্যাকেজ ভ্যালু</p>
                 <h3 id="teamDeposit" style="color: #11998e;">৳ 0.00</h3>
             </div>
             <div class="stat-item">
-                <p style="font-size: 11px; color: #888;">আজকের এক্টিভ মেম্বার</p>
+                <p style="font-size: 11px; color: #888;">এক্টিভ মেম্বার</p>
                 <h3 id="activeToday">0</h3>
             </div>
             <div class="stat-item">
@@ -87,10 +111,15 @@
             
             <table>
                 <thead>
-                    <tr><th>আইডি</th><th>ডিপোজিট</th><th>স্ট্যাটাস</th></tr>
+                    <tr>
+                        <th>আইডি</th>
+                        <th>প্যাকেজ</th>
+                        <th>আপনার ROI</th>
+                        <th>স্ট্যাটাস</th>
+                    </tr>
                 </thead>
                 <tbody id="teamBody">
-                    <tr><td colspan="3" style="text-align:center; padding: 20px;">লোড হচ্ছে...</td></tr>
+                    <tr><td colspan="4" style="text-align:center; padding: 20px;">লোড হচ্ছে...</td></tr>
                 </tbody>
             </table>
         </div>
@@ -112,6 +141,13 @@
     let allTeamData = [];
     let currentLevel = 1;
 
+    // কমিশন কনফিগারেশন
+    const roiConfig = {
+        level1: 0.10, // ১০%
+        level2: 0.05, // ৫%
+        level3: 0.02  // ২%
+    };
+
     async function loadPromotionData() {
         if(!loggedUser) { window.location.href="login.html"; return; }
 
@@ -120,7 +156,11 @@
             if (userSnap.exists) {
                 const userData = userSnap.data();
                 const myUID = userData.userID;
+                
+                // মেইন ব্যালেন্স ও ক্লেইম ব্যালেন্স আপডেট
                 document.getElementById('myBalanceDisplay').innerText = "৳ " + (parseFloat(userData.balance) || 0).toFixed(2);
+                document.getElementById('levelIncomeDisplay').innerText = "৳ " + (parseFloat(userData.level_income) || 0).toFixed(2);
+                document.getElementById('roiIncomeDisplay').innerText = "৳ " + (parseFloat(userData.daily_roi) || 0).toFixed(2);
 
                 const baseURL = window.location.origin + window.location.pathname.replace(/\/[^\/]*$/, "");
                 const finalLink = baseURL + "/index.html?ref=" + myUID;
@@ -133,8 +173,9 @@
 
     async function fetchTeam(myUID) {
         allTeamData = [];
-        let totalTeamDep = 0;
+        let totalTeamActiveDeposit = 0; 
         let activeCount = 0;
+        let totalRoiCalc = 0; 
 
         const snapshot = await db.collection("users").get();
         const users = snapshot.docs.map(doc => doc.data());
@@ -144,18 +185,25 @@
             const refs = users.filter(u => String(u.referrerID) === String(parentID));
             
             refs.forEach(u => {
-                // ব্যালেন্সের বদলে টোটাল ডিপোজিট চেক করা হচ্ছে
-                const totalDeposit = parseFloat(u.total_deposit || 0); 
-                
-                // যদি মেম্বারের টোটাল ডিপোজিট ১০০ বা তার বেশি হয়, তবে সে Active
-                const isActive = totalDeposit >= 100;
+                // প্যাকেজ প্রাইস চেক (active_package_price ফিল্ড ধরা হয়েছে)
+                const packagePrice = parseFloat(u.active_package_price || 0); 
+                const isActive = packagePrice > 0;
                 
                 if(isActive) activeCount++;
-                totalTeamDep += totalDeposit;
+                totalTeamActiveDeposit += packagePrice;
+
+                // লেভেল অনুযায়ী ROI হিসাব (শুধুমাত্র দেখানোর জন্য)
+                let memberRoi = 0;
+                if (level === 1) memberRoi = packagePrice * roiConfig.level1;
+                else if (level === 2) memberRoi = packagePrice * roiConfig.level2;
+                else if (level === 3) memberRoi = packagePrice * roiConfig.level3;
+
+                totalRoiCalc += memberRoi;
 
                 allTeamData.push({
                     id: u.userID,
-                    deposit: totalDeposit, // ব্যালেন্সের জায়গায় ডিপোজিট ডাটা রাখা হলো
+                    package: packagePrice,
+                    roi: memberRoi,
                     status: isActive ? 'Active' : 'Inactive',
                     level: level
                 });
@@ -165,11 +213,37 @@
 
         findReferrals(myUID, 1);
 
-        document.getElementById('totalTeam').innerText = `${allTeamData.length} / ৳ 0`;
-        document.getElementById('teamDeposit').innerText = `৳ ${totalTeamDep.toFixed(2)}`;
+        document.getElementById('totalTeam').innerText = `${allTeamData.length} / ৳ ${totalRoiCalc.toFixed(2)}`;
+        document.getElementById('teamDeposit').innerText = `৳ ${totalTeamActiveDeposit.toFixed(2)}`;
         document.getElementById('activeToday').innerText = activeCount;
         
         filterTeam(1);
+    }
+
+    // ক্লেইম ফাংশন
+    async function claimMoney(incomeField) {
+        if(!confirm("আপনি কি এই ব্যালেন্সটি মেইন ব্যালেন্সে নিতে চান?")) return;
+        
+        const userRef = db.collection("users").doc(loggedUser);
+        try {
+            const doc = await userRef.get();
+            const amountToClaim = parseFloat(doc.data()[incomeField] || 0);
+
+            if (amountToClaim <= 0) {
+                alert("আপনার ক্লেইম করার মতো কোনো ব্যালেন্স নেই।");
+                return;
+            }
+
+            await userRef.update({
+                balance: firebase.firestore.FieldValue.increment(amountToClaim),
+                [incomeField]: 0 
+            });
+
+            alert("৳" + amountToClaim.toFixed(2) + " সফলভাবে মেইন ব্যালেন্সে যোগ হয়েছে!");
+            loadPromotionData(); // পেজ আপডেট
+        } catch (error) {
+            alert("ক্লেইম করতে সমস্যা হয়েছে।");
+        }
     }
 
     function filterTeam(level, btn) {
@@ -184,14 +258,15 @@
     function renderTable(data) {
         const body = document.getElementById('teamBody');
         if(data.length === 0) {
-            body.innerHTML = `<tr><td colspan="3" style="text-align:center; padding:20px;">কোন মেম্বার নেই</td></tr>`;
+            body.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:20px;">কোন মেম্বার নেই</td></tr>`;
             return;
         }
 
         body.innerHTML = data.map(u => `
             <tr>
                 <td><b>${u.id}</b></td>
-                <td>৳${u.deposit.toFixed(2)}</td>
+                <td>৳${u.package.toFixed(2)}</td>
+                <td style="color:#11998e; font-weight:bold;">৳${u.roi.toFixed(2)}</td>
                 <td><span class="status-badge ${u.status === 'Active' ? 'active-user' : 'inactive-user'}">${u.status}</span></td>
             </tr>
         `).join('');
