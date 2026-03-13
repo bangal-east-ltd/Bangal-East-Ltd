@@ -102,17 +102,46 @@
 
     <div class="card">
         <h3><i class="fas fa-wallet"></i> Deposit Target Rewards</h3>
+        <p style="font-size: 12px; color: #888; margin-bottom: 15px;">ইউজার নির্দিষ্ট পরিমাণ টাকা ডিপোজিট করলে কত বোনাস পাবে তা এখান থেকে সেট করুন।</p>
         <div class="grid">
             <div class="form-group">
-                <label>Target Amount (৳)</label>
-                <input type="number" id="depTarget" placeholder="Ex: 1000">
+                <label>1000 Dep Bonus (৳)</label>
+                <input type="number" id="depBonus1000" placeholder="Ex: 100">
             </div>
             <div class="form-group">
-                <label>Bonus Amount (৳)</label>
-                <input type="number" id="depBonus" placeholder="Ex: 100">
+                <label>2000 Dep Bonus (৳)</label>
+                <input type="number" id="depBonus2000" placeholder="Ex: 250">
+            </div>
+            <div class="form-group">
+                <label>5000 Dep Bonus (৳)</label>
+                <input type="number" id="depBonus5000" placeholder="Ex: 600">
+            </div>
+            <div class="form-group">
+                <label>10000 Dep Bonus (৳)</label>
+                <input type="number" id="depBonus10000" placeholder="Ex: 1200">
+            </div>
+            <div class="form-group">
+                <label>25000 Dep Bonus (৳)</label>
+                <input type="number" id="depBonus25000" placeholder="Ex: 3000">
+            </div>
+            <div class="form-group">
+                <label>50000 Dep Bonus (৳)</label>
+                <input type="number" id="depBonus50000" placeholder="Ex: 7000">
+            </div>
+            <div class="form-group">
+                <label>100000 Dep Bonus (৳)</label>
+                <input type="number" id="depBonus100000" placeholder="Ex: 15000">
+            </div>
+            <div class="form-group">
+                <label>200000 Dep Bonus (৳)</label>
+                <input type="number" id="depBonus200000" placeholder="Ex: 35000">
+            </div>
+            <div class="form-group">
+                <label>500000 Dep Bonus (৳)</label>
+                <input type="number" id="depBonus500000" placeholder="Ex: 100000">
             </div>
         </div>
-        <button class="btn-sub" onclick="saveDepSettings()">Add/Update Target</button>
+        <button class="btn-main" style="background: #2ecc71;" onclick="saveDepSettings()">Save Deposit Rewards</button>
     </div>
 
     <div class="card">
@@ -162,7 +191,7 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    // Referral Rewards Update (নতুন লজিক)
+    // Referral Rewards Update
     window.updateReferralRewards = async () => {
         const rewardData = {
             10: Number(document.getElementById('amt10').value) || 0,
@@ -173,7 +202,6 @@
         };
 
         try {
-            // এটি Firestore-এ settings/referral_rewards পথে ডেটা সেভ করবে
             await setDoc(doc(db, "admin_settings", "referral_rewards"), rewardData);
             alert("Success: Referral Rewards Updated!");
         } catch (e) {
@@ -202,12 +230,26 @@
         alert("Success: Gift Code Created!");
     };
     
-    // Deposit Target
+    // Deposit Target Update - ছবির মতো মাল্টিপল টার্গেট সেভ করার লজিক
     window.saveDepSettings = async () => {
-        const target = document.getElementById('depTarget').value;
-        const bonus = document.getElementById('depBonus').value;
-        await updateDoc(doc(db, "admin_settings", "deposit_targets"), { [target]: bonus });
-        alert("Success: Deposit Target Saved!");
+        const depData = {
+            1000: Number(document.getElementById('depBonus1000').value) || 0,
+            2000: Number(document.getElementById('depBonus2000').value) || 0,
+            5000: Number(document.getElementById('depBonus5000').value) || 0,
+            10000: Number(document.getElementById('depBonus10000').value) || 0,
+            25000: Number(document.getElementById('depBonus25000').value) || 0,
+            50000: Number(document.getElementById('depBonus50000').value) || 0,
+            100000: Number(document.getElementById('depBonus100000').value) || 0,
+            200000: Number(document.getElementById('depBonus200000').value) || 0,
+            500000: Number(document.getElementById('depBonus500000').value) || 0
+        };
+
+        try {
+            await setDoc(doc(db, "admin_settings", "deposit_targets"), depData);
+            alert("Success: All Deposit Targets Saved!");
+        } catch (e) {
+            alert("Error: " + e.message);
+        }
     };
 
     // Betting Reward
@@ -249,4 +291,3 @@
 </script>
 </body>
 </html>
-
