@@ -24,13 +24,12 @@
         .config-group label { font-size: 12px; font-weight: bold; color: #666; }
         .config-group input { padding: 10px; border: 1px solid #ddd; border-radius: 8px; outline: none; font-weight: bold; }
 
-        /* লিডারবোর্ড বা নতুন ইউজার দেখানোর গ্রিড */
         .team-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; margin-bottom: 30px; }
         .team-card { background: var(--white); padding: 20px; border-radius: 15px; border-top: 5px solid var(--primary); box-shadow: 0 4px 10px rgba(0,0,0,0.03); }
         .team-card h4 { color: #555; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
         .team-card .count { font-size: 24px; font-weight: 800; color: var(--primary); }
 
-        .data-card { background: var(--white); padding: 20px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); overflow-x: auto; }
+        .data-card { background: var(--white); padding: 20px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); overflow-x: auto; margin-bottom: 25px; }
         .search-bar { width: 100%; padding: 12px; border: 1px solid #eee; border-radius: 10px; margin-bottom: 20px; background: #f9f9f9; }
 
         table { width: 100%; border-collapse: collapse; min-width: 600px; }
@@ -39,10 +38,13 @@
         
         .btn { padding: 10px 20px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.2s; }
         .btn-primary { background: var(--primary); color: white; width: 100%; margin-top: 10px; }
+        .btn-approve { background: #e8f5e9; color: #2e7d32; font-size: 11px; }
+        .btn-reject { background: #ffebee; color: #c62828; font-size: 11px; margin-left: 5px; }
         
         .status-pill { padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: bold; }
         .active { background: #e8f5e9; color: #2e7d32; }
         .inactive { background: #ffebee; color: #c62828; }
+        .pending { background: #fff3e0; color: #ef6c00; }
     </style>
 </head>
 <body>
@@ -54,30 +56,37 @@
 
     <div class="container">
         
+        <h3 style="margin-bottom: 15px; font-size: 16px;"><i class="fas fa-wallet"></i> পেন্ডিং ডিপোজিট রিকোয়েস্ট</h3>
+        <div class="data-card">
+            <table>
+                <thead>
+                    <tr>
+                        <th>ইউজার আইডি</th>
+                        <th>পরিমাণ (৳)</th>
+                        <th>ট্রানজেকশন আইডি</th>
+                        <th>তারিখ</th>
+                        <th>অ্যাকশন</th>
+                    </tr>
+                </thead>
+                <tbody id="pendingDepositList">
+                    <tr><td colspan="5" style="text-align: center;">কোনো পেন্ডিং ডিপোজিট নেই</td></tr>
+                </tbody>
+            </table>
+        </div>
+
         <h3 style="margin-bottom: 15px; font-size: 16px;"><i class="fas fa-percentage"></i> কমিশন ও অটো ইনকাম সেটআপ</h3>
         <div class="config-card">
-            <div class="config-group">
-                <label>Level 1 (%)</label>
-                <input type="number" id="l1_comm" value="10">
-            </div>
-            <div class="config-group">
-                <label>Level 2 (%)</label>
-                <input type="number" id="l2_comm" value="5">
-            </div>
-            <div class="config-group">
-                <label>Level 3 (%)</label>
-                <input type="number" id="l3_comm" value="2">
-            </div>
-            <div class="config-group">
-                <label>Daily Return (%)</label>
-                <input type="number" id="daily_ret" value="5">
-            </div>
+            <div class="config-group"><label>Level 1 (%)</label><input type="number" id="l1_comm" value="10"></div>
+            <div class="config-group"><label>Level 2 (%)</label><input type="number" id="l2_comm" value="5"></div>
+            <div class="config-group"><label>Level 3 (%)</label><input type="number" id="l3_comm" value="2"></div>
+            <div class="config-group"><label>Daily Return (%)</label><input type="number" id="daily_ret" value="5"></div>
             <button class="btn btn-primary" onclick="distributeDailyCommission()">কমিশন পাঠান (Daily)</button>
         </div>
 
         <h3 style="margin-bottom: 15px; font-size: 16px;"><i class="fas fa-crown"></i> লিডার বোর্ড রিপোর্ট</h3>
         <div class="team-grid" id="topTeams"></div>
 
+        <h3 style="margin-bottom: 15px; font-size: 16px;"><i class="fas fa-users"></i> ইউজার তালিকা</h3>
         <div class="data-card">
             <input type="text" id="uSearch" class="search-bar" placeholder="আইডি বা ফোন দিয়ে খুঁজুন..." onkeyup="searchMember()">
             <table>
@@ -113,18 +122,69 @@
     let allUsers = [];
 
     async function loadAdminData() {
-        const snap = await db.collection("users").get();
-        allUsers = snap.docs.map(doc => ({ phone: doc.id, ...doc.data() }));
+        const userSnap = await db.collection("users").get();
+        allUsers = userSnap.docs.map(doc => ({ phone: doc.id, ...doc.data() }));
+        
+        const depSnap = await db.collection("deposits").where("status", "==", "PENDING").get();
+        renderPendingDeposits(depSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+        
         renderUI();
     }
 
+    // ডিপোজিট রিকোয়েস্ট রেন্ডার করা
+    function renderPendingDeposits(deposits) {
+        const list = document.getElementById('pendingDepositList');
+        if (deposits.length === 0) {
+            list.innerHTML = '<tr><td colspan="5" style="text-align: center;">কোনো পেন্ডিং ডিপোজিট নেই</td></tr>';
+            return;
+        }
+        list.innerHTML = deposits.map(d => `
+            <tr>
+                <td><b>${d.userID}</b></td>
+                <td>৳${d.amount}</td>
+                <td>${d.trxID}</td>
+                <td>${d.date}</td>
+                <td>
+                    <button class="btn btn-approve" onclick="approveDeposit('${d.id}', '${d.userPhone}', ${d.amount})">Accept</button>
+                    <button class="btn btn-reject" onclick="rejectDeposit('${d.id}')">Reject</button>
+                </td>
+            </tr>
+        `).join('');
+    }
+
+    // ডিপোজিট অ্যাপ্রুভ করার লজিক (সব জায়গায় আপডেট হবে)
+    async function approveDeposit(docID, userPhone, amount) {
+        if(!confirm(`আপনি কি ৳${amount} অ্যাপ্রুভ করতে চান? এটি ইউজারের ব্যালেন্স ও ইনভেস্টে যুক্ত হবে।`)) return;
+
+        const batch = db.batch();
+        const userRef = db.collection("users").doc(userPhone);
+        const depRef = db.collection("deposits").doc(docID);
+
+        // ১. ইউজারের ব্যালেন্স ও টোটাল ডিপোজিট বাড়ানো
+        batch.update(userRef, {
+            balance: firebase.firestore.FieldValue.increment(amount),
+            totalDeposit: firebase.firestore.FieldValue.increment(amount)
+        });
+
+        // ২. ডিপোজিট স্ট্যাটাস SUCCESS করা
+        batch.update(depRef, { status: "SUCCESS" });
+
+        await batch.commit();
+        alert("সফলভাবে অ্যাপ্রুভ হয়েছে!");
+        loadAdminData();
+    }
+
+    async function rejectDeposit(docID) {
+        if(!confirm("আপনি কি এই রিকোয়েস্টটি রিজেক্ট করতে চান?")) return;
+        await db.collection("deposits").doc(docID).update({ status: "REJECTED" });
+        loadAdminData();
+    }
+
     function renderUI() {
-        // প্রতিটি ইউজারের টিম মেম্বার গণনা
         allUsers.forEach(u => {
             u.myTeamCount = allUsers.filter(x => String(x.referrerID) === String(u.userID)).length;
         });
 
-        // লিডারবোর্ড আপডেট (সবচেয়ে বেশি মেম্বার আছে এমন ৩ জন)
         const sortedTeams = [...allUsers].sort((a,b) => b.myTeamCount - a.myTeamCount).slice(0, 3);
         document.getElementById('topTeams').innerHTML = sortedTeams.map(t => `
             <div class="team-card">
@@ -141,7 +201,6 @@
         document.getElementById('userList').innerHTML = data.map(u => {
             const totalDep = parseFloat(u.totalDeposit || 0);
             const mainBal = parseFloat(u.balance || 0);
-            // ১০০ টাকা শর্তে একটিভ/ইনএকটিভ দেখানো
             const isActive = (totalDep >= 100 || mainBal >= 100);
             
             return `
@@ -158,7 +217,6 @@
         `}).join('');
     }
 
-    // আপনার নতুন অটো ডিস্ট্রিবিউশন ফাংশন
     async function distributeDailyCommission() {
         const today = new Date().toISOString().split('T')[0];
         const roiPercent = parseFloat(document.getElementById('daily_ret').value) / 100;
@@ -166,43 +224,35 @@
         const l2 = parseFloat(document.getElementById('l2_comm').value) / 100;
         const l3 = parseFloat(document.getElementById('l3_comm').value) / 100;
 
-        if(!confirm(`${today} তারিখের ইনকাম সকল যোগ্য ইউজারদের পাঠাতে চান?`)) return;
+        if(!confirm(`${today} তারিখের ইনকাম পাঠাতে চান?`)) return;
 
         const batch = db.batch();
         let qualifiedCount = 0;
 
         allUsers.forEach(user => {
             const totalDep = parseFloat(user.totalDeposit || 0);
-            const mainBal = parseFloat(user.balance || 0);
-            
-            // ১০০ টাকা শর্ত চেক (সব ইউজারের জন্য)
-            if (totalDep >= 100 || mainBal >= 100) {
+            if (totalDep >= 100) {
                 const myRoi = totalDep * roiPercent;
-                const userRef = db.collection("users").doc(user.phone);
-                
-                batch.update(userRef, {
+                batch.update(db.collection("users").doc(user.phone), {
                     daily_roi: firebase.firestore.FieldValue.increment(myRoi),
                     last_dist_date: today
                 });
-
-                // টিম কমিশন ডিস্ট্রিবিউট করা
                 distributeTeamComm(user.referrerID, myRoi, 1, l1, l2, l3, batch);
                 qualifiedCount++;
             }
         });
 
         await batch.commit();
-        alert(`মোট ${qualifiedCount} জন ইউজারের অ্যাকাউন্টে ইনকাম পাঠানো হয়েছে!`);
-        loadAdminData(); 
+        alert(`মোট ${qualifiedCount} জনের ইনকাম পাঠানো হয়েছে!`);
+        loadAdminData();
     }
 
-    async function distributeTeamComm(refID, amount, level, l1, l2, l3, batch) {
+    function distributeTeamComm(refID, amount, level, l1, l2, l3, batch) {
         if(!refID || level > 3) return;
         const refUser = allUsers.find(u => String(u.userID) === String(refID));
         if(refUser) {
             let comm = (level === 1) ? (amount * l1) : (level === 2 ? amount * l2 : amount * l3);
-            const refRef = db.collection("users").doc(refUser.phone);
-            batch.update(refRef, {
+            batch.update(db.collection("users").doc(refUser.phone), {
                 level_income: firebase.firestore.FieldValue.increment(comm)
             });
             distributeTeamComm(refUser.referrerID, amount, level + 1, l1, l2, l3, batch);
