@@ -46,11 +46,14 @@
         .status-badge {
             padding: 6px 14px; border-radius: 30px; font-size: 11px;
             font-weight: 900; text-transform: uppercase; border: 1px solid;
+            text-align: center; display: inline-block;
         }
 
         .pending { background: #fff9db; color: #f08c00; border-color: #f08c00; }
         .success { background: #e8f5e9; color: #2e7d32; border-color: #2e7d32; }
         .rejected { background: #ffebee; color: #c62828; border-color: #c62828; }
+
+        .status-msg { font-size: 10px; font-weight: 700; margin-top: 5px; display: block; }
 
         #loader { text-align: center; margin-top: 50px; color: var(--primary); font-weight: bold; }
         #noData { text-align: center; margin-top: 100px; color: #a0aec0; display: none; }
@@ -116,10 +119,25 @@
                 snapshot.forEach((doc) => {
                     const data = doc.data();
                     
-                    let statusText = data.status || 'Pending';
-                    let statusClass = "pending";
-                    if(statusText === "Success") statusClass = "success";
-                    if(statusText === "Rejected") statusClass = "rejected";
+                    let dbStatus = data.status || 'Pending';
+                    let statusText = "";
+                    let statusClass = "";
+                    let extraMsg = "";
+
+                    // কন্ডিশন অনুযায়ী টেক্সট সেটআপ
+                    if(dbStatus === "Success") {
+                        statusText = "Success";
+                        statusClass = "success";
+                        extraMsg = "";
+                    } else if(dbStatus === "Rejected") {
+                        statusText = "Rejected";
+                        statusClass = "rejected";
+                        extraMsg = "কাস্টমার কেয়ারের সাথে যোগাযোগ করুন";
+                    } else {
+                        statusText = "Pending";
+                        statusClass = "pending";
+                        extraMsg = "প্রিয় গ্রাহক চিন্তা করবেন না ছয় ঘণ্টার মধ্যে আপনার একাউন্ট টাকা জমা হবে";
+                    }
 
                     let methodClass = "";
                     const m = (data.method || "").toLowerCase();
@@ -127,7 +145,6 @@
                     else if(m.includes("nagad")) methodClass = "card-nagad";
                     else if(m.includes("rocket")) methodClass = "card-rocket";
 
-                    // কার্ডে ডাটাবেজ থেকে User ID যুক্ত করা হলো
                     const cardHtml = `
                         <div class="history-card ${methodClass}">
                             <div class="info-row">
@@ -152,7 +169,10 @@
                             </div>
                             <div class="info-row" style="margin-top:12px; border-top:1px dashed #eee; padding-top:10px;">
                                 <span class="label">Status</span>
-                                <span class="status-badge ${statusClass}">${statusText}</span>
+                                <div style="text-align: right;">
+                                    <span class="status-badge ${statusClass}">${statusText}</span>
+                                    ${extraMsg ? `<span class="status-msg" style="color:${statusClass === 'rejected' ? '#c62828' : '#f08c00'}">${extraMsg}</span>` : ''}
+                                </div>
                             </div>
                         </div>
                     `;
