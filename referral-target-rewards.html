@@ -3,47 +3,124 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Referral Target Rewards</title>
+    <title>Premium Referral Rewards</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-
     <style>
-        * { margin:0; padding:0; box-sizing:border-box; font-family: 'Segoe UI', sans-serif; }
-        body { background: #f4f7f6; color: #333; padding: 20px; }
-        .container { max-width: 500px; margin: 0 auto; }
-        .header { background: #6a11cb; color: white; padding: 20px; text-align: center; border-radius: 15px; margin-bottom: 20px; position: relative; }
-        .back-btn { position: absolute; left: 15px; top: 22px; color: white; text-decoration: none; font-size: 18px; }
-        .team-section { background: white; border-radius: 15px; padding: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.05); }
-        .reward-item { display: flex; align-items: center; gap: 15px; padding: 15px; border: 1px solid #f0f0f0; border-radius: 12px; margin-bottom: 12px; }
-        .reward-icon { width: 45px; height: 45px; background: #f3e5f5; border-radius: 10px; display: flex; align-items: center; justify-content: center; color: #9c27b0; font-size: 20px; }
-        .progress-container { width: 100%; height: 8px; background: #eee; border-radius: 10px; overflow: hidden; margin-top: 8px; }
-        .progress-bar { height: 100%; background: linear-gradient(90deg, #6a11cb, #2575fc); width: 0%; transition: 0.8s ease-in-out; }
-        .claim-btn { width: 85px; padding: 10px 0; border-radius: 8px; border: none; font-size: 12px; font-weight: bold; cursor: pointer; transition: 0.3s; }
-        .btn-locked { background: #e0e0e0; color: #999; cursor: not-allowed; }
-        .btn-ready { background: #6a11cb; color: white; box-shadow: 0 4px 10px rgba(106, 17, 203, 0.3); }
-        .btn-done { background: #e8f5e9; color: #2e7d32; cursor: default; border: 1px solid #c8e6c9; }
+        :root {
+            --primary-orange: #ff9f43;
+            --bg-color: #f1f3f6;
+            --text-main: #2d3436;
+            --accent-gold: #f1c40f; /* বর্ডার কালার */
+        }
+        * { margin:0; padding:0; box-sizing:border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background-color: var(--bg-color); padding: 15px; }
+        .container { max-width: 480px; margin: 0 auto; }
+
+        /* Header Style */
+        .header { 
+            background: linear-gradient(135deg, #ff9f43 0%, #ff6b6b 100%); 
+            color: white; 
+            padding: 30px 20px; 
+            text-align: center; 
+            border-radius: 20px; 
+            margin-bottom: 20px; 
+            position: relative;
+            box-shadow: 0 8px 20px rgba(255, 159, 67, 0.2);
+        }
+        .header h2 { font-size: 22px; font-weight: 800; display: flex; align-items: center; justify-content: center; gap: 10px; }
+        .header p { font-size: 12px; margin-top: 5px; opacity: 0.9; font-weight: 600; }
+        .back-btn { position: absolute; left: 15px; top: 32px; color: white; font-size: 18px; text-decoration: none; }
+
+        /* Reward Item Card with Golden Border Highlight */
+        .reward-item { 
+            background: white; 
+            display: flex; 
+            align-items: center; 
+            padding: 18px; 
+            border-radius: 18px; 
+            margin-bottom: 15px; 
+            box-shadow: 0 4px 12px rgba(0,0,0,0.04);
+            position: relative;
+            overflow: hidden;
+            border-left: 5px solid var(--accent-gold); /* বাম পাশে গোল্ডেন বর্ডার */
+        }
+        
+        /* বর্ডারের ভেতরে হালকা গ্লো ইফেক্ট */
+        .reward-item::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 3px;
+            background: #ffeaa7; 
+            opacity: 0.5;
+        }
+
+        .reward-icon-box {
+            width: 45px;
+            height: 45px;
+            background: #fff9db;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 15px;
+            color: #d48300;
+            font-size: 20px;
+        }
+
+        .info-content { flex: 1; }
+        .info-content h4 { font-size: 16px; color: var(--text-main); font-weight: 800; margin-bottom: 4px; }
+        .info-content p { font-size: 11px; color: #636e72; font-weight: 700; margin-bottom: 8px; }
+        .info-content p b { color: #2d3436; }
+
+        /* Progress Bar */
+        .progress-box { width: 100%; height: 6px; background: #eaeff2; border-radius: 10px; overflow: hidden; }
+        .progress-fill { height: 100%; background: linear-gradient(90deg, #f1c40f, #ff9f43); width: 0%; transition: 1s ease-in-out; }
+
+        /* Claim Button */
+        .claim-btn { 
+            width: 85px; 
+            padding: 10px 0; 
+            border-radius: 12px; 
+            border: none; 
+            font-size: 13px; 
+            font-weight: 800; 
+            cursor: pointer; 
+            margin-left: 10px;
+            transition: 0.2s;
+        }
+        .btn-locked { background: #f1f3f5; color: #adb5bd; cursor: not-allowed; }
+        .btn-ready { 
+            background: #ff9f43; 
+            color: white; 
+            box-shadow: 0 4px 10px rgba(255, 159, 67, 0.3); 
+        }
+        .btn-done { background: #e9ecef; color: #2e7d32; font-weight: 800; cursor: default; }
+
+        .loader { text-align: center; padding: 40px; color: var(--primary-orange); font-weight: bold; }
     </style>
 </head>
 <body>
 
 <div class="container">
     <div class="header">
-        <a href="index.html" class="back-btn"><i class="fas fa-arrow-left"></i></a>
-        <h2><i class="fas fa-gift"></i> রেফারেল রিওয়ার্ডস</h2>
+        <a href="index.html" class="back-btn"><i class="fas fa-chevron-left"></i></a>
+        <h2><i class="fas fa-users"></i> রেফারেল রিওয়ার্ডস</h2>
+        <p>সফল রেফারেল টার্গেট পূরণ করে বোনাস নিন</p>
     </div>
 
-    <div class="team-section">
-        <h3 style="color: #6a11cb; margin-bottom: 15px; font-size: 16px;"><i class="fas fa-users"></i> Target Progress</h3>
-        <div id="rewardList">
-            <p style="text-align:center; padding:20px; font-size: 13px; color: #888;">কনফিগারেশন লোড হচ্ছে...</p>
-        </div>
+    <div id="rewardList">
+        <div class="loader"><i class="fas fa-circle-notch fa-spin"></i> ডাটা লোড হচ্ছে...</div>
     </div>
 </div>
 
 <script>
+    // Firebase Config (আগে যা ছিল তাই থাকবে)
     const firebaseConfig = {
         apiKey: "AIzaSyCALYxA2M4BwIXq5KC3VMGsZpAFh8nL3fo",
         authDomain: "bengal-east-company-limited.firebaseapp.com",
@@ -58,91 +135,66 @@
     const userPhone = localStorage.getItem("loggedUser");
 
     async function loadRewards() {
-        if (!userPhone) return;
+        if (!userPhone) {
+            document.getElementById("rewardList").innerHTML = "<p style='text-align:center; padding:20px;'>লগইন করুন।</p>";
+            return;
+        }
 
         try {
-            // ১. এডমিন সেটআপ (Targets) আনা
             const configDoc = await db.collection("settings").doc("referral_config").get();
             const targets = configDoc.exists ? configDoc.data().targets : [];
-
-            // ২. ইউজারের ডাটা আনা
+            
             const userDoc = await db.collection("users").doc(userPhone).get();
-            const userData = userDoc.data();
+            const userData = userDoc.exists ? userDoc.data() : { active_referrals: 0, claimed_rewards: [] };
+            
             const activeCount = userData.active_referrals || 0;
             const claimedRewards = userData.claimed_rewards || [];
 
             const listBody = document.getElementById("rewardList");
             listBody.innerHTML = "";
 
-            if (targets.length === 0) {
-                listBody.innerHTML = "<p style='text-align:center;'>কোন রিওয়ার্ড সেট করা নেই।</p>";
-                return;
-            }
-
             targets.forEach(t => {
                 const isClaimed = claimedRewards.includes(t.id);
                 const progress = Math.min((activeCount / t.goal) * 100, 100);
-                
-                // কন্ডিশন: টার্গেট পূরণ হয়েছে AND এডমিন থেকে একটিভ আছে AND আগে ক্লেইম করেনি
                 const canClaim = activeCount >= t.goal && t.status === "active" && !isClaimed;
-
-                let btnHTML = "";
-                if (isClaimed) {
-                    btnHTML = `<button class="claim-btn btn-done" disabled>Done</button>`;
-                } else if (canClaim) {
-                    btnHTML = `<button class="claim-btn btn-ready" onclick="claimReward('${t.id}', ${t.bonus})">Claim</button>`;
-                } else {
-                    // যদি মেম্বার সংখ্যা না পুড়ায় অথবা এডমিন থেকে Unlock না করে তবে লক থাকবে
-                    const lockReason = t.status !== "active" ? "Locked by Admin" : "Claim";
-                    btnHTML = `<button class="claim-btn btn-locked" disabled>${lockReason}</button>`;
-                }
 
                 listBody.innerHTML += `
                     <div class="reward-item">
-                        <div class="reward-icon"><i class="fas fa-award"></i></div>
-                        <div style="flex: 1;">
-                            <h4 style="font-size: 13px; font-weight: 600;">${t.title}</h4>
-                            <p style="font-size: 11px; color: #777;">বোনাস: ৳${t.bonus} (অগ্রগতি: ${activeCount}/${t.goal})</p>
-                            <div class="progress-container">
-                                <div class="progress-bar" style="width: ${progress}%"></div>
+                        <div class="reward-icon-box"><i class="fas fa-award"></i></div>
+                        <div class="info-content">
+                            <h4>${t.title}</h4>
+                            <p>বোনাস: <b>৳${t.bonus}</b> <span style="float:right"><b>${activeCount}</b> / ${t.goal}</span></p>
+                            <div class="progress-box">
+                                <div class="progress-fill" style="width: ${progress}%"></div>
                             </div>
                         </div>
-                        ${btnHTML}
-                    </div>
-                `;
+                        <div>
+                            ${isClaimed ? '<button class="claim-btn btn-done" disabled>Done</button>' : 
+                              canClaim ? `<button class="claim-btn btn-ready" onclick="claimReward('${t.id}', ${t.bonus})">Claim</button>` :
+                              `<button class="claim-btn btn-locked" disabled>Claim</button>`}
+                        </div>
+                    </div>`;
             });
-        } catch (e) {
-            console.error(e);
+        } catch (e) { 
             document.getElementById("rewardList").innerHTML = "ত্রুটি ঘটেছে!";
         }
     }
 
     async function claimReward(rewardID, amount) {
-        Swal.fire({
-            title: 'আপনি কি নিশ্চিত?',
-            text: `আপনি ৳${amount} বোনাস ক্লেইম করছেন!`,
-            icon: 'question',
-            showCancelButton: true,
-            confirmButtonText: 'হ্যাঁ, ক্লেইম করুন'
-        }).then(async (result) => {
-            if (result.isConfirmed) {
-                const userRef = db.collection("users").doc(userPhone);
-                try {
-                    await userRef.update({
-                        balance: firebase.firestore.FieldValue.increment(amount),
-                        claimed_rewards: firebase.firestore.FieldValue.arrayUnion(rewardID)
-                    });
-                    Swal.fire('সফল!', 'বোনাস মেইন ব্যালেন্সে যোগ হয়েছে।', 'success');
-                    loadRewards();
-                } catch (e) {
-                    Swal.fire('দুঃখিত', 'ক্লেইম ব্যর্থ হয়েছে।', 'error');
-                }
-            }
-        });
+        Swal.fire({ title: 'প্রসেসিং...', didOpen: () => { Swal.showLoading(); } });
+        try {
+            await db.collection("users").doc(userPhone).update({
+                balance: firebase.firestore.FieldValue.increment(amount),
+                claimed_rewards: firebase.firestore.FieldValue.arrayUnion(rewardID)
+            });
+            Swal.fire({ icon: 'success', title: 'সফল!', text: `৳${amount} বোনাস ব্যালেন্সে যোগ হয়েছে।` });
+            loadRewards();
+        } catch (e) { 
+            Swal.fire('Error', 'ক্লেইম ব্যর্থ হয়েছে।', 'error'); 
+        }
     }
 
     window.onload = loadRewards;
 </script>
 </body>
 </html>
-
