@@ -10,92 +10,83 @@
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
         :root {
-            --primary: #00b894;
-            --gradient: linear-gradient(135deg, #00b894 0%, #00cec9 100%);
-            --bg: #f0f3f7;
+            --primary-green: #00d2a0;
+            --bg-color: #f8fafc;
+            --text-main: #2d3436;
         }
-        * { margin:0; padding:0; box-sizing:border-box; font-family: 'Segoe UI', Roboto, sans-serif; }
-        body { background: var(--bg); padding: 15px; }
-        .container { max-width: 450px; margin: 0 auto; }
+        * { margin:0; padding:0; box-sizing:border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background-color: var(--bg-color); padding: 15px; }
+        .container { max-width: 480px; margin: 0 auto; }
 
-        /* Header Design */
+        /* Header Style */
         .header { 
-            background: var(--gradient); 
+            background: linear-gradient(135deg, #00d2a0 0%, #00b894 100%); 
             color: white; 
-            padding: 30px 20px; 
+            padding: 35px 20px; 
             text-align: center; 
-            border-radius: 20px; 
+            border-radius: 25px; 
             margin-bottom: 25px; 
             position: relative;
-            box-shadow: 0 10px 20px rgba(0, 184, 148, 0.2);
+            box-shadow: 0 10px 25px rgba(0, 210, 160, 0.2);
         }
-        .header h2 { font-size: 22px; font-weight: 800; letter-spacing: 1px; }
-        .back-btn { position: absolute; left: 20px; top: 32px; color: white; font-size: 18px; }
+        .header h2 { font-size: 24px; font-weight: 800; display: flex; align-items: center; justify-content: center; gap: 10px; }
+        .header p { font-size: 13px; margin-top: 8px; opacity: 0.9; font-weight: 500; }
+        .back-btn { position: absolute; left: 20px; top: 38px; color: white; font-size: 20px; text-decoration: none; }
 
-        /* Reward Card Design */
+        /* Reward Item Card */
         .reward-item { 
             background: white; 
             display: flex; 
             align-items: center; 
-            gap: 15px; 
-            padding: 18px; 
-            border-radius: 18px; 
+            padding: 20px; 
+            border-radius: 22px; 
             margin-bottom: 15px; 
-            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
-            transition: 0.3s;
-            border: 1px solid #edf2f7;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.03);
+            border: 1px solid #f1f5f9;
         }
         .reward-icon { 
-            width: 50px; height: 50px; 
-            background: #e6fffb; 
-            border-radius: 14px; 
+            width: 55px; height: 55px; 
+            background: #f0fffb; 
+            border-radius: 16px; 
             display: flex; 
             align-items: center; 
             justify-content: center; 
-            color: var(--primary); 
-            font-size: 22px; 
+            color: var(--primary-green); 
+            font-size: 24px; 
+            margin-right: 15px;
         }
+
+        .info-content { flex: 1; }
+        .info-content h4 { font-size: 17px; color: var(--text-main); font-weight: 800; margin-bottom: 5px; }
+        .info-content p { font-size: 12px; color: #636e72; font-weight: 700; margin-bottom: 8px; }
+        .info-content p b { color: var(--text-main); }
 
         /* Progress Bar */
-        .info-box { flex: 1; }
-        .info-box h4 { font-size: 15px; color: #2d3436; font-weight: 800; margin-bottom: 4px; }
-        .info-box p { font-size: 12px; color: #636e72; font-weight: 600; }
-        .progress-container { 
-            width: 100%; height: 10px; 
-            background: #dfe6e9; 
-            border-radius: 10px; 
-            overflow: hidden; 
-            margin-top: 10px; 
-        }
-        .progress-bar { 
-            height: 100%; 
-            background: var(--gradient); 
-            width: 0%; 
-            transition: 1s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
-        }
+        .progress-box { width: 100%; height: 8px; background: #eef2f7; border-radius: 10px; overflow: hidden; }
+        .progress-fill { height: 100%; background: var(--primary-green); width: 0%; transition: 1s ease-in-out; }
 
-        /* Buttons */
+        /* Claim Button Style */
         .claim-btn { 
-            width: 90px; 
+            width: 95px; 
             padding: 12px 0; 
-            border-radius: 12px; 
+            border-radius: 14px; 
             border: none; 
-            font-size: 13px; 
+            font-size: 14px; 
             font-weight: 800; 
             cursor: pointer; 
+            margin-left: 10px;
             transition: 0.3s;
         }
-        .btn-locked { background: #f1f2f6; color: #b2bec3; cursor: not-allowed; }
+        .btn-locked { background: #f1f5f9; color: #94a3b8; cursor: not-allowed; }
         .btn-ready { 
-            background: var(--gradient); 
+            background: var(--primary-green); 
             color: white; 
-            box-shadow: 0 4px 12px rgba(0, 184, 148, 0.3); 
+            box-shadow: 0 6px 15px rgba(0, 210, 160, 0.25); 
         }
-        .btn-ready:active { transform: scale(0.95); }
-        .btn-done { background: #e6fffb; color: #00b894; border: 1px dashed #00b894; cursor: default; }
+        .btn-ready:hover { transform: translateY(-2px); }
+        .btn-done { background: #e0fcf5; color: var(--primary-green); font-weight: 800; cursor: default; }
 
-        /* Loader */
-        .loader { text-align: center; padding: 50px; font-weight: bold; color: var(--primary); }
+        .loader { text-align: center; padding: 50px; color: var(--primary-green); font-weight: bold; }
     </style>
 </head>
 <body>
@@ -103,17 +94,17 @@
 <div class="container">
     <div class="header">
         <a href="index.html" class="back-btn"><i class="fas fa-chevron-left"></i></a>
-        <h2><i class="fas fa-gem"></i> ডিপোজিট রিওয়ার্ড</h2>
-        <p style="font-size: 12px; margin-top: 5px; font-weight: 600; opacity: 0.9;">আপনার টার্গেট পূরণ করুন ও বোনাস নিন</p>
+        <h2><i class="fas fa-wallet"></i> ডিপোজিট রিওয়ার্ড</h2>
+        <p>আপনার টার্গেট পূরণ করুন ও বোনাস নিন</p>
     </div>
 
     <div id="rewardList">
-        <div class="loader"><i class="fas fa-circle-notch fa-spin"></i> ডাটা লোড হচ্ছে...</div>
+        <div class="loader"><i class="fas fa-spinner fa-spin"></i> ডাটা লোড হচ্ছে...</div>
     </div>
 </div>
 
 <script>
-    // Firebase Config (আপনারটা বসান)
+    // Firebase Configuration
     const firebaseConfig = {
         apiKey: "AIzaSyCALYxA2M4BwIXq5KC3VMGsZpAFh8nL3fo",
         authDomain: "bengal-east-company-limited.firebaseapp.com",
@@ -129,16 +120,14 @@
 
     async function loadRewards() {
         if (!userPhone) {
-            document.getElementById("rewardList").innerHTML = "<p style='text-align:center;'>দয়া করে লগইন করুন।</p>";
+            document.getElementById("rewardList").innerHTML = "<p style='text-align:center; font-weight:bold;'>দয়া করে লগইন করুন।</p>";
             return;
         }
 
         try {
-            // ১. সেটিংস থেকে টার্গেট আনা
             const configDoc = await db.collection("settings").doc("deposit_config").get();
             const targets = configDoc.exists ? configDoc.data().targets : [];
             
-            // ২. ইউজারের ডাটা আনা
             const userDoc = await db.collection("users").doc(userPhone).get();
             const userData = userDoc.exists ? userDoc.data() : { total_deposit: 0, claimed_deposit_rewards: [] };
             
@@ -148,11 +137,6 @@
             const listBody = document.getElementById("rewardList");
             listBody.innerHTML = "";
 
-            if (targets.length === 0) {
-                listBody.innerHTML = "<p style='text-align:center;'>বর্তমানে কোনো রিওয়ার্ড নেই।</p>";
-                return;
-            }
-
             targets.forEach(t => {
                 const isClaimed = claimed.includes(t.id);
                 const progress = Math.min((totalDep / t.goal) * 100, 100);
@@ -161,34 +145,34 @@
                 listBody.innerHTML += `
                     <div class="reward-item">
                         <div class="reward-icon"><i class="fas fa-gift"></i></div>
-                        <div class="info-box">
+                        <div class="info-content">
                             <h4>${t.title}</h4>
                             <p>বোনাস: <b>৳${t.bonus}</b> <span style="float:right"><b>${totalDep}</b> / ${t.goal}</span></p>
-                            <div class="progress-container">
-                                <div class="progress-bar" style="width: ${progress}%"></div>
+                            <div class="progress-box">
+                                <div class="progress-fill" style="width: ${progress}%"></div>
                             </div>
                         </div>
-                        <div style="margin-left: 10px;">
+                        <div>
                             ${isClaimed ? '<button class="claim-btn btn-done" disabled>সংগৃহীত</button>' : 
-                              canClaim ? `<button class="claim-btn btn-ready" onclick="claim('${t.id}', ${t.bonus})">নিন</button>` :
-                              `<button class="claim-btn btn-locked" disabled>${t.status === 'active' ? 'বাকি' : 'লক'}</button>`}
+                              canClaim ? `<button class="claim-btn btn-ready" onclick="claim('${t.id}', ${t.bonus})">Claim</button>` :
+                              `<button class="claim-btn btn-locked" disabled>${t.status === 'active' ? 'Claim' : 'Locked'}</button>`}
                         </div>
                     </div>`;
             });
         } catch (e) { 
             console.error(e); 
-            document.getElementById("rewardList").innerHTML = "<p style='text-align:center; color:red;'>সার্ভার সমস্যা! আবার চেষ্টা করুন।</p>";
+            document.getElementById("rewardList").innerHTML = "<p style='text-align:center; color:red;'>নেটওয়ার্ক সমস্যা। রিফ্রেশ দিন।</p>";
         }
     }
 
     async function claim(id, amt) {
-        Swal.fire({ title: 'প্রসেসিং...', didOpen: () => { Swal.showLoading(); } });
+        Swal.fire({ title: 'অপেক্ষা করুন...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
         try {
             await db.collection("users").doc(userPhone).update({
                 balance: firebase.firestore.FieldValue.increment(amt),
                 claimed_deposit_rewards: firebase.firestore.FieldValue.arrayUnion(id)
             });
-            Swal.fire({ icon: 'success', title: 'অভিনন্দন!', text: `আপনি ৳${amt} বোনাস পেয়েছেন।`, confirmButtonColor: '#00b894' });
+            Swal.fire({ icon: 'success', title: 'সাফল্য!', text: `আপনি ৳${amt} বোনাস পেয়েছেন।`, confirmButtonColor: '#00d2a0' });
             loadRewards();
         } catch (e) { 
             Swal.fire('Error', 'ক্লেইম করা সম্ভব হয়নি।', 'error'); 
