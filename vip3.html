@@ -44,7 +44,6 @@
         .status-pill { padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: bold; }
         .active { background: #e8f5e9; color: #2e7d32; }
         .inactive { background: #ffebee; color: #c62828; }
-        .pending { background: #fff3e0; color: #ef6c00; }
     </style>
 </head>
 <body>
@@ -69,7 +68,7 @@
                     </tr>
                 </thead>
                 <tbody id="pendingDepositList">
-                    <tr><td colspan="5" style="text-align: center;">কোনো পেন্ডিং ডিপোজিট নেই</td></tr>
+                    <tr><td colspan="5" style="text-align: center;">ডাটা লোড হচ্ছে...</td></tr>
                 </tbody>
             </table>
         </div>
@@ -86,7 +85,7 @@
         <h3 style="margin-bottom: 15px; font-size: 16px;"><i class="fas fa-crown"></i> লিডার বোর্ড রিপোর্ট</h3>
         <div class="team-grid" id="topTeams"></div>
 
-        <h3 style="margin-bottom: 15px; font-size: 16px;"><i class="fas fa-users"></i> ইউজার তালিকা</h3>
+        <h3 style="margin-bottom: 15px; font-size: 16px;"><i class="fas fa-users"></i> মেম্বার লিস্ট</h3>
         <div class="data-card">
             <input type="text" id="uSearch" class="search-bar" placeholder="আইডি বা ফোন দিয়ে খুঁজুন..." onkeyup="searchMember()">
             <table>
@@ -108,6 +107,7 @@
     </div>
 
 <script>
+    // Firebase Config
     const firebaseConfig = {
         apiKey: "AIzaSyCALYxA2M4BwIXq5KC3VMGsZpAFh8nL3fo",
         authDomain: "bengal-east-company-limited.firebaseapp.com",
@@ -121,17 +121,20 @@
 
     let allUsers = [];
 
+    // ডাটা লোড করা
     async function loadAdminData() {
+        // ইউজার ডাটা
         const userSnap = await db.collection("users").get();
         allUsers = userSnap.docs.map(doc => ({ phone: doc.id, ...doc.data() }));
         
+        // পেন্ডিং ডিপোজিট ডাটা
         const depSnap = await db.collection("deposits").where("status", "==", "PENDING").get();
         renderPendingDeposits(depSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
         
         renderUI();
     }
 
-    // ডিপোজিট রিকোয়েস্ট রেন্ডার করা
+    // ডিপোজিট রিকোয়েস্ট টেবিল
     function renderPendingDeposits(deposits) {
         const list = document.getElementById('pendingDepositList');
         if (deposits.length === 0) {
@@ -152,34 +155,39 @@
         `).join('');
     }
 
-    // ডিপোজিট অ্যাপ্রুভ করার লজিক (সব জায়গায় আপডেট হবে)
+    // ডিপোজিট এক্সেপ্ট করার লজিক (ব্যালেন্স + ইনভেস্ট আপডেট)
     async function approveDeposit(docID, userPhone, amount) {
-        if(!confirm(`আপনি কি ৳${amount} অ্যাপ্রুভ করতে চান? এটি ইউজারের ব্যালেন্স ও ইনভেস্টে যুক্ত হবে।`)) return;
+        if(!confirm(`আপনি কি ৳${amount} অ্যাপ্রুভ করতে চান? এটি ইউজারের ব্যালেন্স এবং ইনভেস্টমেন্টে যুক্ত হবে।`)) return;
 
-        const batch = db.batch();
-        const userRef = db.collection("users").doc(userPhone);
-        const depRef = db.collection("deposits").doc(docID);
+        try {
+            const batch = db.batch();
+            const userRef = db.collection("users").doc(userPhone);
+            const depRef = db.collection("deposits").doc(docID);
 
-        // ১. ইউজারের ব্যালেন্স ও টোটাল ডিপোজিট বাড়ানো
-        batch.update(userRef, {
-            balance: firebase.firestore.FieldValue.increment(amount),
-            totalDeposit: firebase.firestore.FieldValue.increment(amount)
-        });
+            // ১. ইউজারের ব্যালেন্স এবং টোটাল ডিপোজিট বাড়ানো
+            batch.update(userRef, {
+                balance: firebase.firestore.FieldValue.increment(amount),
+                totalDeposit: firebase.firestore.FieldValue.increment(amount)
+            });
 
-        // ২. ডিপোজিট স্ট্যাটাস SUCCESS করা
-        batch.update(depRef, { status: "SUCCESS" });
+            // ২. ডিপোজিট স্ট্যাটাস SUCCESS করা
+            batch.update(depRef, { status: "SUCCESS" });
 
-        await batch.commit();
-        alert("সফলভাবে অ্যাপ্রুভ হয়েছে!");
-        loadAdminData();
+            await batch.commit();
+            alert("ডিপোজিট সফলভাবে অ্যাপ্রুভ হয়েছে এবং ইউজারের ব্যালেন্স আপডেট হয়েছে।");
+            loadAdminData();
+        } catch (error) {
+            alert("এরর: " + error.message);
+        }
     }
 
     async function rejectDeposit(docID) {
-        if(!confirm("আপনি কি এই রিকোয়েস্টটি রিজেক্ট করতে চান?")) return;
+        if(!confirm("আপনি কি এই ডিপোজিট রিকোয়েস্টটি বাতিল করতে চান?")) return;
         await db.collection("deposits").doc(docID).update({ status: "REJECTED" });
         loadAdminData();
     }
 
+    // ইউজার লিস্ট এবং রিপোর্ট রেন্ডার
     function renderUI() {
         allUsers.forEach(u => {
             u.myTeamCount = allUsers.filter(x => String(x.referrerID) === String(u.userID)).length;
@@ -188,7 +196,7 @@
         const sortedTeams = [...allUsers].sort((a,b) => b.myTeamCount - a.myTeamCount).slice(0, 3);
         document.getElementById('topTeams').innerHTML = sortedTeams.map(t => `
             <div class="team-card">
-                <h4><i class="fas fa-crown" style="color:#ffa000"></i> ID: ${t.userID || 'undefined'} (Top Leader)</h4>
+                <h4><i class="fas fa-crown" style="color:#ffa000"></i> ID: ${t.userID || 'N/A'}</h4>
                 <div class="count">${t.myTeamCount} Members</div>
                 <div class="detail">Total Invest: ৳${t.totalDeposit || 0}</div>
             </div>
@@ -201,11 +209,13 @@
         document.getElementById('userList').innerHTML = data.map(u => {
             const totalDep = parseFloat(u.totalDeposit || 0);
             const mainBal = parseFloat(u.balance || 0);
+            
+            // ১০০ টাকার শর্ত: ডিপোজিট বা মেইন ব্যালেন্স ১০০+ থাকলেই Active
             const isActive = (totalDep >= 100 || mainBal >= 100);
             
             return `
             <tr>
-                <td><b>${u.userID || 'undefined'}</b></td>
+                <td><b>${u.userID || 'N/A'}</b></td>
                 <td>${u.phone}</td>
                 <td>৳${totalDep}</td>
                 <td><i class="fas fa-users"></i> ${u.myTeamCount}</td>
@@ -217,6 +227,7 @@
         `}).join('');
     }
 
+    // অটো ইনকাম ডিস্ট্রিবিউশন
     async function distributeDailyCommission() {
         const today = new Date().toISOString().split('T')[0];
         const roiPercent = parseFloat(document.getElementById('daily_ret').value) / 100;
@@ -224,7 +235,7 @@
         const l2 = parseFloat(document.getElementById('l2_comm').value) / 100;
         const l3 = parseFloat(document.getElementById('l3_comm').value) / 100;
 
-        if(!confirm(`${today} তারিখের ইনকাম পাঠাতে চান?`)) return;
+        if(!confirm(`${today} তারিখের ইনকাম সকল যোগ্য মেম্বারদের পাঠাতে চান?`)) return;
 
         const batch = db.batch();
         let qualifiedCount = 0;
@@ -233,17 +244,20 @@
             const totalDep = parseFloat(user.totalDeposit || 0);
             if (totalDep >= 100) {
                 const myRoi = totalDep * roiPercent;
-                batch.update(db.collection("users").doc(user.phone), {
+                const userRef = db.collection("users").doc(user.phone);
+                
+                batch.update(userRef, {
                     daily_roi: firebase.firestore.FieldValue.increment(myRoi),
                     last_dist_date: today
                 });
+
                 distributeTeamComm(user.referrerID, myRoi, 1, l1, l2, l3, batch);
                 qualifiedCount++;
             }
         });
 
         await batch.commit();
-        alert(`মোট ${qualifiedCount} জনের ইনকাম পাঠানো হয়েছে!`);
+        alert(`মোট ${qualifiedCount} জন ইউজারের অ্যাকাউন্টে ইনকাম পাঠানো হয়েছে!`);
         loadAdminData();
     }
 
