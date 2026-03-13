@@ -104,64 +104,21 @@
         <h3><i class="fas fa-wallet"></i> Deposit Target Rewards</h3>
         <p style="font-size: 12px; color: #888; margin-bottom: 15px;">ইউজার নির্দিষ্ট পরিমাণ টাকা ডিপোজিট করলে কত বোনাস পাবে তা এখান থেকে সেট করুন।</p>
         <div class="grid">
-            <div class="form-group">
-                <label>1000 Dep Bonus (৳)</label>
-                <input type="number" id="depBonus1000" placeholder="Ex: 100">
-            </div>
-            <div class="form-group">
-                <label>2000 Dep Bonus (৳)</label>
-                <input type="number" id="depBonus2000" placeholder="Ex: 250">
-            </div>
-            <div class="form-group">
-                <label>5000 Dep Bonus (৳)</label>
-                <input type="number" id="depBonus5000" placeholder="Ex: 600">
-            </div>
-            <div class="form-group">
-                <label>10000 Dep Bonus (৳)</label>
-                <input type="number" id="depBonus10000" placeholder="Ex: 1200">
-            </div>
-            <div class="form-group">
-                <label>25000 Dep Bonus (৳)</label>
-                <input type="number" id="depBonus25000" placeholder="Ex: 3000">
-            </div>
-            <div class="form-group">
-                <label>50000 Dep Bonus (৳)</label>
-                <input type="number" id="depBonus50000" placeholder="Ex: 7000">
-            </div>
-            <div class="form-group">
-                <label>100000 Dep Bonus (৳)</label>
-                <input type="number" id="depBonus100000" placeholder="Ex: 15000">
-            </div>
-            <div class="form-group">
-                <label>200000 Dep Bonus (৳)</label>
-                <input type="number" id="depBonus200000" placeholder="Ex: 35000">
-            </div>
-            <div class="form-group">
-                <label>500000 Dep Bonus (৳)</label>
-                <input type="number" id="depBonus500000" placeholder="Ex: 100000">
-            </div>
+            <div class="form-group"><label>1000 Dep Bonus (৳)</label><input type="number" id="depBonus1000" placeholder="Ex: 100"></div>
+            <div class="form-group"><label>2000 Dep Bonus (৳)</label><input type="number" id="depBonus2000" placeholder="Ex: 250"></div>
+            <div class="form-group"><label>5000 Dep Bonus (৳)</label><input type="number" id="depBonus5000" placeholder="Ex: 600"></div>
+            <div class="form-group"><label>10000 Dep Bonus (৳)</label><input type="number" id="depBonus10000" placeholder="Ex: 1200"></div>
+            <div class="form-group"><label>25000 Dep Bonus (৳)</label><input type="number" id="depBonus25000" placeholder="Ex: 3000"></div>
+            <div class="form-group"><label>50000 Dep Bonus (৳)</label><input type="number" id="depBonus50000" placeholder="Ex: 7000"></div>
+            <div class="form-group"><label>100000 Dep Bonus (৳)</label><input type="number" id="depBonus100000" placeholder="Ex: 15000"></div>
+            <div class="form-group"><label>200000 Dep Bonus (৳)</label><input type="number" id="depBonus200000" placeholder="Ex: 35000"></div>
+            <div class="form-group"><label>500000 Dep Bonus (৳)</label><input type="number" id="depBonus500000" placeholder="Ex: 100000"></div>
         </div>
         <button class="btn-main" style="background: #2ecc71;" onclick="saveDepSettings()">Save Deposit Rewards</button>
     </div>
 
     <div class="card">
-        <h3><i class="fas fa-dice"></i> Daily Betting Reward</h3>
-        <div class="grid">
-            <div class="form-group">
-                <label>Betting Target (৳)</label>
-                <input type="number" id="betTarget" placeholder="Ex: 5000">
-            </div>
-            <div class="form-group">
-                <label>Bonus (৳)</label>
-                <input type="number" id="betBonus" placeholder="Ex: 50">
-            </div>
-        </div>
-        <button class="btn-sub" onclick="saveBetSettings()">Set Betting Reward</button>
-    </div>
-
-    <div class="card">
         <h3><i class="fas fa-user-shield"></i> User Control (Unlock Claims)</h3>
-        <p style="font-size: 12px; color: #888;">ইউজারের আইডি দিয়ে সার্চ করে কোনো ক্লেইম সমস্যা হলে তা ম্যানুয়ালি চেক করতে পারবেন।</p>
         <div class="search-box">
             <input type="text" id="userSearchId" placeholder="Enter User ID (Phone Number)">
             <button class="btn-sub" style="background:#333;" onclick="searchUser()">Search</button>
@@ -191,7 +148,7 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    // Referral Rewards Update
+    // ১. Referral Rewards Save (User Page এর সাথে কানেক্টেড)
     window.updateReferralRewards = async () => {
         const rewardData = {
             10: Number(document.getElementById('amt10').value) || 0,
@@ -200,37 +157,13 @@
             50: Number(document.getElementById('amt50').value) || 0,
             100: Number(document.getElementById('amt100').value) || 0
         };
-
         try {
             await setDoc(doc(db, "admin_settings", "referral_rewards"), rewardData);
             alert("Success: Referral Rewards Updated!");
-        } catch (e) {
-            alert("Error: " + e.message);
-        }
+        } catch (e) { alert("Error: " + e.message); }
     };
 
-    // Global VIP 4 Settings Update
-    window.updateAllVip4 = async () => {
-        const settings = {
-            ref_bonus: document.getElementById('admRefBonus').value,
-            roi_percent: document.getElementById('admRoiPercent').value,
-            level1_percent: document.getElementById('admLevel1').value,
-            salary_percent: document.getElementById('admSalary').value
-        };
-        await setDoc(doc(db, "admin_settings", "vip4_config"), settings, { merge: true });
-        alert("Success: Global VIP 4 Settings Updated!");
-    };
-
-    // Gift Code
-    window.saveGiftCode = async () => {
-        const code = document.getElementById('newGiftCode').value;
-        const amt = parseFloat(document.getElementById('giftAmt').value);
-        if(!code || isNaN(amt)) return alert("Please fill code and amount");
-        await updateDoc(doc(db, "admin_settings", "gift_codes"), { [code]: amt });
-        alert("Success: Gift Code Created!");
-    };
-    
-    // Deposit Target Update - ছবির মতো মাল্টিপল টার্গেট সেভ করার লজিক
+    // ২. Deposit Target Rewards Save
     window.saveDepSettings = async () => {
         const depData = {
             1000: Number(document.getElementById('depBonus1000').value) || 0,
@@ -243,24 +176,34 @@
             200000: Number(document.getElementById('depBonus200000').value) || 0,
             500000: Number(document.getElementById('depBonus500000').value) || 0
         };
-
         try {
             await setDoc(doc(db, "admin_settings", "deposit_targets"), depData);
-            alert("Success: All Deposit Targets Saved!");
-        } catch (e) {
-            alert("Error: " + e.message);
-        }
+            alert("Success: Deposit Rewards Updated!");
+        } catch (e) { alert("Error: " + e.message); }
     };
 
-    // Betting Reward
-    window.saveBetSettings = async () => {
-        const target = document.getElementById('betTarget').value;
-        const bonus = document.getElementById('betBonus').value;
-        await updateDoc(doc(db, "admin_settings", "betting_rewards"), { [target]: bonus });
-        alert("Success: Betting Reward Set!");
+    // ৩. Global VIP 4 Settings
+    window.updateAllVip4 = async () => {
+        const settings = {
+            ref_bonus: document.getElementById('admRefBonus').value,
+            roi_percent: document.getElementById('admRoiPercent').value,
+            level1_percent: document.getElementById('admLevel1').value,
+            salary_percent: document.getElementById('admSalary').value
+        };
+        await setDoc(doc(db, "admin_settings", "vip4_config"), settings, { merge: true });
+        alert("Global Settings Saved!");
     };
 
-    // User Search Logic
+    // ৪. Gift Code
+    window.saveGiftCode = async () => {
+        const code = document.getElementById('newGiftCode').value;
+        const amt = parseFloat(document.getElementById('giftAmt').value);
+        if(!code || isNaN(amt)) return alert("Fill data");
+        await updateDoc(doc(db, "admin_settings", "gift_codes"), { [code]: amt });
+        alert("Gift Code Saved!");
+    };
+
+    // ৫. User Control
     window.searchUser = async () => {
         const id = document.getElementById('userSearchId').value;
         const uSnap = await getDoc(doc(db, "users", id));
@@ -269,23 +212,15 @@
             document.getElementById('userInfo').style.display = "block";
             document.getElementById('uName').innerText = data.name || "N/A";
             document.getElementById('uDep').innerText = data.total_deposit || 0;
-        } else {
-            alert("User not found!");
-            document.getElementById('userInfo').style.display = "none";
-        }
+        } else { alert("Not found"); }
     };
 
-    // Reset User Claims (Manual Unlock)
     window.resetUserClaim = async () => {
         const id = document.getElementById('userSearchId').value;
-        if(confirm("Are you sure to reset claim history for this user?")){
-            await updateDoc(doc(db, "users", id), {
-                claimed_dep: [],
-                claimed_bet: [],
-                claimed_ref_target: []
-            });
-            alert("Claims Reset! User can claim again.");
-        }
+        await updateDoc(doc(db, "users", id), {
+            claimed_dep: [], claimed_ref_target: []
+        });
+        alert("Claims Reset!");
     };
 
 </script>
