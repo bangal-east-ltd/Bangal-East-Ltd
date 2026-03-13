@@ -124,11 +124,9 @@
         const db = getFirestore(app);
         const loggedUser = localStorage.getItem("loggedUser");
 
-        // এটি এখন খালি রাখা হয়েছে, এডমিন প্যানেল থেকে ডেটা আসবে
         let refTargets = [];
         const depRewards = [{ t: 1000, b: 100 }, { t: 2000, b: 250 }, { t: 5000, b: 600 }, { t: 10000, b: 1200 }];
 
-        // এডমিন প্যানেল থেকে রিওয়ার্ড ডেটা লোড করার নতুন ফাংশন
         async function fetchAdminRewards() {
             const docRef = doc(db, "admin_settings", "referral_rewards");
             const docSnap = await getDoc(docRef);
@@ -142,7 +140,6 @@
                     { t: 100, b: data[100] || 0 }
                 ];
             } else {
-                // ডেটা না থাকলে ডিফল্ট
                 refTargets = [{ t: 10, b: 0 }, { t: 20, b: 0 }, { t: 30, b: 0 }, { t: 50, b: 0 }, { t: 100, b: 0 }];
             }
         }
@@ -151,11 +148,17 @@
             const snap = await getDocs(collection(db, "users"));
             const users = snap.docs.map(d => d.data());
             let activeCount = 0;
+            
+            // আইডি স্ট্রিং ফরমেটে রূপান্তর করে ফিল্টার করা হচ্ছে
             const myRefs = users.filter(u => String(u.referrerID) === String(myUID));
+            
             myRefs.forEach(u => {
-                const dep = parseFloat(u.total_deposit || 0);
+                // ডিপোজিট এবং ব্যালেন্স চেক করার সঠিক লজিক
+                const dep = parseFloat(u.total_deposit || u.totalDeposit || 0);
                 const bal = parseFloat(u.balance || 0);
-                if (dep >= 100 || bal >= 100) activeCount++;
+                if (dep >= 100 || bal >= 100) {
+                    activeCount++;
+                }
             });
             return activeCount;
         }
@@ -231,7 +234,6 @@
             alert("Reward Claimed!");
         };
 
-        // পেজ লোড হওয়ার সময় এডমিন রিওয়ার্ড লোড করবে
         window.onload = async () => {
             await fetchAdminRewards();
             sync();
@@ -239,3 +241,4 @@
     </script>
 </body>
 </html>
+
