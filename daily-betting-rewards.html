@@ -9,86 +9,189 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
-        * { margin:0; padding:0; box-sizing:border-box; font-family: 'Segoe UI', sans-serif; }
-        body { background: #f4f7f6; padding: 20px; }
-        .container { max-width: 500px; margin: 0 auto; }
-        .header { background: #e67e22; color: white; padding: 20px; text-align: center; border-radius: 15px; margin-bottom: 20px; position: relative; }
-        .back-btn { position: absolute; left: 15px; top: 22px; color: white; text-decoration: none; }
-        .reward-item { background: white; display: flex; align-items: center; gap: 15px; padding: 15px; border-radius: 12px; margin-bottom: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
-        .reward-icon { width: 45px; height: 45px; background: #fdf2e9; border-radius: 10px; display: flex; align-items: center; justify-content: center; color: #e67e22; font-size: 20px; }
-        .progress-container { width: 100%; height: 8px; background: #eee; border-radius: 10px; overflow: hidden; margin-top: 8px; }
-        .progress-bar { height: 100%; background: linear-gradient(90deg, #e67e22, #d35400); width: 0%; transition: 0.8s; }
-        .claim-btn { width: 85px; padding: 10px 0; border-radius: 8px; border: none; font-size: 12px; font-weight: bold; cursor: pointer; }
-        .btn-locked { background: #e0e0e0; color: #999; cursor: not-allowed; }
-        .btn-ready { background: #e67e22; color: white; box-shadow: 0 4px 10px rgba(230, 126, 34, 0.3); }
-        .btn-done { background: #fdf2e9; color: #e67e22; cursor: default; }
+        :root {
+            --primary-blue: #0984e3;
+            --bg-color: #f1f3f6;
+            --text-main: #2d3436;
+            --accent-cyan: #00cec9; /* বাম পাশের বর্ডার কালার */
+        }
+        * { margin:0; padding:0; box-sizing:border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background-color: var(--bg-color); padding: 15px; }
+        .container { max-width: 480px; margin: 0 auto; }
+
+        /* Header Style */
+        .header { 
+            background: linear-gradient(135deg, #0984e3 0%, #6c5ce7 100%); 
+            color: white; 
+            padding: 30px 20px; 
+            text-align: center; 
+            border-radius: 20px; 
+            margin-bottom: 20px; 
+            position: relative;
+            box-shadow: 0 8px 20px rgba(9, 132, 227, 0.2);
+        }
+        .header h2 { font-size: 22px; font-weight: 800; display: flex; align-items: center; justify-content: center; gap: 10px; }
+        .header p { font-size: 12px; margin-top: 5px; opacity: 0.9; font-weight: 600; }
+        .back-btn { position: absolute; left: 15px; top: 32px; color: white; font-size: 18px; text-decoration: none; }
+
+        /* Betting Reward Card with Cyan Border Highlight */
+        .reward-item { 
+            background: white; 
+            display: flex; 
+            align-items: center; 
+            padding: 18px; 
+            border-radius: 18px; 
+            margin-bottom: 15px; 
+            box-shadow: 0 4px 12px rgba(0,0,0,0.04);
+            position: relative;
+            overflow: hidden;
+            border-left: 5px solid var(--accent-cyan); /* বাম পাশে সায়ান নীল বর্ডার */
+        }
+        
+        .reward-item::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 3px;
+            background: #81ecec; 
+            opacity: 0.4;
+        }
+
+        .reward-icon-box {
+            width: 45px;
+            height: 45px;
+            background: #e0fbff;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 15px;
+            color: var(--primary-blue);
+            font-size: 20px;
+        }
+
+        .info-content { flex: 1; }
+        .info-content h4 { font-size: 16px; color: var(--text-main); font-weight: 800; margin-bottom: 4px; }
+        .info-content p { font-size: 11px; color: #636e72; font-weight: 700; margin-bottom: 8px; }
+
+        /* Progress Bar */
+        .progress-box { width: 100%; height: 6px; background: #eaeff2; border-radius: 10px; overflow: hidden; }
+        .progress-fill { height: 100%; background: linear-gradient(90deg, var(--accent-cyan), var(--primary-blue)); width: 0%; transition: 1s ease-in-out; }
+
+        /* Claim Button */
+        .claim-btn { 
+            width: 85px; 
+            padding: 10px 0; 
+            border-radius: 12px; 
+            border: none; 
+            font-size: 13px; 
+            font-weight: 800; 
+            cursor: pointer; 
+            margin-left: 10px;
+            transition: 0.2s;
+        }
+        .btn-locked { background: #f1f3f5; color: #adb5bd; cursor: not-allowed; }
+        .btn-ready { 
+            background: var(--primary-blue); 
+            color: white; 
+            box-shadow: 0 4px 10px rgba(9, 132, 227, 0.3); 
+        }
+        .btn-done { background: #e9ecef; color: #0984e3; font-weight: 800; cursor: default; }
+
+        .loader { text-align: center; padding: 40px; color: var(--primary-blue); font-weight: bold; }
     </style>
 </head>
 <body>
 
 <div class="container">
     <div class="header">
-        <a href="index.html" class="back-btn"><i class="fas fa-arrow-left"></i></a>
+        <a href="index.html" class="back-btn"><i class="fas fa-chevron-left"></i></a>
         <h2><i class="fas fa-dice"></i> ডেইলি বেটিং রিওয়ার্ড</h2>
+        <p>প্রতিদিন গেম খেলুন আর বোনাস সংগ্রহ করুন</p>
     </div>
-    <div id="betRewardList"><p style="text-align:center;">লোড হচ্ছে...</p></div>
+
+    <div id="rewardList">
+        <div class="loader"><i class="fas fa-sync fa-spin"></i> লোড হচ্ছে...</div>
+    </div>
 </div>
 
 <script>
-    // আপনার ফায়ারবেস কনফিগ দিন
-    const firebaseConfig = { ... }; 
+    // Firebase Config
+    const firebaseConfig = {
+        apiKey: "AIzaSyCALYxA2M4BwIXq5KC3VMGsZpAFh8nL3fo",
+        authDomain: "bengal-east-company-limited.firebaseapp.com",
+        projectId: "bengal-east-company-limited",
+        storageBucket: "bengal-east-company-limited.firebasestorage.app",
+        messagingSenderId: "653223286483",
+        appId: "1:653223286483:web:8e4ed0782ae807f8f02626"
+    };
 
     if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
     const db = firebase.firestore();
     const userPhone = localStorage.getItem("loggedUser");
 
-    async function loadBetRewards() {
+    async function loadBettingRewards() {
         if (!userPhone) return;
+
         try {
+            // ১. সেটিংস থেকে বেটিং কনফিগ আনা (অ্যাডমিন প্যানেলে এই নাম থাকতে হবে)
             const configDoc = await db.collection("settings").doc("betting_config").get();
             const targets = configDoc.exists ? configDoc.data().targets : [];
-            const userDoc = await db.collection("users").doc(userPhone).get();
-            const userData = userDoc.data();
             
-            const dailyBet = userData.daily_bet_amount || 0;
-            const claimed = userData.claimed_bet_rewards || []; // প্রতিদিন এটি রিসেট করার লজিক সার্ভারে থাকতে হবে
+            // ২. ইউজারের আজকের বেটিং ভলিউম আনা
+            const userDoc = await db.collection("users").doc(userPhone).get();
+            const userData = userDoc.exists ? userDoc.data() : { total_betting: 0, claimed_betting_rewards: [] };
+            
+            const totalBet = userData.total_betting || 0;
+            const claimed = userData.claimed_betting_rewards || [];
 
-            const listBody = document.getElementById("betRewardList");
+            const listBody = document.getElementById("rewardList");
             listBody.innerHTML = "";
 
             targets.forEach(t => {
                 const isClaimed = claimed.includes(t.id);
-                const progress = Math.min((dailyBet / t.goal) * 100, 100);
-                const canClaim = dailyBet >= t.goal && t.status === "active" && !isClaimed;
+                const progress = Math.min((totalBet / t.goal) * 100, 100);
+                const canClaim = totalBet >= t.goal && t.status === "active" && !isClaimed;
 
                 listBody.innerHTML += `
                     <div class="reward-item">
-                        <div class="reward-icon"><i class="fas fa-trophy"></i></div>
-                        <div style="flex: 1;">
-                            <h4 style="font-size: 13px;">${t.title}</h4>
-                            <p style="font-size: 11px; color: #777;">বোনাস: ৳${t.bonus} (${dailyBet}/${t.goal})</p>
-                            <div class="progress-container"><div class="progress-bar" style="width: ${progress}%"></div></div>
+                        <div class="reward-icon-box"><i class="fas fa-coins"></i></div>
+                        <div class="info-content">
+                            <h4>${t.title}</h4>
+                            <p>বোনাস: <b>৳${t.bonus}</b> <span style="float:right"><b>${totalBet}</b> / ${t.goal}</span></p>
+                            <div class="progress-box">
+                                <div class="progress-fill" style="width: ${progress}%"></div>
+                            </div>
                         </div>
-                        ${isClaimed ? '<button class="claim-btn btn-done" disabled>Done</button>' : 
-                          canClaim ? `<button class="claim-btn btn-ready" onclick="claimBet('${t.id}', ${t.bonus})">Claim</button>` :
-                          `<button class="claim-btn btn-locked" disabled>${t.status === 'active' ? 'Claim' : 'Locked'}</button>`}
+                        <div>
+                            ${isClaimed ? '<button class="claim-btn btn-done" disabled>Claimed</button>' : 
+                              canClaim ? `<button class="claim-btn btn-ready" onclick="claimBetBonus('${t.id}', ${t.bonus})">Claim</button>` :
+                              `<button class="claim-btn btn-locked" disabled>Claim</button>`}
+                        </div>
                     </div>`;
             });
-        } catch (e) { console.error(e); }
+        } catch (e) { 
+            document.getElementById("rewardList").innerHTML = "ডেটা লোড করতে সমস্যা হয়েছে।";
+        }
     }
 
-    async function claimBet(id, amt) {
+    async function claimBetBonus(id, amt) {
+        Swal.fire({ title: 'অপেক্ষা করুন...', didOpen: () => { Swal.showLoading(); } });
         try {
             await db.collection("users").doc(userPhone).update({
                 balance: firebase.firestore.FieldValue.increment(amt),
-                claimed_bet_rewards: firebase.firestore.FieldValue.arrayUnion(id)
+                claimed_betting_rewards: firebase.firestore.FieldValue.arrayUnion(id)
             });
-            Swal.fire('সফল!', `৳${amt} বোনাস মেইন ব্যালেন্সে যোগ হয়েছে।`, 'success');
-            loadBetRewards();
-        } catch (e) { Swal.fire('Error', 'ক্লেইম সফল হয়নি', 'error'); }
+            Swal.fire({ icon: 'success', title: 'সাফল্য!', text: `৳${amt} বোনাস যোগ হয়েছে।`, confirmButtonColor: '#0984e3' });
+            loadBettingRewards();
+        } catch (e) { 
+            Swal.fire('Error', 'ক্লেইম সফল হয়নি।', 'error'); 
+        }
     }
-    window.onload = loadBetRewards;
+
+    window.onload = loadBettingRewards;
 </script>
 </body>
 </html>
-
