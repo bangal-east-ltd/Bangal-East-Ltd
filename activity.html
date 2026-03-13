@@ -32,6 +32,7 @@
             box-shadow: 0 4px 15px rgba(0,0,0,0.05);
             transition: transform 0.2s;
             border: 1px solid #eee;
+            cursor: pointer; /* নতুন যোগ করা */
         }
         .menu-btn:active {
             transform: scale(0.98);
@@ -64,6 +65,14 @@
 
     <div class="reward-menu-container">
         
+        <div class="menu-btn activity-item" onclick="window.location.href='main_rewards.html'">
+            <div class="btn-info">
+                <div class="icon-circle" style="background: #f1c40f;"><i class="fas fa-trophy"></i></div>
+                <span>Main Rewards</span>
+            </div>
+            <i class="fas fa-chevron-right arrow"></i>
+        </div>
+
         <a href="main-reward.html" class="menu-btn">
             <div class="btn-info">
                 <div class="icon-circle" style="background: #3498db;"><i class="fas fa-star"></i></div>
@@ -108,3 +117,4 @@
 
 </body>
 </html>
+
