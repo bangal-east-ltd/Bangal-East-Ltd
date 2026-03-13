@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - Reward Settings</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background: #f4f7f6; padding: 20px; }
+        .admin-card {
+            max-width: 500px; background: white; margin: auto;
+            padding: 25px; border-radius: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        h2 { text-align: center; color: #333; font-size: 20px; margin-bottom: 20px; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; font-size: 13px; margin-bottom: 5px; color: #666; font-weight: bold; }
+        input {
+            width: 100%; padding: 10px; border: 1px solid #ddd;
+            border-radius: 8px; box-sizing: border-box; outline: none;
+        }
+        .save-btn {
+            width: 100%; background: #2575fc; color: white; border: none;
+            padding: 12px; border-radius: 8px; font-weight: bold;
+            cursor: pointer; margin-top: 10px; transition: 0.3s;
+        }
+        .save-btn:hover { background: #1a5fdb; }
+        .status-msg { text-align: center; font-size: 12px; margin-top: 10px; display: none; }
+    </style>
+</head>
+<body>
+
+    <div class="admin-card">
+        <h2><i class="fas fa-user-shield"></i> VIP 4 Reward Control</h2>
+        
+        <div class="form-group">
+            <label>Active Referral Bonus (৳)</label>
+            <input type="number" id="refBonus" placeholder="Ex: 50">
+        </div>
+
+        <hr>
+
+        <div class="form-group">
+            <label>Level 1 Commission (%)</label>
+            <input type="number" id="l1" placeholder="Ex: 10">
+        </div>
+        <div class="form-group">
+            <label>Level 2 Commission (%)</label>
+            <input type="number" id="l2" placeholder="Ex: 5">
+        </div>
+        <div class="form-group">
+            <label>Level 3 Commission (%)</label>
+            <input type="number" id="l3" placeholder="Ex: 2">
+        </div>
+
+        <hr>
+
+        <div class="form-group">
+            <label>Daily ROI Income (%)</label>
+            <input type="number" id="roiPercent" placeholder="Ex: 3">
+        </div>
+
+        <button class="save-btn" onclick="saveSettings()">Save Settings</button>
+        <div id="status" class="status-msg"></div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCALYxA2M4BwIXq5KC3VMGsZpAFh8nL3fo",
+            authDomain: "bengal-east-company-limited.firebaseapp.com",
+            projectId: "bengal-east-company-limited",
+            storageBucket: "bengal-east-company-limited.firebasestorage.app",
+            messagingSenderId: "653223286483",
+            appId: "1:653223286483:web:8e4ed0782ae807f8f02626"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // আগের সেটিংস লোড করা
+        async function loadCurrentSettings() {
+            const docRef = doc(db, "admin_settings", "rewards_control");
+            const snap = await getDoc(docRef);
+            if (snap.exists()) {
+                const data = snap.data();
+                document.getElementById('refBonus').value = data.refer_bonus || 0;
+                document.getElementById('l1').value = data.l1 || 0;
+                document.getElementById('l2').value = data.l2 || 0;
+                document.getElementById('l3').value = data.l3 || 0;
+                document.getElementById('roiPercent').value = data.roi_percent || 0;
+            }
+        }
+
+        // নতুন সেটিংস সেভ করা
+        window.saveSettings = async () => {
+            const btn = document.querySelector('.save-btn');
+            const status = document.getElementById('status');
+            btn.disabled = true;
+            btn.innerText = "Saving...";
+
+            const settings = {
+                refer_bonus: parseFloat(document.getElementById('refBonus').value) || 0,
+                l1: parseFloat(document.getElementById('l1').value) || 0,
+                l2: parseFloat(document.getElementById('l2').value) || 0,
+                l3: parseFloat(document.getElementById('l3').value) || 0,
+                roi_percent: parseFloat(document.getElementById('roiPercent').value) || 0,
+                updatedAt: new Date().toISOString()
+            };
+
+            try {
+                await setDoc(doc(db, "admin_settings", "rewards_control"), settings);
+                status.style.display = "block";
+                status.style.color = "green";
+                status.innerText = "Settings Updated Successfully!";
+            } catch (e) {
+                status.style.display = "block";
+                status.style.color = "red";
+                status.innerText = "Error updating settings.";
+            }
+
+            btn.disabled = false;
+            btn.innerText = "Save Settings";
+        };
+
+        window.onload = loadCurrentSettings;
+    </script>
+</body>
+</html>
+
