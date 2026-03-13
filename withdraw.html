@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Withdraw - ai-signal</title>
+    <title>Withdraw - Bengal East</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         * { margin:0; padding:0; box-sizing:border-box; font-family: 'Segoe UI', sans-serif; }
@@ -55,18 +55,37 @@
         
         #timeNotice { color: #d9534f; font-size: 12px; text-align: center; margin-top: 15px; font-weight: 600; display: block; padding: 8px; border-radius: 8px; border: 1px dashed #d9534f; }
 
-        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1000; align-items: center; justify-content: center; backdrop-filter: blur(3px); }
-        .modal-card { background: white; padding: 30px; border-radius: 20px; text-align: center; max-width: 90%; width: 350px; }
-        .modal-btn { margin-top: 20px; width: 100%; padding: 12px; background: #ff8c00; color: white; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; }
+        /* Modern Popup Styles */
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 1000; align-items: center; justify-content: center; backdrop-filter: blur(5px); transition: 0.3s; }
+        .modal-card { 
+            background: white; padding: 30px; border-radius: 25px; text-align: center; max-width: 90%; width: 340px; 
+            box-shadow: 0 20px 40px rgba(0,0,0,0.2); transform: scale(0.7); opacity: 0; transition: 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        .modal-overlay.active { display: flex; }
+        .modal-overlay.active .modal-card { transform: scale(1); opacity: 1; }
+        
+        .modal-icon { width: 70px; height: 70px; line-height: 70px; border-radius: 50%; font-size: 35px; margin: 0 auto 20px; }
+        .icon-success { background: #d4edda; color: #28a745; }
+        .icon-error { background: #f8d7da; color: #dc3545; }
+        .icon-warning { background: #fff3cd; color: #ffc107; }
+
+        .modal-title { font-size: 20px; font-weight: 800; color: #333; margin-bottom: 10px; }
+        .modal-msg { font-size: 14px; color: #666; line-height: 1.6; margin-bottom: 25px; }
+        .modal-btn { width: 100%; padding: 14px; background: #ff8c00; color: white; border: none; border-radius: 12px; font-weight: bold; cursor: pointer; font-size: 15px; transition: 0.2s; }
+        .modal-btn:active { transform: scale(0.96); }
+
     </style>
 </head>
 <body>
 
     <div class="modal-overlay" id="customModal">
         <div class="modal-card">
-            <i id="modalIcon" class="fas" style="font-size: 50px; margin-bottom: 15px;"></i>
-            <h2 id="modalTitle"></h2> <p id="modalMsg"></p>
-            <button class="modal-btn" onclick="closeModal()">OK</button>
+            <div id="modalIconBox" class="modal-icon">
+                <i id="modalIcon" class="fas"></i>
+            </div>
+            <h2 id="modalTitle" class="modal-title"></h2>
+            <p id="modalMsg" class="modal-msg"></p>
+            <button class="modal-btn" onclick="closeModal()">ঠিক আছে</button>
         </div>
     </div>
 
@@ -134,7 +153,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        import { getFirestore, doc, onSnapshot, updateDoc, collection, addDoc, query, where, getDocs, or } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+        import { getFirestore, doc, onSnapshot, updateDoc, collection, addDoc, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyCALYxA2M4BwIXq5KC3VMGsZpAFh8nL3fo",
@@ -150,8 +169,27 @@
         const loggedUser = localStorage.getItem("loggedUser");
         let userDisplayID = "";
         let currentVatPercent = 0;
+        let accountStatus = "Inactive"; // একাউন্ট অ্যাক্টিভ স্ট্যাটাস স্টোর করার জন্য
 
         if (!loggedUser) window.location.replace("index.html");
+
+        // --- আধুনিক পপ-আপ ফাংশন ---
+        window.showModal = function(type, title, msg) {
+            const overlay = document.getElementById("customModal");
+            const iconBox = document.getElementById("modalIconBox");
+            const icon = document.getElementById("modalIcon");
+            
+            iconBox.className = "modal-icon icon-" + (type === 'success' ? 'success' : type === 'error' ? 'error' : 'warning');
+            icon.className = "fas " + (type === 'success' ? 'fa-check' : type === 'error' ? 'fa-times' : 'fa-exclamation');
+            
+            document.getElementById("modalTitle").innerText = title;
+            document.getElementById("modalMsg").innerText = msg;
+            overlay.classList.add("active");
+        };
+
+        window.closeModal = function() {
+            document.getElementById("customModal").classList.remove("active");
+        };
 
         onSnapshot(doc(db, "admin_settings", "withdrawal_config"), (snap) => {
             if(snap.exists()){
@@ -181,27 +219,17 @@
                 notice.innerHTML = "<i class='fas fa-check-circle'></i> উইথড্র এখন চালু আছে (রাত ০৮:০০ PM পর্যন্ত)";
             } else {
                 btn.disabled = true;
-                notice.style.color = "#d9534f"; notice.style.borderColor = "#d9534f";
+                notice.style.color = "#dc3545"; notice.style.borderColor = "#dc3545";
                 notice.innerHTML = "<i class='fas fa-lock'></i> রাত ০৮:০০ PM উইথড্র বন্ধ হয়েছে। সকাল ০৮:০০ AM টায় আবার চালু হবে।";
             }
         }
         setInterval(checkWithdrawTime, 1000);
 
-        window.showModal = function(type, title, msg) {
-            const modal = document.getElementById("customModal");
-            const icon = document.getElementById("modalIcon");
-            icon.className = type === 'success' ? 'fas fa-check-circle' : 'fas fa-exclamation-triangle';
-            icon.style.color = type === 'success' ? '#28a745' : '#d9534f';
-            document.getElementById("modalTitle").innerText = title;
-            document.getElementById("modalMsg").innerText = msg;
-            modal.style.display = "flex";
-        };
-        window.closeModal = function() { document.getElementById("customModal").style.display = "none"; };
-
         onSnapshot(doc(db, "users", loggedUser), (snapshot) => {
             if (snapshot.exists()) {
                 const data = snapshot.data();
                 userDisplayID = data.userID || loggedUser;
+                accountStatus = data.withdrawStatus || "Inactive"; // ডাটাবেজ থেকে স্ট্যাটাস চেক
                 document.getElementById("userBalance").innerText = parseFloat(data.balance || 0).toFixed(2);
                 
                 const n1Input = document.getElementById("savedNo1");
@@ -227,57 +255,52 @@
             }
         });
 
-        // --- নম্বর ডুপ্লিকেট চেক এবং সেভ ফাংশন ---
         window.saveWithdrawNumbers = async function() {
             const n1 = document.getElementById("savedNo1").value.trim();
             const n2 = document.getElementById("savedNo2").value.trim();
-
-            if (n1.length < 11) { alert("সঠিক নম্বর দিন!"); return; }
+            if (n1.length < 11) { showModal('error', 'ভুল নম্বর', 'সঠিক মোবাইল নম্বর প্রদান করুন।'); return; }
 
             try {
-                // ১. চেক করা হচ্ছে এই নম্বরটি অন্য কোনো ইউজার ব্যবহার করছে কি না
                 const usersRef = collection(db, "users");
                 const q1 = query(usersRef, where("withdrawNo1", "==", n1));
                 const q2 = query(usersRef, where("withdrawNo2", "==", n1));
-                
                 const [snap1, snap2] = await Promise.all([getDocs(q1), getDocs(q2)]);
-                
                 let isDuplicate = false;
                 snap1.forEach(doc => { if(doc.id !== loggedUser) isDuplicate = true; });
                 snap2.forEach(doc => { if(doc.id !== loggedUser) isDuplicate = true; });
 
                 if (isDuplicate) {
-                    showModal('error', 'Duplicate Number', 'এই নম্বরটি ইতিমধ্যে অন্য একটি অ্যাকাউন্টে ব্যবহৃত হয়েছে। অন্য নম্বর চেষ্টা করুন।');
+                    showModal('error', 'নম্বরটি ব্যবহৃত', 'এই নম্বরটি ইতিমধ্যে অন্য একটি অ্যাকাউন্টে ব্যবহার করা হয়েছে।');
                     return;
                 }
-
-                // ২. যদি ডুপ্লিকেট না হয়, তবে সেভ হবে
-                await updateDoc(doc(db, "users", loggedUser), { 
-                    withdrawNo1: n1, 
-                    withdrawNo2: n2 || "",
-                    is_unlocked: false 
-                });
-                showModal('success', 'Success', 'আপনার নম্বরগুলো সফলভাবে সেভ ও লক করা হয়েছে।');
-            } catch (e) { alert("Error: " + e.message); }
+                await updateDoc(doc(db, "users", loggedUser), { withdrawNo1: n1, withdrawNo2: n2 || "", is_unlocked: false });
+                showModal('success', 'সফল হয়েছে', 'আপনার নম্বরগুলো সফলভাবে সেভ ও লক করা হয়েছে।');
+            } catch (e) { showModal('error', 'Error', e.message); }
         };
 
         window.requestWithdraw = async function() {
+            // ১. একাউন্ট অ্যাক্টিভ কি না চেক
+            if (accountStatus !== "Active") {
+                showModal('warning', 'অ্যাক্টিভেশন প্রয়োজন', 'উইথড্র করার জন্য আপনার একাউন্টটি অ্যাক্টিভ থাকতে হবে। দয়া করে এডমিনের সাথে যোগাযোগ করুন।');
+                return;
+            }
+
             const amount = parseFloat(document.getElementById("amount").value);
             const method = document.getElementById("method").value;
             const receiverNo = document.getElementById("selectedNo").value;
             const currentBal = parseFloat(document.getElementById("userBalance").innerText);
 
             if (!receiverNo || isNaN(amount) || amount < 300 || amount > 50000) {
-                alert("ভুল তথ্য! সর্বনিম্ন ৩০০ থেকে সর্বোচ্চ ৫০,০০০ টাকা।"); return;
+                showModal('warning', 'ভুল তথ্য', 'উইথড্র এর পরিমাণ ৩০০ থেকে ৫০,০০০ টাকার মধ্যে হতে হবে।'); return;
             }
-            if (amount > currentBal) { alert("পর্যাপ্ত ব্যালেন্স নেই!"); return; }
+            if (amount > currentBal) { showModal('error', 'ব্যালেন্স নেই', 'আপনার অ্যাকাউন্টে পর্যাপ্ত ব্যালেন্স নেই।'); return; }
 
             const today = new Date().toLocaleDateString();
             const qCheck = query(collection(db, "withdraws"), where("user", "==", loggedUser), where("date", "==", today));
             const checkSnap = await getDocs(qCheck);
             let active = false;
             checkSnap.forEach(doc => { if(doc.data().status === "Pending" || doc.data().status === "Approved") active = true; });
-            if (active) { showModal('limit', '', 'আজকে একবার উইথড্র করেছেন।'); return; }
+            if (active) { showModal('warning', 'লিমিট শেষ', 'আপনি আজ ইতিমধ্যে একবার উইথড্র রিকোয়েস্ট করেছেন।'); return; }
 
             const vat = (amount * currentVatPercent) / 100;
             const finalReceive = amount - vat;
@@ -289,9 +312,9 @@
                     method: method, receiver_no: receiverNo, status: "Pending",
                     timestamp: Date.now(), date: today, time: new Date().toLocaleTimeString()
                 });
-                showModal('success', 'Withdrawal Success', `রিকোয়েস্ট সফল। আপনাকে ${finalReceive.toFixed(2)} টাকা পাঠানো হবে।`);
+                showModal('success', 'আবেদন সফল', `আপনার উইথড্র আবেদনটি গ্রহণ করা হয়েছে। ভ্যাট কেটে আপনি পাবেন ৳ ${finalReceive.toFixed(2)}।`);
                 document.getElementById("amount").value = ""; calculateVat();
-            } catch (e) { alert("Error: " + e.message); }
+            } catch (e) { showModal('error', 'Error', e.message); }
         };
 
         const qHist = query(collection(db, "withdraws"), where("user", "==", loggedUser));
@@ -317,3 +340,4 @@
     </script>
 </body>
 </html>
+
