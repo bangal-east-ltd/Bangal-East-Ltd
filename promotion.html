@@ -206,18 +206,26 @@
         }
 
         findReferrals(myUID, 1);
+
+        // --- অটোমেটিক আপডেট সিস্টেম যুক্ত করা হলো ---
+        try {
+            await db.collection("users").doc(userPhone).update({
+                active_referrals: activeCount 
+            });
+        } catch (err) {
+            console.log("Auto-update failed:", err);
+        }
+        // --- সমাপ্ত ---
+
         document.getElementById('totalTeam').innerText = `${allTeamData.length} / ৳ ${totalRoiCalc.toFixed(2)}`;
         document.getElementById('teamDeposit').innerText = "৳ " + totalActiveDeposit.toFixed(2);
         document.getElementById('activeToday').innerText = activeCount;
         filterTeam(1);
     }
 
-    // --- ক্লেইম করার আপডেট ফাংশন (উভয় ইনকামের জন্য আলাদা তারিখ চেক ও SweetAlert2) ---
     async function claimMoney(field) {
         const userRef = db.collection("users").doc(userPhone);
         const today = new Date().toLocaleDateString('en-GB'); 
-        
-        // ফিল্ড অনুযায়ী আলাদা আলাদা ট্র্যাকিং Key তৈরি করা
         const claimDateField = field === 'level_income' ? 'last_claim_date_level' : 'last_claim_date_roi';
 
         try {
@@ -226,13 +234,11 @@
             const lastClaimDate = userData[claimDateField] || ""; 
             const amount = parseFloat(userData[field] || 0);
 
-            // ১. ব্যালেন্স চেক
             if (amount <= 0) {
                 Swal.fire({ icon: 'error', title: 'দুঃখিত', text: 'আপনার ক্লেইম করার মতো কোনো ব্যালেন্স নেই!', confirmButtonColor: '#11998e' });
                 return;
             }
 
-            // ২. তারিখ চেক
             if (lastClaimDate === today) {
                 Swal.fire({ 
                     icon: 'warning', 
@@ -243,7 +249,6 @@
                 return;
             }
 
-            // ৩. কনফার্মেশন পপ-আপ
             const result = await Swal.fire({
                 title: 'ব্যালেন্স ক্লেইম',
                 text: `আপনি কি ৳${amount.toFixed(2)} টাকা মেইন ব্যালেন্সে নিতে চান?`,
@@ -256,7 +261,6 @@
             });
 
             if (result.isConfirmed) {
-                // ৪. ব্যালেন্স আপডেট এবং ফিল্ড অনুযায়ী তারিখ সেভ
                 await userRef.update({
                     balance: firebase.firestore.FieldValue.increment(amount),
                     [field]: 0,
