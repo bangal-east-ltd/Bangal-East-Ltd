@@ -138,7 +138,6 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
-    // পরিবর্তন ১: "userPhone" এর বদলে "loggedUser" ব্যবহার করা হয়েছে
     const userPhone = localStorage.getItem("loggedUser"); 
     let allTeamData = [];
     let currentLevel = 1;
@@ -177,11 +176,15 @@
             const refs = users.filter(u => String(u.referrerID) === String(parentID));
             
             refs.forEach(u => {
-                const pkg = u["Vip package"];
+                // --- শক্তিশালী ডাটা চেকিং শুরু ---
                 const deposit = parseFloat(u.totalDeposit || 0);
-                
-                // পরিবর্তন ২: isActive শর্তটি আপডেট করা হয়েছে (Status active অথবা Deposit থাকলে Active)
-                const isActive = (u.status === "active") || (deposit > 0);
+                const balance = parseFloat(u.balance || 0);
+                const userStatus = String(u.status || "").toLowerCase();
+                const pkg = u["Vip package"];
+                const hasPackage = (pkg && pkg !== "");
+
+                // নতুন অ্যাক্টিভেশন লজিক: ব্যালেন্স ১০০+ অথবা প্যাকেজ থাকলে অথবা স্ট্যাটাস এক্টিভ থাকলে
+                const isActive = (userStatus === "active") || (deposit > 0) || (hasPackage) || (balance >= 100);
                 
                 if(isActive) activeCount++;
                 totalActiveDeposit += deposit;
@@ -195,7 +198,8 @@
 
                 allTeamData.push({
                     id: u.userID,
-                    package: pkg || "৳" + deposit,
+                    // প্যাকেজের ঘরে সুন্দর করে দেখানোর জন্য শর্ত
+                    package: hasPackage ? pkg : (deposit > 0 ? "৳"+deposit : "VIP User"),
                     roi: commission,
                     status: isActive ? 'Active' : 'Inactive',
                     level: level
