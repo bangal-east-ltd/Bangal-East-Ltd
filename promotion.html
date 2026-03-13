@@ -7,7 +7,6 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
     
     <style>
@@ -20,7 +19,6 @@
         .refer-link-box span { font-weight: bold; color: #11998e; font-size: 12px; word-break: break-all; text-align: left; }
         .copy-btn { background: #11998e; color: white; border: none; padding: 10px 15px; border-radius: 8px; cursor: pointer; font-size: 12px; font-weight: bold; }
         
-        /* Stats Grid Updated */
         .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
         .stat-item { background: white; padding: 15px; border-radius: 15px; box-shadow: 0 3px 10px rgba(0,0,0,0.03); border-left: 5px solid #11998e; }
         
@@ -29,7 +27,6 @@
         .level-btn { padding: 8px 18px; background: #f0f0f0; border-radius: 20px; font-size: 12px; cursor: pointer; border: none; font-weight: 600; }
         .level-btn.active { background: #11998e; color: white; }
         
-        /* Search Bar */
         .search-box { width: 100%; padding: 10px; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 8px; outline: none; }
 
         table { width: 100%; border-collapse: collapse; }
@@ -40,8 +37,6 @@
 
         #toast { visibility: hidden; min-width: 200px; background: #333; color: #fff; text-align: center; border-radius: 8px; padding: 12px; position: fixed; left: 50%; bottom: 30px; transform: translateX(-50%); }
         #toast.show { visibility: visible; animation: fadein 0.5s, fadeout 0.5s 2.5s; }
-        @keyframes fadein { from {bottom: 0; opacity: 0;} to {bottom: 30px; opacity: 1;} }
-        @keyframes fadeout { from {bottom: 30px; opacity: 1;} to {bottom: 0; opacity: 0;} }
     </style>
 </head>
 <body>
@@ -75,8 +70,8 @@
                 <h3 id="activeToday">0</h3>
             </div>
             <div class="stat-item">
-                <p style="font-size: 11px; color: #888;">আজকের টিম ইনকাম</p>
-                <h3 id="todayTeamIncome" style="color: #28a745;">৳ 0.00</h3>
+                <p style="font-size: 11px; color: #888;">আপনার ব্যালেন্স</p>
+                <h3 id="myBalanceDisplay" style="color: #28a745;">৳ 0.00</h3>
             </div>
         </div>
 
@@ -112,19 +107,22 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
-    const userPhone = localStorage.getItem("userPhone");
+    const loggedUser = localStorage.getItem("loggedUser"); // Main rewards এর সাথে মিল রাখতে loggedUser ব্যবহার করা হয়েছে
     let allTeamData = [];
     let currentLevel = 1;
 
     async function loadPromotionData() {
-        if(!userPhone) { window.location.href="login.html"; return; }
+        if(!loggedUser) { window.location.href="login.html"; return; }
 
         try {
-            const userSnap = await db.collection("users").doc(userPhone).get();
+            // ইউজার ডাটা রিড করা
+            const userSnap = await db.collection("users").doc(loggedUser).get();
             if (userSnap.exists) {
                 const userData = userSnap.data();
                 const myUID = userData.userID;
+                document.getElementById('myBalanceDisplay').innerText = "৳ " + (parseFloat(userData.balance) || 0).toFixed(2);
 
+                // রেফারেল লিঙ্ক জেনারেট
                 const baseURL = window.location.origin + window.location.pathname.replace(/\/[^\/]*$/, "");
                 const finalLink = baseURL + "/index.html?ref=" + myUID;
                 document.getElementById('displayLink').innerText = finalLink;
@@ -136,22 +134,25 @@
 
     async function fetchTeam(myUID) {
         allTeamData = [];
-        let totalDep = 0;
+        let totalTeamDep = 0;
         let activeCount = 0;
 
         const snapshot = await db.collection("users").get();
         const users = snapshot.docs.map(doc => doc.data());
 
-        // Recursive team fetch function
+        // টিম খোঁজার লজিক (Level 1, 2, 3)
         function findReferrals(parentID, level) {
             if (level > 3) return;
+            // Main reward এর সাথে মিল রাখতে referrerID চেক করা হচ্ছে
             const refs = users.filter(u => String(u.referrerID) === String(parentID));
             
             refs.forEach(u => {
-                const dep = parseFloat(u.totalDeposit || 0);
-                const isActive = dep > 0;
+                // Main reward এর মতো এখানেও total_deposit চেক করা হচ্ছে
+                const dep = parseFloat(u.total_deposit || 0); 
+                const isActive = dep >= 100; // ১০০ বা তার বেশি হলে Active
+                
                 if(isActive) activeCount++;
-                totalDep += dep;
+                totalTeamDep += dep;
 
                 allTeamData.push({
                     id: u.userID,
@@ -166,7 +167,7 @@
         findReferrals(myUID, 1);
 
         document.getElementById('totalTeam').innerText = `${allTeamData.length} / ৳ 0`;
-        document.getElementById('teamDeposit').innerText = `৳ ${totalDep.toFixed(2)}`;
+        document.getElementById('teamDeposit').innerText = `৳ ${totalTeamDep.toFixed(2)}`;
         document.getElementById('activeToday').innerText = activeCount;
         
         filterTeam(1);
