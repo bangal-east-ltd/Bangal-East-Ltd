@@ -131,7 +131,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyCALYxA2M4BwIXq5KC3VMGsZpAFh8nL3fo",
@@ -198,10 +198,20 @@
             btn.innerText = "যাচাই করা হচ্ছে...";
 
             try {
-                // এখান থেকে userID ডাটাবেসে পাঠানো হচ্ছে
+                // ডুপ্লিকেট TrxID চেক করার লজিক
+                const q = query(collection(db, "deposits"), where("trxID", "==", trx));
+                const querySnapshot = await getDocs(q);
+                
+                if (!querySnapshot.empty) {
+                    showPopup("Error", "এই Transaction ID টি ইতিমধ্যে একবার ব্যবহার করা হয়েছে!", "fas fa-times-circle", "#dc3545");
+                    btn.disabled = false;
+                    btn.innerText = "জমা দিন";
+                    return;
+                }
+
                 await addDoc(collection(db, "deposits"), {
                     user: localStorage.getItem("loggedUser") || "Guest",
-                    userID: localStorage.getItem("target_user_id") || "Unknown", // ইউজার আইডি যুক্ত করা হয়েছে
+                    userID: localStorage.getItem("target_user_id") || "Unknown",
                     amount: localStorage.getItem("dep_amt"),
                     method: localStorage.getItem("dep_method"),
                     trxID: trx,
