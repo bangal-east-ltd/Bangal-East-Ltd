@@ -12,42 +12,23 @@
             --success: #00c851;
         }
         body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; padding: 15px; padding-bottom: 50px; }
-        
         .header { display: flex; align-items: center; gap: 15px; margin-bottom: 20px; color: #333; }
-        .stats-summary {
-            background: var(--grad);
-            color: white; padding: 25px; border-radius: 25px;
-            margin-bottom: 25px; display: grid; grid-template-columns: 1fr 1fr;
-            box-shadow: 0 10px 20px rgba(37, 117, 252, 0.3);
-        }
+        .stats-summary { background: var(--grad); color: white; padding: 25px; border-radius: 25px; margin-bottom: 25px; display: grid; grid-template-columns: 1fr 1fr; box-shadow: 0 10px 20px rgba(37, 117, 252, 0.3); }
         .stat-small { text-align: center; }
         .stat-small span { font-size: 12px; opacity: 0.9; }
         .stat-small h4 { margin: 8px 0 0; font-size: 20px; }
-
         .active-tag { font-size: 12px; padding: 6px 15px; border-radius: 20px; margin: 10px 0; display: inline-block; font-weight: bold; }
-
         .sec-title { font-size: 16px; font-weight: bold; margin: 20px 0 10px; color: #444; display: flex; align-items: center; gap: 8px; }
-
         .roadmap-container { padding: 5px; }
-        .roadmap-item {
-            background: white; border-radius: 18px; padding: 15px;
-            margin-bottom: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.03);
-            display: flex; align-items: center; gap: 12px; border-left: 5px solid #2575fc;
-        }
+        .roadmap-item { background: white; border-radius: 18px; padding: 15px; margin-bottom: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.03); display: flex; align-items: center; gap: 12px; border-left: 5px solid #2575fc; }
         .icon-box { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
         .content { flex-grow: 1; }
         .content h3 { margin: 0; font-size: 13px; color: #333; }
         .content p { margin: 2px 0 0; font-size: 11px; color: #666; }
-        
         .prog-bar-bg { width: 100%; height: 6px; background: #eee; border-radius: 10px; margin-top: 8px; overflow: hidden; }
         .prog-fill { height: 100%; background: var(--grad); border-radius: 10px; transition: 0.5s; }
-
-        .claim-btn {
-            background: var(--success); color: white; border: none; padding: 8px 15px; border-radius: 8px;
-            font-size: 11px; font-weight: bold; cursor: pointer;
-        }
+        .claim-btn { background: var(--success); color: white; border: none; padding: 8px 15px; border-radius: 8px; font-size: 11px; font-weight: bold; cursor: pointer; }
         .claim-btn:disabled { background: #cbd5e0 !important; cursor: not-allowed; }
-
         .gift-box { background: white; padding: 15px; border-radius: 18px; display: flex; gap: 10px; margin-bottom: 20px; }
         .gift-box input { flex-grow: 1; border: 1px solid #ddd; padding: 10px; border-radius: 8px; outline: none; }
         .amt-display { font-weight: bold; color: #2575fc; font-size: 14px; margin-right: 5px; }
@@ -61,14 +42,8 @@
     </div>
 
     <div class="stats-summary">
-        <div class="stat-small">
-            <span>মূল ব্যালেন্স</span>
-            <h4 id="mainBalance">৳ 0.00</h4>
-        </div>
-        <div class="stat-small">
-            <span>বর্তমান র‍্যাঙ্ক</span>
-            <h4 id="userRank">General</h4>
-        </div>
+        <div class="stat-small"><span>মূল ব্যালেন্স</span><h4 id="mainBalance">৳ 0.00</h4></div>
+        <div class="stat-small"><span>বর্তমান র‍্যাঙ্ক</span><h4 id="userRank">General</h4></div>
     </div>
 
     <div id="activeStatus" class="active-tag">Checking...</div>
@@ -92,12 +67,6 @@
         </div>
     </div>
 
-    <div class="sec-title"><i class="fas fa-key"></i> Gift Code Claim</div>
-    <div class="gift-box">
-        <input type="text" id="giftInput" placeholder="Enter Gift Code">
-        <button class="claim-btn" style="background: var(--grad);" onclick="claimGift()">Submit</button>
-    </div>
-
     <div class="sec-title"><i class="fas fa-users-cog"></i> Referral Target Rewards</div>
     <div class="roadmap-container" id="refTargetList"></div>
 
@@ -109,7 +78,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        import { getFirestore, doc, onSnapshot, updateDoc, increment, getDoc, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+        import { getFirestore, doc, onSnapshot, updateDoc, increment, getDoc, collection, getDocs, query, where } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyCALYxA2M4BwIXq5KC3VMGsZpAFh8nL3fo",
@@ -124,136 +93,113 @@
         const db = getFirestore(app);
         const loggedUser = localStorage.getItem("loggedUser");
 
-        let refTargets = [];
-        let depRewards = [];
+        let refTargets = [], depRewards = [], betRewards = [];
 
-        // ১. এডমিন ডাটা লোড করার সংশোধিত লজিক
         async function fetchAdminRewards() {
             try {
-                // Referral Rewards
                 const refSnap = await getDoc(doc(db, "admin_settings", "referral_rewards"));
-                if (refSnap.exists()) {
-                    const data = refSnap.data();
-                    refTargets = Object.keys(data)
-                        .map(key => ({ t: parseInt(key), b: parseFloat(data[key]) || 0 }))
-                        .sort((a,b) => a.t - b.t);
-                }
-
-                // Deposit Targets
+                if (refSnap.exists()) refTargets = Object.entries(refSnap.data()).map(([k,v])=>({t:parseInt(k), b:v})).sort((a,b)=>a.t-b.t);
+                
                 const depSnap = await getDoc(doc(db, "admin_settings", "deposit_targets"));
-                if (depSnap.exists()) {
-                    const data = depSnap.data();
-                    depRewards = Object.keys(data)
-                        .map(key => ({ t: parseInt(key), b: parseFloat(data[key]) || 0 }))
-                        .sort((a,b) => a.t - b.t);
-                }
-            } catch (e) { console.error("Error fetching rewards:", e); }
+                if (depSnap.exists()) depRewards = Object.entries(depSnap.data()).map(([k,v])=>({t:parseInt(k), b:v})).sort((a,b)=>a.t-b.t);
+                
+                const betSnap = await getDoc(doc(db, "admin_settings", "betting_rewards"));
+                if (betSnap.exists()) betRewards = Object.entries(betSnap.data()).map(([k,v])=>({t:parseInt(k), b:v})).sort((a,b)=>a.t-b.t);
+            } catch (e) { console.error(e); }
         }
 
-        async function getActiveReferralCount(myUID) {
-            const snap = await getDocs(collection(db, "users"));
-            const users = snap.docs.map(d => d.data());
-            let activeCount = 0;
-            const myRefs = users.filter(u => String(u.referrerID) === String(myUID));
-            myRefs.forEach(u => {
-                const dep = parseFloat(u.total_deposit || 0);
-                const bal = parseFloat(u.balance || 0);
-                if (dep >= 100 || bal >= 100) activeCount++;
-            });
-            return activeCount;
+        async function getDailyBetTotal(userID) {
+            const today = new Date().toISOString().split('T')[0];
+            const betCols = ["head_tail_bets", "big_small_bets", "red_green_bets"];
+            let total = 0;
+            for(let col of betCols) {
+                const q = query(collection(db, col), where("userID", "==", userID), where("date", "==", today));
+                const snap = await getDocs(q);
+                snap.forEach(doc => total += (parseFloat(doc.data().amount) || 0));
+            }
+            return total;
+        }
+
+        async function getActiveTeamCount(userID) {
+            const q = query(collection(db, "users"), where("referrerID", "==", userID));
+            const snap = await getDocs(q);
+            let count = 0;
+            snap.forEach(d => { if((d.data().total_deposit || 0) >= 100) count++; });
+            return count;
         }
 
         async function renderDynamicLists(userData) {
-            const currentDeposit = parseFloat(userData.total_deposit || 0);
-            const balance = parseFloat(userData.balance || 0);
-            const isActive = (currentDeposit >= 100 || balance >= 100);
-            const activeRefs = await getActiveReferralCount(userData.userID);
+            const totalDep = parseFloat(userData.total_deposit || 0);
+            const teamCount = await getActiveTeamCount(userData.userID);
+            const dailyBet = await getDailyBetTotal(userData.userID);
+            const today = new Date().toISOString().split('T')[0];
 
-            document.getElementById('activeStatus').innerHTML = isActive ? 
-                `<span style="color:white; background:green; padding:5px 15px; border-radius:15px;">● Active Member</span>` : 
-                `<span style="color:white; background:red; padding:5px 15px; border-radius:15px;">● Not Active</span>`;
-
-            document.getElementById('referAmt').innerText = "৳ " + (userData.refer_income || 0);
-            document.getElementById('levelAmt').innerText = "৳ " + (userData.level_income || 0);
-            document.getElementById('roiAmt').innerText = "৳ " + (userData.daily_roi || 0);
-
-            // ২. Referral Rewards Render (সংশোধিত প্রসেস লজিক)
+            // Referral List
             let rHtml = '';
             refTargets.forEach(item => {
                 const claimed = (userData.claimed_ref_target || []).includes(item.t);
-                const progress = Math.min((activeRefs / item.t) * 100, 100);
-                rHtml += `
-                <div class="roadmap-item" style="border-left-color: #6a11cb;">
-                    <div class="icon-box" style="background:#f3e5f5; color:#6a11cb;"><i class="fas fa-user-check"></i></div>
-                    <div class="content">
-                        <h3>${item.t} Active Referrals</h3>
-                        <p>Bonus: ৳${item.b} (Progress: ${activeRefs}/${item.t})</p>
-                        <div class="prog-bar-bg"><div class="prog-fill" style="width: ${progress}%"></div></div>
-                    </div>
-                    <button class="claim-btn" ${(!isActive || claimed || activeRefs < item.t) ? 'disabled' : ''} 
-                    onclick="claimTargetBonus('ref', ${item.t}, ${item.b})">${claimed ? 'Done' : 'Claim'}</button>
-                </div>`;
+                const progress = Math.min((teamCount / item.t) * 100, 100);
+                rHtml += `<div class="roadmap-item"><div class="content"><h3>${item.t} Active Team</h3><p>Bonus: ৳${item.b} (${teamCount}/${item.t})</p><div class="prog-bar-bg"><div class="prog-fill" style="width:${progress}%"></div></div></div><button class="claim-btn" ${(claimed || teamCount < item.t)?'disabled':''} onclick="claimTargetBonus('ref', ${item.t}, ${item.b})">${claimed?'Done':'Claim'}</button></div>`;
             });
             document.getElementById('refTargetList').innerHTML = rHtml;
 
-            // ৩. Deposit Rewards Render (সংশোধিত প্রসেস লজিক)
+            // Deposit List
             let dHtml = '';
             depRewards.forEach(item => {
                 const claimed = (userData.claimed_dep || []).includes(item.t);
-                const progress = Math.min((currentDeposit / item.t) * 100, 100);
-                dHtml += `
-                <div class="roadmap-item" style="border-left-color: #2196f3;">
-                    <div class="icon-box" style="background:#e3f2fd; color:#2196f3;"><i class="fas fa-wallet"></i></div>
-                    <div class="content">
-                        <h3>Deposit ৳${item.t} Reward</h3>
-                        <p>Bonus: ৳${item.b} (Progress: ${currentDeposit}/${item.t})</p>
-                        <div class="prog-bar-bg"><div class="prog-fill" style="width: ${progress}%"></div></div>
-                    </div>
-                    <button class="claim-btn" ${(!isActive || claimed || currentDeposit < item.t) ? 'disabled' : ''} 
-                    onclick="claimTargetBonus('dep', ${item.t}, ${item.b})">${claimed ? 'Done' : 'Claim'}</button>
-                </div>`;
+                const progress = Math.min((totalDep / item.t) * 100, 100);
+                dHtml += `<div class="roadmap-item"><div class="content"><h3>Deposit ৳${item.t}</h3><p>Bonus: ৳${item.b} (${totalDep}/${item.t})</p><div class="prog-bar-bg"><div class="prog-fill" style="width:${progress}%"></div></div></div><button class="claim-btn" ${(claimed || totalDep < item.t)?'disabled':''} onclick="claimTargetBonus('dep', ${item.t}, ${item.b})">${claimed?'Done':'Claim'}</button></div>`;
             });
             document.getElementById('depositList').innerHTML = dHtml;
+
+            // Betting List (Daily Reset)
+            let bHtml = '';
+            const betData = userData.daily_bet_claim || {};
+            const lastDate = betData.date || "";
+            const claimedList = lastDate === today ? (betData.list || []) : [];
+
+            betRewards.forEach(item => {
+                const claimed = claimedList.includes(item.t);
+                const progress = Math.min((dailyBet / item.t) * 100, 100);
+                bHtml += `<div class="roadmap-item"><div class="content"><h3>Bet ৳${item.t} Daily</h3><p>Bonus: ৳${item.b} (${dailyBet}/${item.t})</p><div class="prog-bar-bg"><div class="prog-fill" style="width:${progress}%"></div></div></div><button class="claim-btn" ${(claimed || dailyBet < item.t)?'disabled':''} onclick="claimBetBonus(${item.t}, ${item.b})">${claimed?'Done':'Claim'}</button></div>`;
+            });
+            document.getElementById('bettingList').innerHTML = bHtml;
         }
+
+        window.claimTargetBonus = async (type, target, amount) => {
+            const ref = doc(db, "users", loggedUser);
+            const d = (await getDoc(ref)).data();
+            let field = type === 'ref' ? 'claimed_ref_target' : 'claimed_dep';
+            if((d[field] || []).includes(target)) return;
+            await updateDoc(ref, { balance: increment(amount), [field]: Array.from(new Set([...(d[field]||[]), target])) });
+            alert("Reward Claimed!");
+        };
+
+        window.claimBetBonus = async (target, amount) => {
+            const today = new Date().toISOString().split('T')[0];
+            const ref = doc(db, "users", loggedUser);
+            const d = (await getDoc(ref)).data();
+            let betData = d.daily_bet_claim || { date: today, list: [] };
+            if(betData.date !== today) betData = { date: today, list: [] };
+            if(betData.list.includes(target)) return;
+            betData.list.push(target);
+            await updateDoc(ref, { balance: increment(amount), daily_bet_claim: betData });
+            alert("Daily Bet Bonus Claimed!");
+        };
 
         function sync() {
             if(!loggedUser) return;
             onSnapshot(doc(db, "users", loggedUser), (snap) => {
                 if (snap.exists()) {
                     const d = snap.data();
-                    document.getElementById('mainBalance').innerText = "৳ " + (parseFloat(d.balance) || 0).toFixed(2);
+                    document.getElementById('mainBalance').innerText = "৳ " + (d.balance || 0).toFixed(2);
                     document.getElementById('userRank').innerText = d.rank || "General";
                     renderDynamicLists(d);
                 }
             });
         }
 
-        window.claimFieldBonus = async (field) => {
-            const ref = doc(db, "users", loggedUser);
-            const snap = await getDoc(ref);
-            const amount = parseFloat(snap.data()[field]) || 0;
-            if(amount > 0) { 
-                await updateDoc(ref, { balance: increment(amount), [field]: 0 }); 
-                alert("Claimed Successfully!"); 
-            }
-        };
-
-        window.claimTargetBonus = async (type, target, amount) => {
-            const ref = doc(db, "users", loggedUser);
-            const snap = await getDoc(ref);
-            const data = snap.data();
-            let updateObj = { balance: increment(amount) };
-            if (type === 'ref') updateObj.claimed_ref_target = Array.from(new Set([...(data.claimed_ref_target || []), target]));
-            if (type === 'dep') updateObj.claimed_dep = Array.from(new Set([...(data.claimed_dep || []), target]));
-            await updateDoc(ref, updateObj);
-            alert("Reward Claimed!");
-        };
-
-        window.onload = async () => {
-            await fetchAdminRewards();
-            sync();
-        };
+        window.onload = async () => { await fetchAdminRewards(); sync(); };
     </script>
 </body>
 </html>
-
