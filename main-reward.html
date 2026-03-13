@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Main Rewards - Bangal East</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root {
+            --grad: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+            --bg: #f0f2f5;
+            --success: #00c851;
+            --danger: #ff4444;
+        }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; padding: 15px; }
+        .header { display: flex; align-items: center; gap: 15px; margin-bottom: 20px; }
+        
+        /* মেম্বার স্ট্যাটাস কার্ড */
+        .status-card {
+            background: white; padding: 10px 15px; border-radius: 12px;
+            margin-bottom: 15px; display: flex; justify-content: space-between;
+            align-items: center; font-size: 13px; font-weight: bold;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+        .active-dot { color: var(--success); }
+        .inactive-dot { color: var(--danger); }
+
+        .stats-summary { 
+            background: var(--grad); color: white; padding: 25px; 
+            border-radius: 20px; margin-bottom: 25px; display: grid; 
+            grid-template-columns: 1fr 1fr; box-shadow: 0 10px 20px rgba(37, 117, 252, 0.2); 
+        }
+        .stat-box { text-align: center; }
+        .stat-box h4 { margin: 8px 0 0; font-size: 18px; }
+
+        .reward-card {
+            background: white; border-radius: 18px; padding: 15px;
+            margin-bottom: 12px; display: flex; align-items: center; gap: 15px;
+            border-left: 5px solid #2575fc;
+        }
+        .content { flex-grow: 1; }
+        .content h3 { margin: 0; font-size: 14px; }
+        .amount-side { text-align: right; }
+        .amt-text { display: block; font-weight: bold; color: #2575fc; font-size: 15px; }
+        
+        .claim-btn {
+            background: var(--success); color: white; border: none;
+            padding: 6px 15px; border-radius: 8px; font-size: 12px;
+            font-weight: bold; cursor: pointer; margin-top: 5px;
+        }
+        .claim-btn:disabled { background: #cbd5e0; cursor: not-allowed; }
+        
+        /* এরর মেসেজ যখন মেম্বার একটিভ না */
+        .lock-overlay {
+            font-size: 11px; color: var(--danger); margin-top: 4px; display: block;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <i class="fas fa-arrow-left" onclick="history.back()"></i>
+        <h2>Main Rewards</h2>
+    </div>
+
+    <div id="memberStatus" class="status-card">
+        <span>Account Status: Loading...</span>
+    </div>
+
+    <div class="stats-summary">
+        <div class="stat-box"><span>মূল ব্যালেন্স</span><h4 id="mainBalance">৳ 0.00</h4></div>
+        <div class="stat-box"><span>Active Team</span><h4 id="activeTeamCount">0</h4></div>
+    </div>
+
+    <div class="reward-container">
+        <div class="reward-card">
+            <div class="content">
+                <h3>Daily Referral Bonus</h3>
+                <p id="refNote" style="font-size: 10px; color: #666;">Admin set: ৳0/per ref</p>
+            </div>
+            <div class="amount-side">
+                <span class="amt-text" id="referAmt">৳ 0</span>
+                <button class="claim-btn" id="refBtn" onclick="claimFieldBonus('refer_income')">Claim</button>
+            </div>
+        </div>
+
+        <div class="reward-card" style="border-left-color: #9b59b6;">
+            <div class="content">
+                <h3>Level Income (L1, L2, L3)</h3>
+                <p id="levelNote" style="font-size: 10px; color: #666;">Team based % income</p>
+            </div>
+            <div class="amount-side">
+                <span class="amt-text" id="levelAmt">৳ 0</span>
+                <button class="claim-btn" id="levelBtn" onclick="claimFieldBonus('level_income')">Claim</button>
+            </div>
+        </div>
+
+        <div class="reward-card" style="border-left-color: #2ecc71;">
+            <div class="content">
+                <h3>Daily ROI Income</h3>
+                <p id="roiNote" style="font-size: 10px; color: #666;">Based on your deposit</p>
+            </div>
+            <div class="amount-side">
+                <span class="amt-text" id="roiAmt">৳ 0</span>
+                <button class="claim-btn" id="roiBtn" onclick="claimFieldBonus('daily_roi')">Claim</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getFirestore, doc, onSnapshot, updateDoc, increment, getDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCALYxA2M4BwIXq5KC3VMGsZpAFh8nL3fo",
+            authDomain: "bengal-east-company-limited.firebaseapp.com",
+            projectId: "bengal-east-company-limited",
+            storageBucket: "bengal-east-company-limited.firebasestorage.app",
+            messagingSenderId: "653223286483",
+            appId: "1:653223286483:web:8e4ed0782ae807f8f02626"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const loggedUser = localStorage.getItem("loggedUser");
+
+        async function getActiveTeam(uid) {
+            const q = query(collection(db, "users"), where("referrerID", "==", uid));
+            const snap = await getDocs(q);
+            let activeCount = 0;
+            snap.forEach(d => {
+                if((parseFloat(d.data().total_deposit) || 0) >= 100) activeCount++;
+            });
+            return activeCount;
+        }
+
+        function sync() {
+            if(!loggedUser) return;
+
+            // অ্যাডমিন সেটিংস ফেচ করা
+            onSnapshot(doc(db, "admin_settings", "rewards_control"), (adminSnap) => {
+                if(adminSnap.exists()){
+                    const conf = adminSnap.data();
+                    document.getElementById('refNote').innerText = `Admin set: ৳${conf.refer_bonus || 0} per Active Member`;
+                    document.getElementById('levelNote').innerText = `L1: ${conf.l1||0}%, L2: ${conf.l2||0}%, L3: ${conf.l3||0}%`;
+                    document.getElementById('roiNote').innerText = `Daily ROI: ${conf.roi_percent || 0}%`;
+                }
+            });
+
+            // ইউজার ডাটা এবং একটিভ স্ট্যাটাস চেক
+            onSnapshot(doc(db, "users", loggedUser), async (snap) => {
+                if (snap.exists()) {
+                    const d = snap.data();
+                    const totalDep = parseFloat(d.total_deposit) || 0;
+                    const isActive = totalDep >= 100;
+
+                    // UI আপডেট
+                    document.getElementById('mainBalance').innerText = "৳ " + (parseFloat(d.balance) || 0).toFixed(2);
+                    document.getElementById('referAmt').innerText = "৳ " + (d.refer_income || 0);
+                    document.getElementById('levelAmt').innerText = "৳ " + (d.level_income || 0);
+                    document.getElementById('roiAmt').innerText = "৳ " + (d.daily_roi || 0);
+                    
+                    const activeCount = await getActiveTeam(loggedUser);
+                    document.getElementById('activeTeamCount').innerText = activeCount;
+
+                    const statusDiv = document.getElementById('memberStatus');
+                    if(isActive) {
+                        statusDiv.innerHTML = `<span>Status: <span class="active-dot">● Active</span></span> <span>Deposit: ৳${totalDep}</span>`;
+                        toggleButtons(false);
+                    } else {
+                        statusDiv.innerHTML = `<span>Status: <span class="inactive-dot">● Inactive</span></span> <span style="color:red">Need ৳100 Deposit</span>`;
+                        toggleButtons(true, "ডিপোজিট করুন");
+                    }
+                }
+            });
+        }
+
+        function toggleButtons(disabled, msg = "") {
+            const btns = ['refBtn', 'levelBtn', 'roiBtn'];
+            btns.forEach(id => {
+                document.getElementById(id).disabled = disabled;
+                if(disabled) document.getElementById(id).innerText = "Locked";
+                else document.getElementById(id).innerText = "Claim";
+            });
+        }
+
+        window.claimFieldBonus = async (field) => {
+            const btn = event.target;
+            btn.disabled = true;
+            try {
+                const ref = doc(db, "users", loggedUser);
+                const snap = await getDoc(ref);
+                const amount = parseFloat(snap.data()[field]) || 0;
+                
+                if(amount > 0) { 
+                    await updateDoc(ref, { balance: increment(amount), [field]: 0 }); 
+                    alert("Claimed Successfully!"); 
+                } else {
+                    alert("কোনো ব্যালেন্স নেই!");
+                }
+            } catch (e) { alert("Error!"); }
+            btn.disabled = false;
+        };
+
+        window.onload = sync;
+    </script>
+</body>
+</html>
+
