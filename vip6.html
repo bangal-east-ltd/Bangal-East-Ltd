@@ -10,53 +10,43 @@
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
         :root { --vip-gold: linear-gradient(135deg, #d4af37 0%, #f9f295 50%, #b8860b 100%); --dark-bg: #1a1a1a; }
-        body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; padding: 20px; margin: 0; }
+        body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; padding: 10px; margin: 0; }
         .master-wrapper { max-width: 1000px; margin: 0 auto; }
-        
-        .admin-section { background: white; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); overflow: hidden; margin-bottom: 40px; border: 1px solid #ddd; }
-        .admin-header { background: var(--dark-bg); color: #f9f295; padding: 20px; text-align: center; border-bottom: 4px solid #d4af37; }
-        
-        .config-card { padding: 12px 20px; border-bottom: 1px solid #eee; display: grid; grid-template-columns: 1.5fr 1fr 1fr 1fr; gap: 15px; align-items: center; }
-        .config-card:nth-child(even) { background: #fafafa; }
-        input, select { padding: 10px; border: 1px solid #ddd; border-radius: 8px; width: 100%; font-size: 13px; }
-        
-        .vip6-btn { background: var(--vip-gold); color: #000; border: none; padding: 15px; border-radius: 12px; font-weight: bold; cursor: pointer; width: calc(100% - 40px); margin: 20px; text-transform: uppercase; font-size: 15px; display: block; }
-        .row-num { background: #333; color: #fff; width: 22px; height: 22px; display: inline-flex; align-items: center; justify-content: center; border-radius: 50%; font-size: 10px; margin-right: 5px; }
-        .label-text { font-size: 11px; color: #888; font-weight: bold; display: block; margin-bottom: 4px; }
-        h2 { margin: 0; font-size: 22px; }
+        .admin-section { background: white; border-radius: 15px; box-shadow: 0 5px 25px rgba(0,0,0,0.1); overflow: hidden; margin-bottom: 30px; border: 1px solid #ddd; }
+        .admin-header { background: var(--dark-bg); color: #f9f295; padding: 15px; text-align: center; border-bottom: 4px solid #d4af37; }
+        .config-card { padding: 10px 15px; border-bottom: 1px solid #eee; display: grid; grid-template-columns: 1.5fr 1fr 1fr 1fr; gap: 10px; align-items: center; }
+        @media (max-width: 650px) { .config-card { grid-template-columns: 1fr 1fr; } }
+        input, select { padding: 8px; border: 1px solid #ddd; border-radius: 6px; width: 100%; font-size: 13px; outline: none; }
+        .vip6-btn { background: var(--vip-gold); color: #000; border: none; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer; width: calc(100% - 30px); margin: 15px; text-transform: uppercase; display: block; }
+        .row-num { background: #333; color: #fff; width: 20px; height: 20px; display: inline-flex; align-items: center; justify-content: center; border-radius: 50%; font-size: 10px; margin-right: 5px; }
+        .label-text { font-size: 11px; color: #888; font-weight: bold; display: block; margin-bottom: 3px; }
+        h2 { margin: 0; font-size: 20px; }
     </style>
 </head>
 <body>
 
 <div class="master-wrapper">
-
     <div class="admin-section">
-        <div class="admin-header">
-            <h2><i class="fas fa-dice"></i> Daily Betting Admin (10 Rows)</h2>
-        </div>
+        <div class="admin-header"><h2><i class="fas fa-dice"></i> Daily Betting Rewards</h2></div>
         <div id="betConfigWrapper"><p style="text-align: center; padding: 20px;">লোড হচ্ছে...</p></div>
-        <button class="vip6-btn" onclick="saveData('betting_config', 'betConfigWrapper')"><i class="fas fa-save"></i> Save Daily Betting Rewards</button>
+        <button class="vip6-btn" onclick="saveData('betting_config', 'betConfigWrapper')"><i class="fas fa-save"></i> Save Betting Rewards</button>
     </div>
 
     <div class="admin-section">
-        <div class="admin-header">
-            <h2><i class="fas fa-users"></i> Referral Admin (10 Rows)</h2>
-        </div>
+        <div class="admin-header"><h2><i class="fas fa-users"></i> Referral Rewards</h2></div>
         <div id="refConfigWrapper"><p style="text-align: center; padding: 20px;">লোড হচ্ছে...</p></div>
         <button class="vip6-btn" onclick="saveData('referral_config', 'refConfigWrapper')"><i class="fas fa-save"></i> Save Referral Rewards</button>
     </div>
 
     <div class="admin-section">
-        <div class="admin-header">
-            <h2><i class="fas fa-wallet"></i> Deposit Admin (10 Rows)</h2>
-        </div>
+        <div class="admin-header"><h2><i class="fas fa-wallet"></i> Deposit Rewards</h2></div>
         <div id="depConfigWrapper"><p style="text-align: center; padding: 20px;">লোড হচ্ছে...</p></div>
         <button class="vip6-btn" onclick="saveData('deposit_config', 'depConfigWrapper')"><i class="fas fa-save"></i> Save Deposit Rewards</button>
     </div>
-
 </div>
 
 <script>
+    // আপনার সঠিক Firebase কনফিগ এখানে নিশ্চিত করুন
     const firebaseConfig = {
         apiKey: "AIzaSyCALYxA2M4BwIXq5KC3VMGsZpAFh8nL3fo",
         authDomain: "bengal-east-company-limited.firebaseapp.com",
@@ -69,20 +59,31 @@
     if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
     const db = firebase.firestore();
 
-    // কমন ফাংশন ডাটা লোড করার জন্য
     async function loadSection(docName, wrapperId, idPrefix) {
         const wrapper = document.getElementById(wrapperId);
         try {
             const doc = await db.collection("settings").doc(docName).get();
-            let targets = doc.exists ? doc.data().targets : [];
+            let targets = [];
             
-            while(targets.length < 10) {
-                targets.push({ id: idPrefix + "_" + (targets.length + 1), goal: 0, bonus: 0, title: "New Level", status: "inactive" });
+            // ডাটা থাকলে নিবে, না থাকলে খালি অ্যারে
+            if (doc.exists && doc.data().targets) {
+                targets = doc.data().targets;
             }
 
-            wrapper.innerHTML = "";
+            // যদি ১০টার কম থাকে তবে ১০টা পূর্ণ করবে
+            while(targets.length < 10) {
+                targets.push({ 
+                    id: idPrefix + "_" + Date.now() + targets.length, 
+                    goal: 0, 
+                    bonus: 0, 
+                    title: "New Level", 
+                    status: "inactive" 
+                });
+            }
+
+            let htmlContent = "";
             targets.slice(0, 10).forEach((t, i) => {
-                wrapper.innerHTML += `
+                htmlContent += `
                     <div class="config-card" data-id="${t.id}">
                         <div><span class="label-text"><span class="row-num">${i+1}</span> Title</span><input type="text" value="${t.title}" class="inp-title"></div>
                         <div><span class="label-text">Target</span><input type="number" value="${t.goal}" class="inp-goal"></div>
@@ -95,32 +96,37 @@
                         </div>
                     </div>`;
             });
-        } catch (e) { console.error(e); }
+            wrapper.innerHTML = htmlContent;
+        } catch (error) {
+            console.error("Error loading " + docName, error);
+            wrapper.innerHTML = `<p style="color:red; text-align:center;">লোড করতে ব্যর্থ! ইন্টারনেট চেক করুন।</p>`;
+        }
     }
 
-    // কমন ফাংশন ডাটা সেভ করার জন্য
     async function saveData(docName, wrapperId) {
         const cards = document.querySelectorAll(`#${wrapperId} .config-card`);
         const updatedTargets = Array.from(cards).map(card => ({
-            id: card.getAttribute("data-id"),
+            id: card.getAttribute("data-id") || ("id_" + Math.random()),
             title: card.querySelector(".inp-title").value,
-            goal: parseInt(card.querySelector(".inp-goal").value) || 0,
-            bonus: parseInt(card.querySelector(".inp-bonus").value) || 0,
+            goal: Number(card.querySelector(".inp-goal").value) || 0,
+            bonus: Number(card.querySelector(".inp-bonus").value) || 0,
             status: card.querySelector(".inp-status").value
         }));
 
         try {
-            await db.collection("settings").doc(docName).set({ targets: updatedTargets });
-            Swal.fire("সফল!", docName + " আপডেট হয়েছে!", "success");
-        } catch (e) { Swal.fire("ত্রুটি", "সেভ করা যায়নি", "error"); }
+            await db.collection("settings").doc(docName).set({ targets: updatedTargets }, { merge: true });
+            Swal.fire({ icon: 'success', title: 'সফল!', text: 'ডাটা আপডেট হয়েছে।', timer: 1500 });
+        } catch (e) {
+            Swal.fire('ত্রুটি!', 'ডাটা সেভ হয়নি। ' + e.message, 'error');
+        }
     }
 
-    // পেজ লোড হলে সব সেকশন একসাথে লোড হবে
-    window.onload = () => {
+    // পেজ এবং ফায়ারবেস পুরোপুরি রেডি হলে কাজ শুরু হবে
+    document.addEventListener('DOMContentLoaded', () => {
         loadSection('betting_config', 'betConfigWrapper', 'bet');
         loadSection('referral_config', 'refConfigWrapper', 'ref');
         loadSection('deposit_config', 'depConfigWrapper', 'dep');
-    };
+    });
 </script>
 
 </body>
