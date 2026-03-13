@@ -37,6 +37,8 @@
 
         #toast { visibility: hidden; min-width: 200px; background: #333; color: #fff; text-align: center; border-radius: 8px; padding: 12px; position: fixed; left: 50%; bottom: 30px; transform: translateX(-50%); }
         #toast.show { visibility: visible; animation: fadein 0.5s, fadeout 0.5s 2.5s; }
+        
+        .rewards-link { display: block; background: #2575fc; color: white; text-decoration: none; padding: 12px; text-align: center; border-radius: 10px; margin-top: 15px; font-weight: bold; font-size: 14px; }
     </style>
 </head>
 <body>
@@ -48,7 +50,11 @@
     </div>
 
     <div class="container">
-        <div class="refer-card">
+        <a href="main_rewards.html" class="rewards-link">
+            <i class="fas fa-gift"></i> ইনকাম ক্লেইম করুন (Main Rewards)
+        </a>
+
+        <div class="refer-card" style="margin-top: 20px;">
             <h4>আপনার রেফারেল লিঙ্ক</h4>
             <div class="refer-link-box">
                 <span id="displayLink">লিঙ্ক তৈরি হচ্ছে...</span>
@@ -115,60 +121,67 @@
         if(!loggedUser) { window.location.href="login.html"; return; }
 
         try {
-            const userSnap = await db.collection("users").doc(loggedUser).get();
-            if (userSnap.exists) {
-                const userData = userSnap.data();
-                const myUID = userData.userID;
-                document.getElementById('myBalanceDisplay').innerText = "৳ " + (parseFloat(userData.balance) || 0).toFixed(2);
+            db.collection("users").doc(loggedUser).onSnapshot((doc) => {
+                if (doc.exists) {
+                    const userData = doc.data();
+                    const myUID = userData.userID;
+                    
+                    // মূল ব্যালেন্স আপডেট
+                    document.getElementById('myBalanceDisplay').innerText = "৳ " + (parseFloat(userData.balance) || 0).toFixed(2);
 
-                const baseURL = window.location.origin + window.location.pathname.replace(/\/[^\/]*$/, "");
-                const finalLink = baseURL + "/index.html?ref=" + myUID;
-                document.getElementById('displayLink').innerText = finalLink;
-                
-                fetchTeam(myUID);
-            }
+                    // রেফার লিঙ্ক তৈরি
+                    const baseURL = window.location.origin + window.location.pathname.replace(/\/[^\/]*$/, "");
+                    document.getElementById('displayLink').innerText = baseURL + "/index.html?ref=" + myUID;
+                    
+                    // টিম ডাটা ফেচ
+                    fetchTeam(myUID);
+                }
+            });
         } catch (e) { console.error(e); }
     }
 
     async function fetchTeam(myUID) {
-        allTeamData = [];
-        let totalTeamDep = 0;
-        let activeCount = 0;
-
-        const snapshot = await db.collection("users").get();
-        const users = snapshot.docs.map(doc => doc.data());
-
-        function findReferrals(parentID, level) {
-            if (level > 3) return;
-            const refs = users.filter(u => String(u.referrerID) === String(parentID));
+        try {
+            const snapshot = await db.collection("users").get();
+            const users = snapshot.docs.map(doc => doc.data());
             
-            refs.forEach(u => {
-                // এখানে লজিক পরিবর্তন করা হয়েছে: balance ১০০ বা তার বেশি হলে Active
-                const currentBal = parseFloat(u.balance || 0); 
-                const dep = parseFloat(u.total_deposit || 0); // টেবিল এ দেখানোর জন্য ডিপোজিট ডাটা রাখা হয়েছে
-                
-                const isActive = currentBal >= 100; // ব্যালেন্স চেক
-                
-                if(isActive) activeCount++;
-                totalTeamDep += dep;
+            allTeamData = [];
+            let totalTeamDep = 0;
+            let activeCount = 0;
+            let totalComm = 0;
 
-                allTeamData.push({
-                    id: u.userID,
-                    dep: dep,
-                    status: isActive ? 'Active' : 'Inactive',
-                    level: level
+            function findReferrals(parentID, level) {
+                if (level > 3) return;
+                const refs = users.filter(u => String(u.referrerID) === String(parentID));
+                
+                refs.forEach(u => {
+                    const currentBal = parseFloat(u.balance || 0); 
+                    const dep = parseFloat(u.total_deposit || 0);
+                    
+                    // মেম্বার ব্যালেন্স ১০০ বা তার বেশি হলে Active
+                    const isActive = currentBal >= 100; 
+                    
+                    if(isActive) activeCount++;
+                    totalTeamDep += dep;
+
+                    allTeamData.push({
+                        id: u.userID,
+                        dep: dep,
+                        status: isActive ? 'Active' : 'Inactive',
+                        level: level
+                    });
+                    findReferrals(u.userID, level + 1);
                 });
-                findReferrals(u.userID, level + 1);
-            });
-        }
+            }
 
-        findReferrals(myUID, 1);
+            findReferrals(myUID, 1);
 
-        document.getElementById('totalTeam').innerText = `${allTeamData.length} / ৳ 0`;
-        document.getElementById('teamDeposit').innerText = `৳ ${totalTeamDep.toFixed(2)}`;
-        document.getElementById('activeToday').innerText = activeCount;
-        
-        filterTeam(1);
+            document.getElementById('totalTeam').innerText = `${allTeamData.length} / ৳ 0`;
+            document.getElementById('teamDeposit').innerText = `৳ ${totalTeamDep.toFixed(2)}`;
+            document.getElementById('activeToday').innerText = activeCount;
+            
+            filterTeam(currentLevel);
+        } catch (err) { console.error(err); }
     }
 
     function filterTeam(level, btn) {
@@ -190,7 +203,7 @@
         body.innerHTML = data.map(u => `
             <tr>
                 <td><b>${u.id}</b></td>
-                <td>৳${u.dep}</td>
+                <td>৳${u.dep.toFixed(2)}</td>
                 <td><span class="status-badge ${u.status === 'Active' ? 'active-user' : 'inactive-user'}">${u.status}</span></td>
             </tr>
         `).join('');
