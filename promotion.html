@@ -13,7 +13,6 @@
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     
     <style>
-        /* আপনার দেওয়া CSS অংশ */
         * { margin:0; padding:0; box-sizing:border-box; font-family: 'Segoe UI', sans-serif; }
         body { background: #f4f7f6; color: #333; padding-bottom: 30px; }
         .header { background: #11998e; color: white; padding: 20px; text-align: center; border-radius: 0 0 20px 20px; position: sticky; top: 0; z-index: 100; }
@@ -116,7 +115,6 @@
     </div>
 
 <script>
-    // Firebase Config (আপনার দেওয়া)
     const firebaseConfig = {
         apiKey: "AIzaSyCALYxA2M4BwIXq5KC3VMGsZpAFh8nL3fo",
         authDomain: "bengal-east-company-limited.firebaseapp.com",
@@ -214,31 +212,41 @@
         filterTeam(1);
     }
 
-    // --- ক্লেইম করার আপডেট ফাংশন (SweetAlert2 এবং তারিখ চেক সহ) ---
+    // --- ক্লেইম করার আপডেট ফাংশন (উভয় ইনকামের জন্য আলাদা তারিখ চেক ও SweetAlert2) ---
     async function claimMoney(field) {
         const userRef = db.collection("users").doc(userPhone);
         const today = new Date().toLocaleDateString('en-GB'); 
+        
+        // ফিল্ড অনুযায়ী আলাদা আলাদা ট্র্যাকিং Key তৈরি করা
+        const claimDateField = field === 'level_income' ? 'last_claim_date_level' : 'last_claim_date_roi';
 
         try {
             const doc = await userRef.get();
             const userData = doc.data();
-            const lastClaimDate = userData.last_claim_date || ""; 
+            const lastClaimDate = userData[claimDateField] || ""; 
             const amount = parseFloat(userData[field] || 0);
 
+            // ১. ব্যালেন্স চেক
             if (amount <= 0) {
                 Swal.fire({ icon: 'error', title: 'দুঃখিত', text: 'আপনার ক্লেইম করার মতো কোনো ব্যালেন্স নেই!', confirmButtonColor: '#11998e' });
                 return;
             }
 
+            // ২. তারিখ চেক
             if (lastClaimDate === today) {
-                Swal.fire({ icon: 'warning', title: 'সীমাবদ্ধতা', text: 'আপনি আজ ইতিমধ্যে ক্লেইম করেছেন। পরবর্তী ক্লেইমের জন্য আগামীকাল পর্যন্ত অপেক্ষা করুন।', confirmButtonColor: '#11998e' });
+                Swal.fire({ 
+                    icon: 'warning', 
+                    title: 'সীমাবদ্ধতা', 
+                    text: `আপনি আজ ইতিমধ্যে আপনার ${field === 'level_income' ? 'টিম ইনকাম' : 'ROI ইনকাম'} ক্লেইম করেছেন। আগামীকাল আবার পারবেন।`, 
+                    confirmButtonColor: '#11998e' 
+                });
                 return;
             }
 
-            // সাধারণ confirm এর বদলে সুন্দর পপ-আপ
+            // ৩. কনফার্মেশন পপ-আপ
             const result = await Swal.fire({
                 title: 'ব্যালেন্স ক্লেইম',
-                text: "আপনি কি এই ব্যালেন্সটি মেইন ব্যালেন্সে নিতে চান?",
+                text: `আপনি কি ৳${amount.toFixed(2)} টাকা মেইন ব্যালেন্সে নিতে চান?`,
                 icon: 'question',
                 showCancelButton: true,
                 confirmButtonColor: '#11998e',
@@ -248,10 +256,11 @@
             });
 
             if (result.isConfirmed) {
+                // ৪. ব্যালেন্স আপডেট এবং ফিল্ড অনুযায়ী তারিখ সেভ
                 await userRef.update({
                     balance: firebase.firestore.FieldValue.increment(amount),
                     [field]: 0,
-                    last_claim_date: today 
+                    [claimDateField]: today 
                 });
 
                 Swal.fire({ icon: 'success', title: 'সফল', text: 'ব্যালেন্সটি সফলভাবে যোগ হয়েছে!', showConfirmButton: false, timer: 2000 });
@@ -259,7 +268,8 @@
             }
 
         } catch (e) {
-            Swal.fire({ icon: 'error', title: 'ভুল', text: 'ক্লেইম করতে সমস্যা হয়েছে। আবার চেষ্টা করুন।', confirmButtonColor: '#11998e' });
+            console.error(e);
+            Swal.fire({ icon: 'error', title: 'ভুল', text: 'ক্লেইম করতে সমস্যা হয়েছে।', confirmButtonColor: '#11998e' });
         }
     }
 
@@ -293,7 +303,6 @@
         renderTable(allTeamData.filter(u => u.level === currentLevel && String(u.id).includes(val)));
     }
 
-    // লিঙ্ক কপির জন্য সুন্দর পপ-আপ
     window.copyLink = function() {
         const link = document.getElementById('displayLink').innerText;
         navigator.clipboard.writeText(link).then(() => {
