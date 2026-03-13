@@ -3,72 +3,42 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Auto Reset & Platform Stats - Admin</title>
+    <title>Daily Betting Admin - VIP 6</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
     <style>
-        :root { --primary: #008080; --bg: #f0f2f5; --white: #ffffff; }
-        body { font-family: 'Segoe UI', Arial, sans-serif; background: var(--bg); margin: 0; padding: 20px; }
-        .container { max-width: 900px; margin: 0 auto; }
-        .card { background: var(--white); padding: 25px; border-radius: 15px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); margin-bottom: 25px; }
-        h2 { color: var(--primary); border-bottom: 2px solid #eee; padding-bottom: 12px; font-size: 20px; display: flex; align-items: center; gap: 10px; }
-        
-        /* Reset List Styles */
-        .reset-list { list-style: none; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 10px; }
-        .reset-item { display: flex; align-items: center; padding: 12px; border: 1px solid #eee; border-radius: 8px; transition: 0.3s; }
-        .reset-item:hover { background: #f9f9f9; }
-        .reset-item input[type="checkbox"] { width: 18px; height: 18px; margin-right: 12px; cursor: pointer; }
-        .reset-item label { font-size: 15px; cursor: pointer; flex-grow: 1; color: #444; }
-        .save-btn { background: var(--primary); color: white; border: none; padding: 14px; border-radius: 8px; cursor: pointer; width: 100%; font-size: 16px; font-weight: bold; margin-top: 20px; box-shadow: 0 4px 10px rgba(0,128,128,0.2); }
-        
-        /* Stats Styles */
-        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-top: 15px; }
-        .stat-box { background: #ffffff; padding: 20px; border-radius: 12px; text-align: center; border: 1px solid #e0e0e0; transition: 0.3s; }
-        .stat-box:hover { transform: translateY(-3px); box-shadow: 0 5px 15px rgba(0,0,0,0.05); }
-        .stat-box h3 { margin: 0; font-size: 13px; color: #777; text-transform: uppercase; letter-spacing: 0.5px; }
-        .stat-box p { margin: 10px 0 0; font-size: 20px; font-weight: bold; color: var(--primary); }
-        .pending-val { color: #e67e22 !important; }
-        .notice { font-size: 12px; color: #666; background: #fff3e0; padding: 10px; border-radius: 6px; border-left: 4px solid #ff9800; margin-bottom: 20px; }
+        :root { --vip-gold: linear-gradient(135deg, #d4af37 0%, #f9f295 50%, #b8860b 100%); --dark-bg: #1a1a1a; }
+        body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; padding: 20px; }
+        .admin-container { max-width: 850px; margin: 0 auto; background: white; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); overflow: hidden; }
+        .admin-header { background: var(--dark-bg); color: #f9f295; padding: 25px; text-align: center; border-bottom: 4px solid #d4af37; }
+        .config-card { padding: 15px; border-bottom: 1px solid #eee; display: grid; grid-template-columns: 1.5fr 1fr 1fr 1fr; gap: 10px; align-items: center; }
+        input, select { padding: 10px; border: 1px solid #ddd; border-radius: 8px; width: 100%; }
+        .vip6-btn { background: var(--vip-gold); color: #000; border: none; padding: 15px; border-radius: 10px; font-weight: bold; cursor: pointer; width: 100%; margin-top: 20px; text-transform: uppercase; }
+        .label-text { font-size: 11px; color: #666; font-weight: bold; display: block; margin-bottom: 4px; }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <div class="card">
-        <h2><i class="fas fa-clock"></i> অটো রিসেট ও ডাটা প্রোটেকশন</h2>
-        <div class="notice">
-            <i class="fas fa-info-circle"></i> <b>নিয়ম:</b> রাত ১২টার পর তারিখ পরিবর্তন হলে অটোমেটিক রিসেট কার্যকর হবে। যেসব অপশনে <b>টিক মার্ক</b> থাকবে, সেগুলো সেভ থাকবে। টিক মার্ক না থাকলে সেগুলো ডিলিট হয়ে যাবে।
-        </div>
-        
-        <form id="resetControlForm">
-            <ul class="reset-list">
-                <li class="reset-item"><input type="checkbox" id="withdraw_history" name="noReset" value="withdraw_history"><label for="withdraw_history">Withdrawal History (সেভ রাখুন)</label></li>
-                <li class="reset-item"><input type="checkbox" id="withdraw_pending" name="noReset" value="withdraw_pending"><label for="withdraw_pending">Withdrawal Pending (সেভ রাখুন)</label></li>
-                <li class="reset-item"><input type="checkbox" id="deposit_history" name="noReset" value="deposit_history"><label for="deposit_history">Deposit History (সেভ রাখুন)</label></li>
-                <li class="reset-item"><input type="checkbox" id="deposit_pending" name="noReset" value="deposit_pending"><label for="deposit_pending">Deposit Pending (সেভ রাখুন)</label></li>
-                <li class="reset-item"><input type="checkbox" id="auto_history" name="noReset" value="auto_history"><label for="auto_history">Auto History (সেভ রাখুন)</label></li>
-                <li class="reset-item"><input type="checkbox" id="transactions" name="noReset" value="transactions"><label for="transactions">Transactions (সেভ রাখুন)</label></li>
-            </ul>
-            <button type="submit" class="save-btn">কনফিগারেশন সেভ করুন</button>
-        </form>
+<div class="admin-container">
+    <div class="admin-header">
+        <h1><i class="fas fa-dice"></i> Daily Betting Admin</h1>
+        <p>VIP 6 Exclusive Controller</p>
     </div>
 
-    <div class="card">
-        <h2><i class="fas fa-chart-pie"></i> প্ল্যাটফর্ম পরিসংখ্যান (Real-time)</h2>
-        <div class="stats-grid">
-            <div class="stat-box"><h3>Total Deposit</h3><p id="totalDep">৳ 0</p></div>
-            <div class="stat-box"><h3>Total Withdraw</h3><p id="totalWith">৳ 0</p></div>
-            <div class="stat-box"><h3>Deposit Pending</h3><p id="depPen" class="pending-val">0</p></div>
-            <div class="stat-box"><h3>Withdraw Pending</h3><p id="withPen" class="pending-val">0</p></div>
-            <div class="stat-box"><h3>Total Transactions</h3><p id="totalTrans">0</p></div>
-            <div class="stat-box"><h3>Total VIP Members</h3><p id="totalVip">0</p></div>
+    <div style="padding: 20px;">
+        <div id="betConfigWrapper">
+            <p style="text-align: center;">লোড হচ্ছে...</p>
         </div>
+        <button class="vip6-btn" onclick="saveBetSettings()">
+            <i class="fas fa-save"></i> Save Betting Rewards
+        </button>
     </div>
 </div>
 
-<script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-    import { getFirestore, doc, setDoc, getDoc, collection, getDocs, query, where, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-
+<script>
     const firebaseConfig = {
         apiKey: "AIzaSyCALYxA2M4BwIXq5KC3VMGsZpAFh8nL3fo",
         authDomain: "bengal-east-company-limited.firebaseapp.com",
@@ -78,102 +48,52 @@
         appId: "1:653223286483:web:8e4ed0782ae807f8f02626"
     };
 
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
+    if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
+    const db = firebase.firestore();
 
-    // --- ১. সেটিংস লোড ও সেভ ---
-    async function initSettings() {
-        const snap = await getDoc(doc(db, "admin_settings", "auto_reset_config"));
-        if (snap.exists()) {
-            (snap.data().noResetList || []).forEach(val => {
-                const cb = document.getElementById(val);
-                if (cb) cb.checked = true;
-            });
-        }
-    }
-
-    document.getElementById('resetControlForm').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const checked = Array.from(document.querySelectorAll('input[name="noReset"]:checked')).map(cb => cb.value);
+    async function fetchBetSettings() {
+        const wrapper = document.getElementById("betConfigWrapper");
         try {
-            await setDoc(doc(db, "admin_settings", "auto_reset_config"), { noResetList: checked }, { merge: true });
-            alert("সফলভাবে আপডেট হয়েছে!");
-        } catch (err) { alert("Error: " + err.message); }
-    });
-
-    // --- ২. পরিসংখ্যান ক্যালকুলেশন ---
-    async function fetchAllStats() {
-        // Deposits & Pending
-        const depSnap = await getDocs(collection(db, "deposits"));
-        let totalD = 0, penD = 0;
-        depSnap.forEach(d => {
-            totalD += Number(d.data().amount || 0);
-            if(d.data().status === "pending") penD++;
-        });
-        document.getElementById('totalDep').innerText = "৳ " + totalD;
-        document.getElementById('depPen').innerText = penD + " জন";
-
-        // Withdraws & Pending
-        const withSnap = await getDocs(collection(db, "withdraws"));
-        let totalW = 0, penW = 0;
-        withSnap.forEach(d => {
-            totalW += Number(d.data().amount || 0);
-            if(d.data().status === "pending") penW++;
-        });
-        document.getElementById('totalWith').innerText = "৳ " + totalW;
-        document.getElementById('withPen').innerText = penW + " জন";
-
-        // Transactions
-        const transSnap = await getDocs(collection(db, "transactions"));
-        document.getElementById('totalTrans').innerText = transSnap.size;
-
-        // VIP Members
-        const vipSnap = await getDocs(query(collection(db, "users"), where("package", "!=", "Free")));
-        document.getElementById('totalVip').innerText = vipSnap.size + " জন";
-    }
-
-    // --- ৩. অটো-রিসেট কোর লজিক (২৪ ঘণ্টা অন্তর) ---
-    async function runAutoReset() {
-        const today = new Date().toLocaleDateString();
-        const configRef = doc(db, "admin_settings", "auto_reset_config");
-        const configSnap = await getDoc(configRef);
-
-        if (configSnap.exists() && configSnap.data().lastResetDate !== today) {
-            const noResetList = configSnap.data().noResetList || [];
-            console.log("রিসেট শুরু হচ্ছে...");
-
-            const collectionsToReset = [
-                { id: "withdraw_history", path: "withdraws", condition: (d) => d.status !== "pending" },
-                { id: "withdraw_pending", path: "withdraws", condition: (d) => d.status === "pending" },
-                { id: "deposit_history", path: "deposits", condition: (d) => d.status !== "pending" },
-                { id: "deposit_pending", path: "deposits", condition: (d) => d.status === "pending" },
-                { id: "auto_history", path: "daily_collection", condition: () => true },
-                { id: "transactions", path: "transactions", condition: () => true }
+            const doc = await db.collection("settings").doc("betting_config").get();
+            let targets = doc.exists ? doc.data().targets : [
+                { id: "bet_1", goal: 2000, bonus: 100, title: "Bet ৳2000 Daily", status: "active" },
+                { id: "bet_2", goal: 5000, bonus: 300, title: "Bet ৳5000 Daily", status: "active" }
             ];
 
-            for (const item of collectionsToReset) {
-                if (!noResetList.includes(item.id)) {
-                    const qSnap = await getDocs(collection(db, item.path));
-                    qSnap.forEach(async (docRef) => {
-                        if (item.condition(docRef.data())) {
-                            await deleteDoc(doc(db, item.path, docRef.id));
-                        }
-                    });
-                }
-            }
-
-            await setDoc(configRef, { lastResetDate: today }, { merge: true });
-            console.log("আজকের রিসেট সম্পন্ন!");
-        }
+            wrapper.innerHTML = "";
+            targets.forEach(t => {
+                wrapper.innerHTML += `
+                    <div class="config-card" data-id="${t.id}">
+                        <div><span class="label-text">Title</span><input type="text" value="${t.title}" class="inp-title"></div>
+                        <div><span class="label-text">Bet Target (৳)</span><input type="number" value="${t.goal}" class="inp-goal"></div>
+                        <div><span class="label-text">Bonus (৳)</span><input type="number" value="${t.bonus}" class="inp-bonus"></div>
+                        <div><span class="label-text">Status</span>
+                            <select class="inp-status">
+                                <option value="active" ${t.status === 'active' ? 'selected' : ''}>Unlock</option>
+                                <option value="inactive" ${t.status === 'inactive' ? 'selected' : ''}>Lock</option>
+                            </select>
+                        </div>
+                    </div>`;
+            });
+        } catch (e) { Swal.fire("Error", "ডাটা লোড হয়নি", "error"); }
     }
 
-    window.onload = () => {
-        initSettings();
-        fetchAllStats();
-        runAutoReset();
-    };
-</script>
+    async function saveBetSettings() {
+        const cards = document.querySelectorAll(".config-card");
+        const updatedTargets = Array.from(cards).map(card => ({
+            id: card.getAttribute("data-id"),
+            title: card.querySelector(".inp-title").value,
+            goal: parseInt(card.querySelector(".inp-goal").value),
+            bonus: parseInt(card.querySelector(".inp-bonus").value),
+            status: card.querySelector(".inp-status").value
+        }));
 
+        try {
+            await db.collection("settings").doc("betting_config").set({ targets: updatedTargets });
+            Swal.fire("Success", "বেটিং রিওয়ার্ড আপডেট হয়েছে!", "success");
+        } catch (e) { Swal.fire("Error", "সেভ হয়নি", "error"); }
+    }
+    window.onload = fetchBetSettings;
+</script>
 </body>
 </html>
-
