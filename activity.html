@@ -39,7 +39,6 @@
         .content h3 { margin: 0; font-size: 13px; color: #333; }
         .content p { margin: 2px 0 0; font-size: 11px; color: #666; }
         
-        /* Progress Bar Style */
         .prog-bar-bg { width: 100%; height: 6px; background: #eee; border-radius: 10px; margin-top: 8px; overflow: hidden; }
         .prog-fill { height: 100%; background: var(--grad); border-radius: 10px; transition: 0.5s; }
 
@@ -125,26 +124,39 @@
         const db = getFirestore(app);
         const loggedUser = localStorage.getItem("loggedUser");
 
-        const refTargets = [{ t: 10, b: 500 }, { t: 20, b: 1200 }, { t: 30, b: 2000 }, { t: 50, b: 4000 }, { t: 100, b: 10000 }];
+        // এটি এখন খালি রাখা হয়েছে, এডমিন প্যানেল থেকে ডেটা আসবে
+        let refTargets = [];
         const depRewards = [{ t: 1000, b: 100 }, { t: 2000, b: 250 }, { t: 5000, b: 600 }, { t: 10000, b: 1200 }];
 
-        // টিমের এক্টিভ মেম্বার গণনার জন্য আপডেট করা ফাংশন
+        // এডমিন প্যানেল থেকে রিওয়ার্ড ডেটা লোড করার নতুন ফাংশন
+        async function fetchAdminRewards() {
+            const docRef = doc(db, "admin_settings", "referral_rewards");
+            const docSnap = await getDoc(docRef);
+            if (docSnap.exists()) {
+                const data = docSnap.data();
+                refTargets = [
+                    { t: 10, b: data[10] || 0 },
+                    { t: 20, b: data[20] || 0 },
+                    { t: 30, b: data[30] || 0 },
+                    { t: 50, b: data[50] || 0 },
+                    { t: 100, b: data[100] || 0 }
+                ];
+            } else {
+                // ডেটা না থাকলে ডিফল্ট
+                refTargets = [{ t: 10, b: 0 }, { t: 20, b: 0 }, { t: 30, b: 0 }, { t: 50, b: 0 }, { t: 100, b: 0 }];
+            }
+        }
+
         async function getActiveReferralCount(myUID) {
             const snap = await getDocs(collection(db, "users"));
             const users = snap.docs.map(d => d.data());
             let activeCount = 0;
-
             const myRefs = users.filter(u => String(u.referrerID) === String(myUID));
-            
             myRefs.forEach(u => {
-                const dep = parseFloat(u.totalDeposit || u.total_deposit || 0);
+                const dep = parseFloat(u.total_deposit || 0);
                 const bal = parseFloat(u.balance || 0);
-                
-                if (dep >= 100 || bal >= 100) {
-                    activeCount++;
-                }
+                if (dep >= 100 || bal >= 100) activeCount++;
             });
-            
             return activeCount;
         }
 
@@ -219,7 +231,11 @@
             alert("Reward Claimed!");
         };
 
-        window.onload = sync;
+        // পেজ লোড হওয়ার সময় এডমিন রিওয়ার্ড লোড করবে
+        window.onload = async () => {
+            await fetchAdminRewards();
+            sync();
+        };
     </script>
 </body>
 </html>
