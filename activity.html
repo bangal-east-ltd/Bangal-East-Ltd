@@ -67,6 +67,12 @@
         </div>
     </div>
 
+    <div class="sec-title"><i class="fas fa-key"></i> Gift Code Claim</div>
+    <div class="gift-box">
+        <input type="text" id="giftInput" placeholder="Enter Gift Code">
+        <button class="claim-btn" style="background: var(--grad);" id="giftBtn" onclick="claimGift()">Submit</button>
+    </div>
+
     <div class="sec-title"><i class="fas fa-users-cog"></i> Referral Target Rewards</div>
     <div class="roadmap-container" id="refTargetList"></div>
 
@@ -109,32 +115,46 @@
         }
 
         async function getDailyBetTotal(userID) {
-            const today = new Date().toISOString().split('T')[0];
-            const betCols = ["head_tail_bets", "big_small_bets", "red_green_bets"];
-            let total = 0;
-            for(let col of betCols) {
-                const q = query(collection(db, col), where("userID", "==", userID), where("date", "==", today));
-                const snap = await getDocs(q);
-                snap.forEach(doc => total += (parseFloat(doc.data().amount) || 0));
-            }
-            return total;
+            try {
+                const today = new Date().toISOString().split('T')[0];
+                const betCols = ["head_tail_bets", "big_small_bets", "red_green_bets"];
+                let total = 0;
+                for(let col of betCols) {
+                    const q = query(collection(db, col), where("userID", "==", userID), where("date", "==", today));
+                    const snap = await getDocs(q);
+                    snap.forEach(doc => total += (parseFloat(doc.data().amount) || 0));
+                }
+                return total;
+            } catch(e) { return 0; }
         }
 
         async function getActiveTeamCount(userID) {
-            const q = query(collection(db, "users"), where("referrerID", "==", userID));
-            const snap = await getDocs(q);
-            let count = 0;
-            snap.forEach(d => { if((d.data().total_deposit || 0) >= 100) count++; });
-            return count;
+            try {
+                const q = query(collection(db, "users"), where("referrerID", "==", userID));
+                const snap = await getDocs(q);
+                let count = 0;
+                snap.forEach(d => { if((parseFloat(d.data().total_deposit) || 0) >= 100) count++; });
+                return count;
+            } catch(e) { return 0; }
         }
 
         async function renderDynamicLists(userData) {
-            const totalDep = parseFloat(userData.total_deposit || 0);
             const teamCount = await getActiveTeamCount(userData.userID);
             const dailyBet = await getDailyBetTotal(userData.userID);
+            
+            const totalDep = parseFloat(userData.total_deposit || 0);
+            const balance = parseFloat(userData.balance || 0);
+            const isActive = (totalDep >= 100 || balance >= 100);
             const today = new Date().toISOString().split('T')[0];
 
-            // Referral List
+            document.getElementById('activeStatus').innerHTML = isActive ? 
+                `<span style="color:white; background:green; padding:5px 15px; border-radius:15px;">● Active Member</span>` : 
+                `<span style="color:white; background:red; padding:5px 15px; border-radius:15px;">● Not Active</span>`;
+
+            document.getElementById('referAmt').innerText = "৳ " + (userData.refer_income || 0);
+            document.getElementById('levelAmt').innerText = "৳ " + (userData.level_income || 0);
+            document.getElementById('roiAmt').innerText = "৳ " + (userData.daily_roi || 0);
+
             let rHtml = '';
             refTargets.forEach(item => {
                 const claimed = (userData.claimed_ref_target || []).includes(item.t);
@@ -143,7 +163,6 @@
             });
             document.getElementById('refTargetList').innerHTML = rHtml;
 
-            // Deposit List
             let dHtml = '';
             depRewards.forEach(item => {
                 const claimed = (userData.claimed_dep || []).includes(item.t);
@@ -152,12 +171,9 @@
             });
             document.getElementById('depositList').innerHTML = dHtml;
 
-            // Betting List (Daily Reset)
             let bHtml = '';
             const betData = userData.daily_bet_claim || {};
-            const lastDate = betData.date || "";
-            const claimedList = lastDate === today ? (betData.list || []) : [];
-
+            const claimedList = betData.date === today ? (betData.list || []) : [];
             betRewards.forEach(item => {
                 const claimed = claimedList.includes(item.t);
                 const progress = Math.min((dailyBet / item.t) * 100, 100);
@@ -165,6 +181,16 @@
             });
             document.getElementById('bettingList').innerHTML = bHtml;
         }
+
+        window.claimFieldBonus = async (field) => {
+            const ref = doc(db, "users", loggedUser);
+            const snap = await getDoc(ref);
+            const amount = parseFloat(snap.data()[field]) || 0;
+            if(amount > 0) { 
+                await updateDoc(ref, { balance: increment(amount), [field]: 0 }); 
+                alert("Claimed Successfully!"); 
+            }
+        };
 
         window.claimTargetBonus = async (type, target, amount) => {
             const ref = doc(db, "users", loggedUser);
@@ -187,19 +213,38 @@
             alert("Daily Bet Bonus Claimed!");
         };
 
+        window.claimGift = async () => {
+            const code = document.getElementById('giftInput').value.trim();
+            if(!code) return alert("Enter code");
+            const giftRef = doc(db, "gift_codes", code);
+            const giftSnap = await getDoc(giftRef);
+            if(!giftSnap.exists()) return alert("Invalid Code");
+            
+            const gData = giftSnap.data();
+            if(gData.status !== "active") return alert("Already Used");
+
+            await updateDoc(giftRef, { status: "used", usedBy: loggedUser });
+            await updateDoc(doc(db, "users", loggedUser), { balance: increment(parseFloat(gData.amount)) });
+            alert(`৳${gData.amount} Added!`);
+            document.getElementById('giftInput').value = "";
+        };
+
         function sync() {
             if(!loggedUser) return;
             onSnapshot(doc(db, "users", loggedUser), (snap) => {
                 if (snap.exists()) {
                     const d = snap.data();
-                    document.getElementById('mainBalance').innerText = "৳ " + (d.balance || 0).toFixed(2);
+                    document.getElementById('mainBalance').innerText = "৳ " + (parseFloat(d.balance) || 0).toFixed(2);
                     document.getElementById('userRank').innerText = d.rank || "General";
                     renderDynamicLists(d);
                 }
             });
         }
 
-        window.onload = async () => { await fetchAdminRewards(); sync(); };
+        window.onload = async () => { 
+            await fetchAdminRewards(); 
+            sync(); 
+        };
     </script>
 </body>
 </html>
