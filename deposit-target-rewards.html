@@ -131,7 +131,6 @@
     const db = firebase.firestore();
     const userPhone = localStorage.getItem("loggedUser");
 
-    // বর্তমান মাসের নাম পাওয়ার ফাংশন
     function getMonthKey() {
         const d = new Date();
         return d.toLocaleString('en-US', { month: 'long', year: 'numeric' });
@@ -153,33 +152,33 @@
             const userDoc = await db.collection("users").doc(userPhone).get();
             const userData = userDoc.exists ? userDoc.data() : {};
             
-            // মাসিক রিসেট লজিক: এই মাসের টোটাল ডিপোজিট চেক করা
             const lastResetMonth = userData.last_reset_month || "";
             let monthlyTotalDep = 0;
 
-            // যদি ডাটাবেসের মাসের সাথে বর্তমান মাস মিলে, তবে ভ্যালু নিবে, নাহলে রিসেট (০) হবে
             if (lastResetMonth === currentMonth) {
                 monthlyTotalDep = userData.monthly_deposit || 0;
             }
 
-            // মাসিক ক্লেইম ট্র্যাকিং ম্যাপ
             const monthlyClaimedMap = userData.monthly_claimed_rewards || {};
 
             const listBody = document.getElementById("rewardList");
             listBody.innerHTML = "";
 
             targets.forEach(t => {
-                // এই মাসের জন্য ক্লেইম হয়েছে কি না চেক
                 const isClaimedThisMonth = monthlyClaimedMap[t.id] === currentMonth;
                 const progress = Math.min((monthlyTotalDep / t.goal) * 100, 100);
                 const canClaim = monthlyTotalDep >= t.goal && t.status === "active" && !isClaimedThisMonth;
+
+                // টার্গেট পূরণ হতে কত বাকি আছে তা বের করা
+                const remaining = t.goal - monthlyTotalDep;
+                const remainingText = remaining > 0 ? ` (আরও বাকি ৳${remaining})` : ` (পূর্ণ হয়েছে)`;
 
                 listBody.innerHTML += `
                     <div class="reward-item">
                         <div class="reward-icon-box"><i class="fas fa-gift"></i></div>
                         <div class="info-content">
                             <h4>${t.title}</h4>
-                            <p>বোনাস: <b>৳${t.bonus}</b> <span style="float:right"><b>${monthlyTotalDep}</b> / ${t.goal}</span></p>
+                            <p>বোনাস: <b>৳${t.bonus}</b> <span style="float:right"><b>${monthlyTotalDep}</b> / ${t.goal}${remaining > 0 ? '<span style="color: #e74c3c;">' + remainingText + '</span>' : ''}</span></p>
                             <div class="progress-box">
                                 <div class="progress-fill" style="width: ${progress}%"></div>
                             </div>
@@ -203,7 +202,6 @@
         try {
             const userRef = db.collection("users").doc(userPhone);
             
-            // ট্রানজ্যাকশন ব্যবহার করা হয়েছে যাতে ডাবল ক্লেইম না হয়
             await db.runTransaction(async (transaction) => {
                 const uDoc = await transaction.get(userRef);
                 const currentMonthlyClaimed = uDoc.data().monthly_claimed_rewards || {};
