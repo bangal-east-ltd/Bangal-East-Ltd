@@ -19,37 +19,72 @@
 
         .container { max-width: 1100px; margin: 20px auto; padding: 0 15px; }
 
-        .config-card { background: var(--white); padding: 20px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); margin-bottom: 25px; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; }
+        .config-card, .stats-card { background: var(--white); padding: 20px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); margin-bottom: 25px; }
+        
+        .config-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; }
         .config-group { display: flex; flex-direction: column; gap: 5px; }
         .config-group label { font-size: 12px; font-weight: bold; color: #666; }
         .config-group input { padding: 10px; border: 1px solid #ddd; border-radius: 8px; outline: none; font-weight: bold; }
         
         .btn { padding: 10px 20px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.2s; }
-        .btn-primary { background: var(--primary); color: white; width: 100%; margin-top: 10px; }
+        .btn-primary { background: var(--primary); color: white; width: 100%; margin-top: 15px; }
+
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-top: 15px; }
+        .stat-item { background: #f8f9fa; padding: 15px; border-radius: 10px; border-left: 4px solid var(--primary); }
+        .stat-item h4 { font-size: 12px; color: #777; margin-bottom: 5px; }
+        .stat-item p { font-size: 16px; font-weight: bold; color: var(--primary); }
+
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; background: white; border-radius: 10px; overflow: hidden; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #eee; font-size: 13px; }
+        th { background: #f1f1f1; color: #555; }
+        .history-section { margin-top: 30px; }
     </style>
 </head>
 <body>
 
     <div class="header">
-        <h2><i class="fas fa-shield-alt"></i> VIP 3 Master Admin</h2>
+        <h2><i class="fas fa-shield-alt"></i> Master Admin Control</h2>
         <button class="btn" style="background: #eee;" onclick="loadAdminData()"><i class="fas fa-sync"></i> Refresh</button>
     </div>
 
     <div class="container">
         
-        <h3 style="margin-bottom: 15px; font-size: 16px;"><i class="fas fa-percentage"></i> কমিশন ও অটো ইনকাম সেটআপ</h3>
         <div class="config-card">
-            <div class="config-group"><label>Level 1 (%)</label><input type="number" id="l1_comm" value="10"></div>
-            <div class="config-group"><label>Level 2 (%)</label><input type="number" id="l2_comm" value="5"></div>
-            <div class="config-group"><label>Level 3 (%)</label><input type="number" id="l3_comm" value="2"></div>
-            <div class="config-group"><label>Daily Return (%)</label><input type="number" id="daily_ret" value="5"></div>
-            <button class="btn btn-primary" onclick="distributeDailyCommission()">কমিশন পাঠান (Daily)</button>
+            <h3 style="margin-bottom: 15px; font-size: 16px;"><i class="fas fa-percentage"></i> কমিশন ও অটো ইনকাম সেটআপ</h3>
+            <div class="config-grid">
+                <div class="config-group"><label>Level 1 (%)</label><input type="number" id="l1_comm" value="10"></div>
+                <div class="config-group"><label>Level 2 (%)</label><input type="number" id="l2_comm" value="5"></div>
+                <div class="config-group"><label>Level 3 (%)</label><input type="number" id="l3_comm" value="2"></div>
+                <div class="config-group"><label>Daily Return (%)</label><input type="number" id="daily_ret" value="5"></div>
+            </div>
+            <button class="btn btn-primary" onclick="distributeDailyCommission(false)">ম্যানুয়ালি ইনকাম পাঠান</button>
+        </div>
+
+        <div class="stats-card">
+            <h3 style="font-size: 16px;"><i class="fas fa-users"></i> সেরা টিম ও পরিসংখ্যান (Top Team Leader)</h3>
+            <div id="teamStatsContent">লোড হচ্ছে...</div>
+        </div>
+
+        <div class="history-section">
+            <h3 style="margin-bottom: 10px; font-size: 16px;"><i class="fas fa-history"></i> ইনকাম ডিস্ট্রিবিউশন লগ</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>তারিখ</th>
+                        <th>মেম্বার সংখ্যা</th>
+                        <th>মোট ROI বিতরণ</th>
+                        <th>স্ট্যাটাস</th>
+                    </tr>
+                </thead>
+                <tbody id="historyBody">
+                    <tr><td colspan="4" style="text-align:center;">কোন ডাটা নেই</td></tr>
+                </tbody>
+            </table>
         </div>
 
     </div>
 
 <script>
-    // Firebase Config
     const firebaseConfig = {
         apiKey: "AIzaSyCALYxA2M4BwIXq5KC3VMGsZpAFh8nL3fo",
         authDomain: "bengal-east-company-limited.firebaseapp.com",
@@ -63,47 +98,113 @@
 
     let allUsers = [];
 
-    // ডাটা লোড করা
-    function loadAdminData() {
-        db.collection("users").get().then(snap => {
+    async function loadAdminData() {
+        try {
+            const snap = await db.collection("users").get();
             allUsers = snap.docs.map(doc => ({ phone: doc.id, ...doc.data() }));
-        });
+            
+            calculateTeamAnalytics();
+            loadDistributionHistory();
+            checkAndAutoDistribute();
+        } catch (e) { console.error(e); }
     }
 
-    // অটো ইনকাম ডিস্ট্রিবিউশন
-    async function distributeDailyCommission() {
+    // ১. টিম এনালাইটিক্স লজিক (সবচেয়ে বড় টিম এবং তাদের তথ্য)
+    function calculateTeamAnalytics() {
+        let teamData = {};
+
+        allUsers.forEach(u => {
+            const refID = u.referrerID;
+            if (refID) {
+                if (!teamData[refID]) teamData[refID] = { count: 0, deposit: 0, income: 0, pkgs: 0 };
+                
+                let pkgVal = parseFloat(u.totalDeposit || 0);
+                const pkgName = u["Vip package"] || "";
+                if (pkgVal === 0 && pkgName) {
+                    const match = pkgName.match(/\d+/);
+                    if (match) pkgVal = parseFloat(match[0]);
+                }
+
+                teamData[refID].count += 1;
+                teamData[refID].deposit += pkgVal;
+                teamData[refID].income += parseFloat(u.balance || 0);
+                if (pkgName) teamData[refID].pkgs += 1;
+            }
+        });
+
+        let sortedTeams = Object.entries(teamData).sort((a, b) => b[1].count - a[1].count);
+        if (sortedTeams.length > 0) {
+            const top = sortedTeams[0];
+            const leader = allUsers.find(x => String(x.userID) === String(top[0])) || { userID: top[0] };
+
+            document.getElementById('teamStatsContent').innerHTML = `
+                <div class="stats-grid">
+                    <div class="stat-item"><h4>সেরা লিডার আইডি</h4><p>${leader.userID}</p></div>
+                    <div class="stat-item"><h4>টিম মেম্বার</h4><p>${top[1].count} জন</p></div>
+                    <div class="stat-item"><h4>টোটাল টিম ডিপোজিট</h4><p>৳ ${top[1].deposit.toFixed(2)}</p></div>
+                    <div class="stat-item"><h4>টিম কেনা প্যাকেজ</h4><p>${top[1].pkgs} টি</p></div>
+                </div>
+            `;
+        }
+    }
+
+    // ২. অটো ডিস্ট্রিবিউশন লজিক
+    async function checkAndAutoDistribute() {
+        const today = new Date().toISOString().split('T')[0];
+        const configRef = db.collection("settings").doc("last_distribution");
+        const configSnap = await configRef.get();
+        
+        if (!configSnap.exists || configSnap.data().date !== today) {
+            await distributeDailyCommission(true);
+        }
+    }
+
+    async function distributeDailyCommission(isAuto = false) {
         const today = new Date().toISOString().split('T')[0];
         const roiPercent = parseFloat(document.getElementById('daily_ret').value) / 100;
         const l1 = parseFloat(document.getElementById('l1_comm').value) / 100;
         const l2 = parseFloat(document.getElementById('l2_comm').value) / 100;
         const l3 = parseFloat(document.getElementById('l3_comm').value) / 100;
 
-        if(allUsers.length === 0) {
-            alert("ডাটা লোড হচ্ছে, কিছুক্ষণ পর চেষ্টা করুন।");
-            return;
-        }
-
-        if(!confirm(`${today} তারিখের ইনকাম পাঠাতে চান?`)) return;
+        if (allUsers.length === 0) return;
+        if (!isAuto && !confirm(`${today} তারিখের ইনকাম পাঠাতে চান?`)) return;
 
         const batch = db.batch();
         let qualifiedCount = 0;
+        let totalDistributedAmount = 0;
 
         allUsers.forEach(user => {
-            const totalDep = parseFloat(user.totalDeposit || 0);
-            // ১০০ টাকার শর্ত মেনে ইনকাম ডিস্ট্রিবিউশন
-            if (totalDep >= 100) {
-                const myRoi = totalDep * roiPercent;
+            let packageValue = parseFloat(user.totalDeposit || 0);
+            const pkg = user["Vip package"] || "";
+            if (packageValue === 0 && pkg) {
+                const match = pkg.match(/\d+/);
+                if (match) packageValue = parseFloat(match[0]);
+            }
+
+            if (packageValue >= 100) {
+                const myRoi = packageValue * roiPercent;
                 batch.update(db.collection("users").doc(user.phone), {
-                    daily_roi: firebase.firestore.FieldValue.increment(myRoi),
-                    last_dist_date: today
+                    daily_roi: firebase.firestore.FieldValue.increment(myRoi)
                 });
                 distributeTeamComm(user.referrerID, myRoi, 1, l1, l2, l3, batch);
                 qualifiedCount++;
+                totalDistributedAmount += myRoi;
             }
         });
 
+        // ৩. হিস্ট্রি সেভ করা
+        const historyRef = db.collection("distribution_logs").doc(today);
+        batch.set(historyRef, {
+            date: today,
+            members: qualifiedCount,
+            totalAmount: totalDistributedAmount,
+            timestamp: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        batch.set(db.collection("settings").doc("last_distribution"), { date: today });
+
         await batch.commit();
-        alert(`মোট ${qualifiedCount} জনের ইনকাম পাঠানো হয়েছে!`);
+        if(!isAuto) alert("সফলভাবে পাঠানো হয়েছে!");
+        loadDistributionHistory();
     }
 
     function distributeTeamComm(refID, amount, level, l1, l2, l3, batch) {
@@ -118,7 +219,24 @@
         }
     }
 
-    loadAdminData();
+    // ৪. হিস্ট্রি লোড করা
+    async function loadDistributionHistory() {
+        const snap = await db.collection("distribution_logs").orderBy("timestamp", "desc").limit(10).get();
+        const body = document.getElementById('historyBody');
+        if (snap.empty) return;
+
+        body.innerHTML = snap.docs.map(doc => {
+            const d = doc.data();
+            return `<tr>
+                <td>${d.date}</td>
+                <td>${d.members} জন</td>
+                <td>৳ ${d.totalAmount.toFixed(2)}</td>
+                <td style="color: green; font-weight: bold;">Completed</td>
+            </tr>`;
+        }).join('');
+    }
+
+    window.onload = loadAdminData;
 </script>
 </body>
 </html>
