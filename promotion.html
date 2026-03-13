@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
     
     <style>
@@ -15,13 +16,13 @@
         .header { background: #11998e; color: white; padding: 20px; text-align: center; border-radius: 0 0 20px 20px; position: sticky; top: 0; z-index: 100; }
         .container { padding: 15px; max-width: 600px; margin: 0 auto; }
         
-        /* ক্লেইম সেকশন ডিজাইন */
+        /* ক্লেইম কার্ড ডিজাইন */
         .reward-container { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
         .income-card { background: white; padding: 15px; border-radius: 15px; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.05); border-top: 4px solid #11998e; }
-        .income-card h4 { font-size: 12px; color: #666; margin-bottom: 5px; }
-        .income-card h2 { font-size: 18px; color: #11998e; margin-bottom: 10px; }
+        .income-card h4 { font-size: 11px; color: #666; margin-bottom: 5px; }
+        .income-card h2 { font-size: 16px; color: #11998e; margin-bottom: 10px; }
         .claim-btn { background: #11998e; color: white; border: none; padding: 8px 12px; border-radius: 8px; font-size: 11px; cursor: pointer; font-weight: bold; width: 100%; transition: 0.3s; }
-        .claim-btn:active { transform: scale(0.95); background: #0e867d; }
+        .claim-btn:active { transform: scale(0.95); }
 
         .refer-card { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.05); margin-bottom: 20px; text-align: center; }
         .refer-link-box { display: flex; background: #f8f9fa; border: 1.5px dashed #11998e; padding: 12px; border-radius: 10px; justify-content: space-between; align-items: center; gap: 10px; margin-top: 10px; }
@@ -36,7 +37,7 @@
         .level-btn { padding: 8px 18px; background: #f0f0f0; border-radius: 20px; font-size: 12px; cursor: pointer; border: none; font-weight: 600; }
         .level-btn.active { background: #11998e; color: white; }
         
-        .search-box { width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 10px; outline: none; background: #fff; }
+        .search-box { width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 10px; outline: none; }
 
         table { width: 100%; border-collapse: collapse; }
         th, td { padding: 12px 5px; font-size: 11px; border-bottom: 1px solid #f4f7f6; text-align: center; }
@@ -137,43 +138,34 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
-    const loggedUser = localStorage.getItem("loggedUser");
+    const userPhone = localStorage.getItem("userPhone");
     let allTeamData = [];
     let currentLevel = 1;
 
-    // কমিশন কনফিগারেশন
-    const roiConfig = {
-        level1: 0.10, // ১০%
-        level2: 0.05, // ৫%
-        level3: 0.02  // ২%
-    };
-
     async function loadPromotionData() {
-        if(!loggedUser) { window.location.href="login.html"; return; }
+        if(!userPhone) { window.location.href="login.html"; return; }
 
         try {
-            const userSnap = await db.collection("users").doc(loggedUser).get();
+            const userSnap = await db.collection("users").doc(userPhone).get();
             if (userSnap.exists) {
                 const userData = userSnap.data();
-                const myUID = userData.userID;
                 
-                // মেইন ব্যালেন্স ও ক্লেইম ব্যালেন্স আপডেট
+                // ড্যাশবোর্ড আপডেট
                 document.getElementById('myBalanceDisplay').innerText = "৳ " + (parseFloat(userData.balance) || 0).toFixed(2);
                 document.getElementById('levelIncomeDisplay').innerText = "৳ " + (parseFloat(userData.level_income) || 0).toFixed(2);
                 document.getElementById('roiIncomeDisplay').innerText = "৳ " + (parseFloat(userData.daily_roi) || 0).toFixed(2);
 
                 const baseURL = window.location.origin + window.location.pathname.replace(/\/[^\/]*$/, "");
-                const finalLink = baseURL + "/index.html?ref=" + myUID;
-                document.getElementById('displayLink').innerText = finalLink;
+                document.getElementById('displayLink').innerText = baseURL + "/index.html?ref=" + userData.userID;
                 
-                fetchTeam(myUID);
+                fetchTeam(userData.userID);
             }
         } catch (e) { console.error(e); }
     }
 
     async function fetchTeam(myUID) {
         allTeamData = [];
-        let totalTeamActiveDeposit = 0; 
+        let totalActiveDeposit = 0; 
         let activeCount = 0;
         let totalRoiCalc = 0; 
 
@@ -185,25 +177,26 @@
             const refs = users.filter(u => String(u.referrerID) === String(parentID));
             
             refs.forEach(u => {
-                // প্যাকেজ প্রাইস চেক (active_package_price ফিল্ড ধরা হয়েছে)
-                const packagePrice = parseFloat(u.active_package_price || 0); 
-                const isActive = packagePrice > 0;
+                // ৫৬৫৬০ সমস্যার সমাধান: 'Vip package' এবং 'totalDeposit' উভয় ফিল্ড চেক করা হচ্ছে
+                const pkg = u["Vip package"];
+                const deposit = parseFloat(u.totalDeposit || 0);
+                const isActive = (pkg && pkg !== "") || deposit > 0;
                 
                 if(isActive) activeCount++;
-                totalTeamActiveDeposit += packagePrice;
+                totalActiveDeposit += deposit;
 
-                // লেভেল অনুযায়ী ROI হিসাব (শুধুমাত্র দেখানোর জন্য)
-                let memberRoi = 0;
-                if (level === 1) memberRoi = packagePrice * roiConfig.level1;
-                else if (level === 2) memberRoi = packagePrice * roiConfig.level2;
-                else if (level === 3) memberRoi = packagePrice * roiConfig.level3;
+                // কমিশন লজিক (অ্যাডমিন প্যানেলের পারসেন্টেজ অনুযায়ী এখানে হিসাব দেখানো হচ্ছে)
+                let commission = 0;
+                if(level === 1) commission = deposit * 0.10;
+                else if(level === 2) commission = deposit * 0.05;
+                else if(level === 3) commission = deposit * 0.02;
 
-                totalRoiCalc += memberRoi;
+                totalRoiCalc += commission;
 
                 allTeamData.push({
                     id: u.userID,
-                    package: packagePrice,
-                    roi: memberRoi,
+                    package: pkg || "৳" + deposit,
+                    roi: commission,
                     status: isActive ? 'Active' : 'Inactive',
                     level: level
                 });
@@ -214,36 +207,34 @@
         findReferrals(myUID, 1);
 
         document.getElementById('totalTeam').innerText = `${allTeamData.length} / ৳ ${totalRoiCalc.toFixed(2)}`;
-        document.getElementById('teamDeposit').innerText = `৳ ${totalTeamActiveDeposit.toFixed(2)}`;
+        document.getElementById('teamDeposit').innerText = "৳ " + totalActiveDeposit.toFixed(2);
         document.getElementById('activeToday').innerText = activeCount;
         
         filterTeam(1);
     }
 
-    // ক্লেইম ফাংশন
-    async function claimMoney(incomeField) {
+    // ক্লেইম করার লজিক
+    async function claimMoney(field) {
         if(!confirm("আপনি কি এই ব্যালেন্সটি মেইন ব্যালেন্সে নিতে চান?")) return;
         
-        const userRef = db.collection("users").doc(loggedUser);
+        const userRef = db.collection("users").doc(userPhone);
         try {
             const doc = await userRef.get();
-            const amountToClaim = parseFloat(doc.data()[incomeField] || 0);
-
-            if (amountToClaim <= 0) {
+            const amount = parseFloat(doc.data()[field] || 0);
+            
+            if(amount <= 0) {
                 alert("আপনার ক্লেইম করার মতো কোনো ব্যালেন্স নেই।");
                 return;
             }
 
             await userRef.update({
-                balance: firebase.firestore.FieldValue.increment(amountToClaim),
-                [incomeField]: 0 
+                balance: firebase.firestore.FieldValue.increment(amount),
+                [field]: 0
             });
 
-            alert("৳" + amountToClaim.toFixed(2) + " সফলভাবে মেইন ব্যালেন্সে যোগ হয়েছে!");
-            loadPromotionData(); // পেজ আপডেট
-        } catch (error) {
-            alert("ক্লেইম করতে সমস্যা হয়েছে।");
-        }
+            alert("সফলভাবে মেইন ব্যালেন্সে যোগ হয়েছে!");
+            loadPromotionData(); 
+        } catch (e) { alert("ক্লেইম করতে সমস্যা হয়েছে।"); }
     }
 
     function filterTeam(level, btn) {
@@ -258,14 +249,14 @@
     function renderTable(data) {
         const body = document.getElementById('teamBody');
         if(data.length === 0) {
-            body.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:20px;">কোন মেম্বার নেই</td></tr>`;
+            body.innerHTML = `<tr><td colspan="4" style="text-align:center; padding: 20px;">কোন মেম্বার নেই</td></tr>`;
             return;
         }
 
         body.innerHTML = data.map(u => `
             <tr>
                 <td><b>${u.id}</b></td>
-                <td>৳${u.package.toFixed(2)}</td>
+                <td>${u.package}</td>
                 <td style="color:#11998e; font-weight:bold;">৳${u.roi.toFixed(2)}</td>
                 <td><span class="status-badge ${u.status === 'Active' ? 'active-user' : 'inactive-user'}">${u.status}</span></td>
             </tr>
@@ -274,8 +265,7 @@
 
     function searchMember() {
         const val = document.getElementById('memberSearch').value.toLowerCase();
-        const filtered = allTeamData.filter(u => u.level === currentLevel && String(u.id).includes(val));
-        renderTable(filtered);
+        renderTable(allTeamData.filter(u => u.level === currentLevel && String(u.id).includes(val)));
     }
 
     window.copyLink = function() {
