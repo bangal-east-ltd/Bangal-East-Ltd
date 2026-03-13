@@ -100,6 +100,7 @@
         const loggedUser = localStorage.getItem("loggedUser");
 
         let refTargets = [], depRewards = [], betRewards = [];
+        let isFetchingHeavyStats = false; // ভারী ডাটা ফেচিং কন্ট্রোল করার জন্য
 
         async function fetchAdminRewards() {
             try {
@@ -139,22 +140,27 @@
         }
 
         async function renderDynamicLists(userData) {
+            if (isFetchingHeavyStats) return; // ইতিমধ্যে প্রসেসিং চললে দ্বিতীয়বার করবে না
+            isFetchingHeavyStats = true;
+
             const teamCount = await getActiveTeamCount(userData.userID);
             const dailyBet = await getDailyBetTotal(userData.userID);
             
             const totalDep = parseFloat(userData.total_deposit || 0);
             const balance = parseFloat(userData.balance || 0);
-            const isActive = (totalDep >= 100 || balance >= 100);
+            const isActive = (totalDep >= 100);
             const today = new Date().toISOString().split('T')[0];
 
+            // UI Update
             document.getElementById('activeStatus').innerHTML = isActive ? 
-                `<span style="color:white; background:green; padding:5px 15px; border-radius:15px;">● Active Member</span>` : 
-                `<span style="color:white; background:red; padding:5px 15px; border-radius:15px;">● Not Active</span>`;
+                `<span style="color:white; background:green; padding:6px 15px; border-radius:20px;">● Active Member</span>` : 
+                `<span style="color:white; background:red; padding:6px 15px; border-radius:20px;">● Not Active</span>`;
 
             document.getElementById('referAmt').innerText = "৳ " + (userData.refer_income || 0);
             document.getElementById('levelAmt').innerText = "৳ " + (userData.level_income || 0);
             document.getElementById('roiAmt').innerText = "৳ " + (userData.daily_roi || 0);
 
+            // Referral Target Render
             let rHtml = '';
             refTargets.forEach(item => {
                 const claimed = (userData.claimed_ref_target || []).includes(item.t);
@@ -163,6 +169,7 @@
             });
             document.getElementById('refTargetList').innerHTML = rHtml;
 
+            // Deposit Target Render
             let dHtml = '';
             depRewards.forEach(item => {
                 const claimed = (userData.claimed_dep || []).includes(item.t);
@@ -171,6 +178,7 @@
             });
             document.getElementById('depositList').innerHTML = dHtml;
 
+            // Betting Rewards Render
             let bHtml = '';
             const betData = userData.daily_bet_claim || {};
             const claimedList = betData.date === today ? (betData.list || []) : [];
@@ -180,16 +188,25 @@
                 bHtml += `<div class="roadmap-item"><div class="content"><h3>Bet ৳${item.t} Daily</h3><p>Bonus: ৳${item.b} (${dailyBet}/${item.t})</p><div class="prog-bar-bg"><div class="prog-fill" style="width:${progress}%"></div></div></div><button class="claim-btn" ${(claimed || dailyBet < item.t)?'disabled':''} onclick="claimBetBonus(${item.t}, ${item.b})">${claimed?'Done':'Claim'}</button></div>`;
             });
             document.getElementById('bettingList').innerHTML = bHtml;
+
+            isFetchingHeavyStats = false;
         }
 
         window.claimFieldBonus = async (field) => {
-            const ref = doc(db, "users", loggedUser);
-            const snap = await getDoc(ref);
-            const amount = parseFloat(snap.data()[field]) || 0;
-            if(amount > 0) { 
-                await updateDoc(ref, { balance: increment(amount), [field]: 0 }); 
-                alert("Claimed Successfully!"); 
-            }
+            const btn = event.target;
+            btn.disabled = true;
+            try {
+                const ref = doc(db, "users", loggedUser);
+                const snap = await getDoc(ref);
+                const amount = parseFloat(snap.data()[field]) || 0;
+                if(amount > 0) { 
+                    await updateDoc(ref, { balance: increment(amount), [field]: 0 }); 
+                    alert("Claimed Successfully!"); 
+                } else {
+                    alert("No income to claim!");
+                }
+            } catch (e) { alert("Error claiming reward"); }
+            btn.disabled = false;
         };
 
         window.claimTargetBonus = async (type, target, amount) => {
@@ -216,17 +233,26 @@
         window.claimGift = async () => {
             const code = document.getElementById('giftInput').value.trim();
             if(!code) return alert("Enter code");
-            const giftRef = doc(db, "gift_codes", code);
-            const giftSnap = await getDoc(giftRef);
-            if(!giftSnap.exists()) return alert("Invalid Code");
-            
-            const gData = giftSnap.data();
-            if(gData.status !== "active") return alert("Already Used");
-
-            await updateDoc(giftRef, { status: "used", usedBy: loggedUser });
-            await updateDoc(doc(db, "users", loggedUser), { balance: increment(parseFloat(gData.amount)) });
-            alert(`৳${gData.amount} Added!`);
-            document.getElementById('giftInput').value = "";
+            const btn = document.getElementById('giftBtn');
+            btn.disabled = true;
+            try {
+                const giftRef = doc(db, "gift_codes", code);
+                const giftSnap = await getDoc(giftRef);
+                if(!giftSnap.exists()) {
+                    btn.disabled = false;
+                    return alert("Invalid Code");
+                }
+                const gData = giftSnap.data();
+                if(gData.status !== "active") {
+                    btn.disabled = false;
+                    return alert("Already Used");
+                }
+                await updateDoc(giftRef, { status: "used", usedBy: loggedUser });
+                await updateDoc(doc(db, "users", loggedUser), { balance: increment(parseFloat(gData.amount)) });
+                alert(`৳${gData.amount} Added!`);
+                document.getElementById('giftInput').value = "";
+            } catch (e) { alert("Error claiming gift code"); }
+            btn.disabled = false;
         };
 
         function sync() {
@@ -236,6 +262,7 @@
                     const d = snap.data();
                     document.getElementById('mainBalance').innerText = "৳ " + (parseFloat(d.balance) || 0).toFixed(2);
                     document.getElementById('userRank').innerText = d.rank || "General";
+                    // renderDynamicLists কে সরাসরি কল না করে একটি কন্ট্রোল মেকানিজমে দেওয়া হলো
                     renderDynamicLists(d);
                 }
             });
