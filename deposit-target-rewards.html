@@ -109,7 +109,7 @@
     <div class="header">
         <a href="javascript:history.back()" class="back-btn"><i class="fas fa-chevron-left"></i></a>
         <h2><i class="fas fa-gem"></i> ডিপোজিট রিওয়ার্ড</h2>
-        <p>টার্গেট পূরণ করে বোনাস ক্লেইম করুন</p>
+        <p id="monthStatus">টার্গেট পূরণ করে বোনাস ক্লেইম করুন</p>
     </div>
 
     <div id="rewardList">
@@ -131,44 +131,63 @@
     const db = firebase.firestore();
     const userPhone = localStorage.getItem("loggedUser");
 
+    // বর্তমান মাসের নাম পাওয়ার ফাংশন
+    function getMonthKey() {
+        const d = new Date();
+        return d.toLocaleString('en-US', { month: 'long', year: 'numeric' });
+    }
+
     async function loadRewards() {
         if (!userPhone) {
             document.getElementById("rewardList").innerHTML = "<p style='text-align:center; padding:20px;'>দয়া করে লগইন করুন।</p>";
             return;
         }
 
+        const currentMonth = getMonthKey();
+        document.getElementById("monthStatus").innerText = currentMonth + " এর টার্গেট";
+
         try {
             const configDoc = await db.collection("settings").doc("deposit_config").get();
             const targets = configDoc.exists ? configDoc.data().targets : [];
             
             const userDoc = await db.collection("users").doc(userPhone).get();
-            const userData = userDoc.exists ? userDoc.data() : { total_deposit: 0, claimed_deposit_rewards: [] };
+            const userData = userDoc.exists ? userDoc.data() : {};
             
-            const totalDep = userData.total_deposit || 0;
-            const claimed = userData.claimed_deposit_rewards || [];
+            // মাসিক রিসেট লজিক: এই মাসের টোটাল ডিপোজিট চেক করা
+            const lastResetMonth = userData.last_reset_month || "";
+            let monthlyTotalDep = 0;
+
+            // যদি ডাটাবেসের মাসের সাথে বর্তমান মাস মিলে, তবে ভ্যালু নিবে, নাহলে রিসেট (০) হবে
+            if (lastResetMonth === currentMonth) {
+                monthlyTotalDep = userData.monthly_deposit || 0;
+            }
+
+            // মাসিক ক্লেইম ট্র্যাকিং ম্যাপ
+            const monthlyClaimedMap = userData.monthly_claimed_rewards || {};
 
             const listBody = document.getElementById("rewardList");
             listBody.innerHTML = "";
 
             targets.forEach(t => {
-                const isClaimed = claimed.includes(t.id);
-                const progress = Math.min((totalDep / t.goal) * 100, 100);
-                const canClaim = totalDep >= t.goal && t.status === "active" && !isClaimed;
+                // এই মাসের জন্য ক্লেইম হয়েছে কি না চেক
+                const isClaimedThisMonth = monthlyClaimedMap[t.id] === currentMonth;
+                const progress = Math.min((monthlyTotalDep / t.goal) * 100, 100);
+                const canClaim = monthlyTotalDep >= t.goal && t.status === "active" && !isClaimedThisMonth;
 
                 listBody.innerHTML += `
                     <div class="reward-item">
                         <div class="reward-icon-box"><i class="fas fa-gift"></i></div>
                         <div class="info-content">
                             <h4>${t.title}</h4>
-                            <p>বোনাস: <b>৳${t.bonus}</b> <span style="float:right"><b>${totalDep}</b> / ${t.goal}</span></p>
+                            <p>বোনাস: <b>৳${t.bonus}</b> <span style="float:right"><b>${monthlyTotalDep}</b> / ${t.goal}</span></p>
                             <div class="progress-box">
                                 <div class="progress-fill" style="width: ${progress}%"></div>
                             </div>
                         </div>
                         <div>
-                            ${isClaimed ? '<button class="claim-btn btn-done" disabled>Claimed</button>' : 
+                            ${isClaimedThisMonth ? '<button class="claim-btn btn-done" disabled>Claimed</button>' : 
                               canClaim ? `<button class="claim-btn btn-ready" onclick="claim('${t.id}', ${t.bonus})">Claim</button>` :
-                              `<button class="claim-btn btn-locked" disabled>Claim</button>`}
+                              `<button class="claim-btn btn-locked" disabled>Locked</button>`}
                         </div>
                     </div>`;
             });
@@ -178,16 +197,31 @@
     }
 
     async function claim(id, amt) {
+        const currentMonth = getMonthKey();
         Swal.fire({ title: 'প্রসেসিং...', didOpen: () => { Swal.showLoading(); } });
+        
         try {
-            await db.collection("users").doc(userPhone).update({
-                balance: firebase.firestore.FieldValue.increment(amt),
-                claimed_deposit_rewards: firebase.firestore.FieldValue.arrayUnion(id)
+            const userRef = db.collection("users").doc(userPhone);
+            
+            // ট্রানজ্যাকশন ব্যবহার করা হয়েছে যাতে ডাবল ক্লেইম না হয়
+            await db.runTransaction(async (transaction) => {
+                const uDoc = await transaction.get(userRef);
+                const currentMonthlyClaimed = uDoc.data().monthly_claimed_rewards || {};
+                
+                if (currentMonthlyClaimed[id] === currentMonth) {
+                    throw "ইতিমধ্যে এই মাসে ক্লেইম করা হয়েছে!";
+                }
+
+                transaction.update(userRef, {
+                    balance: firebase.firestore.FieldValue.increment(amt),
+                    [`monthly_claimed_rewards.${id}`]: currentMonth
+                });
             });
-            Swal.fire({ icon: 'success', title: 'সফল!', text: `আপনি ৳${amt} বোনাস পেয়েছেন।` });
+
+            Swal.fire({ icon: 'success', title: 'সফল!', text: `আপনি এই মাসে ৳${amt} বোনাস পেয়েছেন।` });
             loadRewards();
         } catch (e) { 
-            Swal.fire('Error', 'চেষ্টা করুন আবার।', 'error'); 
+            Swal.fire('Error', e.message || 'চেষ্টা করুন আবার।', 'error'); 
         }
     }
 
