@@ -12,40 +12,42 @@
         }
         body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; padding: 15px; }
         .header { display: flex; align-items: center; gap: 15px; margin-bottom: 30px; color: #333; }
+        .header h2 { font-size: 20px; }
+        .header i { cursor: pointer; font-size: 18px; color: #666; }
         
         /* বাটন স্টাইল */
         .reward-menu-container {
             display: flex;
             flex-direction: column;
-            gap: 15px;
+            gap: 12px;
         }
         .menu-btn {
             background: white;
-            padding: 20px;
-            border-radius: 20px;
+            padding: 18px;
+            border-radius: 18px;
             display: flex;
             align-items: center;
             justify-content: space-between;
             text-decoration: none;
             color: #333;
             font-weight: bold;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
-            transition: transform 0.2s;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.04);
+            transition: transform 0.2s, background 0.2s;
             border: 1px solid #eee;
-            cursor: pointer; /* নতুন যোগ করা */
         }
         .menu-btn:active {
-            transform: scale(0.98);
+            transform: scale(0.97);
+            background: #f9f9f9;
         }
         .btn-info {
             display: flex;
             align-items: center;
             gap: 15px;
-            font-size: 16px;
+            font-size: 15px;
         }
         .icon-circle {
-            width: 45px;
-            height: 45px;
+            width: 42px;
+            height: 42px;
             border-radius: 12px;
             display: flex;
             align-items: center;
@@ -53,7 +55,7 @@
             color: white;
             font-size: 18px;
         }
-        .arrow { color: #ccc; }
+        .arrow { color: #ccc; font-size: 14px; }
     </style>
 </head>
 <body>
@@ -65,23 +67,7 @@
 
     <div class="reward-menu-container">
         
-        <div class="menu-btn activity-item" onclick="window.location.href='main_rewards.html'">
-            <div class="btn-info">
-                <div class="icon-circle" style="background: #f1c40f;"><i class="fas fa-trophy"></i></div>
-                <span>Main Rewards</span>
-            </div>
-            <i class="fas fa-chevron-right arrow"></i>
-        </div>
-
-        <a href="main-reward.html" class="menu-btn">
-            <div class="btn-info">
-                <div class="icon-circle" style="background: #3498db;"><i class="fas fa-star"></i></div>
-                <span>Main Rewards</span>
-            </div>
-            <i class="fas fa-chevron-right arrow"></i>
-        </a>
-
-        <a href="referral-target.html" class="menu-btn">
+        <a href="referral-target-rewards.html" class="menu-btn">
             <div class="btn-info">
                 <div class="icon-circle" style="background: #9b59b6;"><i class="fas fa-users"></i></div>
                 <span>Referral Target Rewards</span>
@@ -89,7 +75,7 @@
             <i class="fas fa-chevron-right arrow"></i>
         </a>
 
-        <a href="deposit-target.html" class="menu-btn">
+        <a href="deposit-target-rewards.html" class="menu-btn">
             <div class="btn-info">
                 <div class="icon-circle" style="background: #2ecc71;"><i class="fas fa-wallet"></i></div>
                 <span>Deposit Target Rewards</span>
@@ -97,7 +83,7 @@
             <i class="fas fa-chevron-right arrow"></i>
         </a>
 
-        <a href="betting-reward.html" class="menu-btn">
+        <a href="daily-betting-rewards.html" class="menu-btn">
             <div class="btn-info">
                 <div class="icon-circle" style="background: #e67e22;"><i class="fas fa-dice"></i></div>
                 <span>Daily Betting Rewards</span>
@@ -105,7 +91,7 @@
             <i class="fas fa-chevron-right arrow"></i>
         </a>
 
-        <a href="gift-code.html" class="menu-btn">
+        <a href="gift-code-claim.html" class="menu-btn">
             <div class="btn-info">
                 <div class="icon-circle" style="background: #e74c3c;"><i class="fas fa-gift"></i></div>
                 <span>Gift Code Claim</span>
@@ -117,4 +103,3 @@
 
 </body>
 </html>
-
