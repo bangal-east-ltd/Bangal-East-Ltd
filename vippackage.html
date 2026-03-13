@@ -57,7 +57,6 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
         import { getFirestore, doc, getDoc, updateDoc, onSnapshot, collection, addDoc, query, where, getDocs, deleteDoc, runTransaction, increment } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-        // আপনার Account পেজের সাথে মিল রেখে সঠিক Config
         const firebaseConfig = {
           apiKey: "AIzaSyCALYxA2M4BwIXq5KC3VMGsZpAFh8nL3fo",
           authDomain: "bengal-east-company-limited.firebaseapp.com",
@@ -70,7 +69,6 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         
-        // Account পেজের সাথে মিল রেখে loggedUser ব্যবহার
         const userPhone = localStorage.getItem("loggedUser");
 
         function showToast(message) {
@@ -84,16 +82,14 @@
             window.location.replace("index.html");
         }
 
-        // রিয়েল-টাইম ব্যালেন্স লিসেনার (Account পেজের সাথে সিঙ্ক থাকবে)
         onSnapshot(doc(db, "users", userPhone), (snapshot) => {
             if(snapshot.exists()) {
                 const balance = parseFloat(snapshot.data().balance || 0).toFixed(2);
                 document.getElementById('userBalanceDisplay').innerText = balance;
-                localStorage.setItem("userBalance", balance); // লোকাল মেমরিতে আপডেট
+                localStorage.setItem("userBalance", balance);
             }
         });
 
-        // সাবস্ক্রিপশন এবং প্যাকেজ লোড লজিক
         const loadContent = () => {
             const q = query(collection(db, "user_subscriptions"), where("phone", "==", userPhone));
             
@@ -104,13 +100,11 @@
                 subSnapshot.forEach(child => {
                     const data = child.data();
                     mySubs[data.package_id] = data;
-                    // মেয়াদ শেষ হলে ডিলিট
                     if (data.expire_time && now >= data.expire_time) {
                         deleteDoc(doc(db, "user_subscriptions", child.id));
                     }
                 });
 
-                // প্যাকেজগুলো ডিসপ্লে করা
                 onSnapshot(collection(db, "packages_vip1"), (pkgSnapshot) => {
                     const pkgDisplay = document.getElementById('packageDisplay');
                     pkgDisplay.innerHTML = "";
@@ -199,7 +193,13 @@
                     const expireTime = startTime + (validity * 24 * 60 * 60 * 1000);
                     
                     try {
-                        await updateDoc(userRef, { balance: balance - price });
+                        // আপনার নতুন লজিক এখানে যুক্ত করা হয়েছে
+                        await updateDoc(userRef, { 
+                            balance: balance - price,
+                            status: "active",              // ইউজারকে এক্টিভ করবে
+                            totalDeposit: increment(price)  // মোট ডিপোজিট আপডেট করবে
+                        });
+
                         await addDoc(collection(db, "user_subscriptions"), {
                             phone: userPhone,
                             package_id: pkgId,
@@ -211,8 +211,13 @@
                             status: "active"
                         });
                         showToast("প্যাকেজটি সফলভাবে সক্রিয় হয়েছে!");
-                    } catch (e) { showToast("ত্রুটি হয়েছে, আবার চেষ্টা করুন।"); }
-                } else { showToast("ব্যালেন্স পর্যাপ্ত নয়!"); }
+                    } catch (e) { 
+                        console.error(e);
+                        showToast("ত্রুটি হয়েছে, আবার চেষ্টা করুন।"); 
+                    }
+                } else { 
+                    showToast("ব্যালেন্স পর্যাপ্ত নয়!"); 
+                }
             }
         };
 
