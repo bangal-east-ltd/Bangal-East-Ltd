@@ -3,139 +3,30 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin - VIP 4 Control Panel</title>
+    <title>Deposit Admin - 10 Rows</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f4f7fe; padding: 20px; }
-        .container { max-width: 900px; margin: 0 auto; }
-        .card { background: #fff; padding: 20px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); margin-bottom: 20px; }
-        .card h3 { margin-top: 0; color: #333; display: flex; align-items: center; gap: 10px; font-size: 18px; border-bottom: 1px solid #eee; padding-bottom: 10px; }
-        
-        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
-        .form-group { margin-bottom: 15px; }
-        label { display: block; font-size: 13px; margin-bottom: 5px; color: #666; font-weight: 600; }
-        input { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; outline: none; transition: 0.3s; }
-        input:focus { border-color: #2575fc; }
-        
-        button { cursor: pointer; border: none; border-radius: 8px; font-weight: bold; transition: 0.3s; }
-        .btn-main { background: #2575fc; color: white; width: 100%; padding: 12px; margin-top: 10px; }
-        .btn-main:hover { background: #1a5fdb; }
-        .btn-sub { background: #00c851; color: white; padding: 10px 20px; }
-        .btn-sub:hover { background: #00ae44; }
-        
-        .search-box { display: flex; gap: 10px; margin-top: 10px; }
-        .search-box input { flex: 1; }
-        
-        .status-badge { font-size: 12px; padding: 4px 8px; border-radius: 5px; margin-top: 10px; display: inline-block; }
+        :root { --vip-gold: linear-gradient(135deg, #d4af37 0%, #f9f295 50%, #b8860b 100%); --dark-bg: #1a1a1a; }
+        body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; padding: 20px; }
+        .admin-container { max-width: 950px; margin: 0 auto; background: white; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); overflow: hidden; }
+        .admin-header { background: var(--dark-bg); color: #f9f295; padding: 25px; text-align: center; border-bottom: 4px solid #d4af37; }
+        .config-card { padding: 12px 20px; border-bottom: 1px solid #eee; display: grid; grid-template-columns: 1.5fr 1fr 1fr 1fr; gap: 15px; align-items: center; }
+        input, select { padding: 10px; border: 1px solid #ddd; border-radius: 8px; width: 100%; font-size: 13px; }
+        .vip6-btn { background: var(--vip-gold); color: #000; border: none; padding: 18px; border-radius: 12px; font-weight: bold; cursor: pointer; width: calc(100% - 40px); margin: 20px; text-transform: uppercase; }
+        .row-num { background: #333; color: #fff; width: 25px; height: 25px; display: inline-flex; align-items: center; justify-content: center; border-radius: 50%; font-size: 11px; margin-right: 5px; }
+        .label-text { font-size: 11px; color: #888; font-weight: bold; display: block; margin-bottom: 4px; }
     </style>
 </head>
 <body>
-
-<div class="container">
-    <h2 style="text-align:center; color:#2575fc;"> <i class="fas fa-tools"></i> Admin VIP 4 Dashboard</h2>
-
-    <div class="card">
-        <h3><i class="fas fa-users-cog"></i> Referral Target Reward Settings</h3>
-        <p style="font-size: 12px; color: #888; margin-bottom: 15px;">কতজন একটিভ রেফার হলে কত টাকা বোনাস পাবে তা এখান থেকে সেট করুন।</p>
-        <div class="grid">
-            <div class="form-group">
-                <label>10 Active Referrals Bonus (৳)</label>
-                <input type="number" id="amt10" placeholder="Ex: 500">
-            </div>
-            <div class="form-group">
-                <label>20 Active Referrals Bonus (৳)</label>
-                <input type="number" id="amt20" placeholder="Ex: 1200">
-            </div>
-            <div class="form-group">
-                <label>30 Active Referrals Bonus (৳)</label>
-                <input type="number" id="amt30" placeholder="Ex: 2000">
-            </div>
-            <div class="form-group">
-                <label>50 Active Referrals Bonus (৳)</label>
-                <input type="number" id="amt50" placeholder="Ex: 4000">
-            </div>
-            <div class="form-group">
-                <label>100 Active Referrals Bonus (৳)</label>
-                <input type="number" id="amt100" placeholder="Ex: 10000">
-            </div>
-        </div>
-        <button class="btn-main" style="background: #6a11cb;" onclick="updateReferralRewards()">Save Referral Rewards</button>
-    </div>
-
-    <div class="card">
-        <h3><i class="fas fa-percent"></i> Bonus & ROI Settings</h3>
-        <div class="grid">
-            <div class="form-group">
-                <label>Daily Referral Bonus (৳)</label>
-                <input type="number" id="admRefBonus" placeholder="Amount">
-            </div>
-            <div class="form-group">
-                <label>Daily ROI (%)</label>
-                <input type="number" id="admRoiPercent" placeholder="Percent">
-            </div>
-            <div class="form-group">
-                <label>Level 1 Bonus (%)</label>
-                <input type="number" id="admLevel1" placeholder="Level 1 %">
-            </div>
-            <div class="form-group">
-                <label>Monthly Salary (%)</label>
-                <input type="number" id="admSalary" placeholder="On Total Dep %">
-            </div>
-        </div>
-        <button class="btn-main" onclick="updateAllVip4()">Save Global Settings</button>
-    </div>
-
-    <div class="card">
-        <h3><i class="fas fa-gift"></i> Gift Code Generator</h3>
-        <div class="grid">
-            <div class="form-group">
-                <label>Unique Code</label>
-                <input type="text" id="newGiftCode" placeholder="Ex: FREE500">
-            </div>
-            <div class="form-group">
-                <label>Amount (৳)</label>
-                <input type="number" id="giftAmt" placeholder="Ex: 500">
-            </div>
-        </div>
-        <button class="btn-sub" onclick="saveGiftCode()">Generate & Save Code</button>
-    </div>
-
-    <div class="card">
-        <h3><i class="fas fa-wallet"></i> Deposit Target Rewards</h3>
-        <p style="font-size: 12px; color: #888; margin-bottom: 15px;">ইউজার নির্দিষ্ট পরিমাণ টাকা ডিপোজিট করলে কত বোনাস পাবে তা এখান থেকে সেট করুন।</p>
-        <div class="grid">
-            <div class="form-group"><label>1000 Dep Bonus (৳)</label><input type="number" id="depBonus1000" placeholder="Ex: 100"></div>
-            <div class="form-group"><label>2000 Dep Bonus (৳)</label><input type="number" id="depBonus2000" placeholder="Ex: 250"></div>
-            <div class="form-group"><label>5000 Dep Bonus (৳)</label><input type="number" id="depBonus5000" placeholder="Ex: 600"></div>
-            <div class="form-group"><label>10000 Dep Bonus (৳)</label><input type="number" id="depBonus10000" placeholder="Ex: 1200"></div>
-            <div class="form-group"><label>25000 Dep Bonus (৳)</label><input type="number" id="depBonus25000" placeholder="Ex: 3000"></div>
-            <div class="form-group"><label>50000 Dep Bonus (৳)</label><input type="number" id="depBonus50000" placeholder="Ex: 7000"></div>
-            <div class="form-group"><label>100000 Dep Bonus (৳)</label><input type="number" id="depBonus100000" placeholder="Ex: 15000"></div>
-            <div class="form-group"><label>200000 Dep Bonus (৳)</label><input type="number" id="depBonus200000" placeholder="Ex: 35000"></div>
-            <div class="form-group"><label>500000 Dep Bonus (৳)</label><input type="number" id="depBonus500000" placeholder="Ex: 100000"></div>
-        </div>
-        <button class="btn-main" style="background: #2ecc71;" onclick="saveDepSettings()">Save Deposit Rewards</button>
-    </div>
-
-    <div class="card">
-        <h3><i class="fas fa-user-shield"></i> User Control (Unlock Claims)</h3>
-        <div class="search-box">
-            <input type="text" id="userSearchId" placeholder="Enter User ID (Phone Number)">
-            <button class="btn-sub" style="background:#333;" onclick="searchUser()">Search</button>
-        </div>
-        <div id="userInfo" style="display:none; margin-top:15px; border-top:1px dashed #ccc; padding-top:10px;">
-            <p><strong>Name:</strong> <span id="uName">---</span></p>
-            <p><strong>Total Deposit:</strong> ৳<span id="uDep">0</span></p>
-            <button class="btn-main" style="background: #e67e22;" onclick="resetUserClaim()">Reset Claims (Enable Buttons)</button>
-        </div>
-    </div>
-
+<div class="admin-container">
+    <div class="admin-header"><h1><i class="fas fa-wallet"></i> Deposit Admin</h1><p>VIP 6 Exclusive (10 Levels)</p></div>
+    <div id="depConfigWrapper"><p style="text-align: center; padding: 40px;">লোড হচ্ছে...</p></div>
+    <button class="vip6-btn" onclick="saveDepSettings()"><i class="fas fa-save"></i> Save Deposit Rewards</button>
 </div>
-
-<script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-    import { getFirestore, doc, setDoc, updateDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-
+<script>
     const firebaseConfig = {
         apiKey: "AIzaSyCALYxA2M4BwIXq5KC3VMGsZpAFh8nL3fo",
         authDomain: "bengal-east-company-limited.firebaseapp.com",
@@ -144,85 +35,38 @@
         messagingSenderId: "653223286483",
         appId: "1:653223286483:web:8e4ed0782ae807f8f02626"
     };
+    if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
+    const db = firebase.firestore();
 
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
-
-    // ১. Referral Rewards Save (User Page এর সাথে কানেক্টেড)
-    window.updateReferralRewards = async () => {
-        const rewardData = {
-            10: Number(document.getElementById('amt10').value) || 0,
-            20: Number(document.getElementById('amt20').value) || 0,
-            30: Number(document.getElementById('amt30').value) || 0,
-            50: Number(document.getElementById('amt50').value) || 0,
-            100: Number(document.getElementById('amt100').value) || 0
-        };
+    async function fetchDepSettings() {
+        const wrapper = document.getElementById("depConfigWrapper");
         try {
-            await setDoc(doc(db, "admin_settings", "referral_rewards"), rewardData);
-            alert("Success: Referral Rewards Updated!");
-        } catch (e) { alert("Error: " + e.message); }
-    };
-
-    // ২. Deposit Target Rewards Save
-    window.saveDepSettings = async () => {
-        const depData = {
-            1000: Number(document.getElementById('depBonus1000').value) || 0,
-            2000: Number(document.getElementById('depBonus2000').value) || 0,
-            5000: Number(document.getElementById('depBonus5000').value) || 0,
-            10000: Number(document.getElementById('depBonus10000').value) || 0,
-            25000: Number(document.getElementById('depBonus25000').value) || 0,
-            50000: Number(document.getElementById('depBonus50000').value) || 0,
-            100000: Number(document.getElementById('depBonus100000').value) || 0,
-            200000: Number(document.getElementById('depBonus200000').value) || 0,
-            500000: Number(document.getElementById('depBonus500000').value) || 0
-        };
-        try {
-            await setDoc(doc(db, "admin_settings", "deposit_targets"), depData);
-            alert("Success: Deposit Rewards Updated!");
-        } catch (e) { alert("Error: " + e.message); }
-    };
-
-    // ৩. Global VIP 4 Settings
-    window.updateAllVip4 = async () => {
-        const settings = {
-            ref_bonus: document.getElementById('admRefBonus').value,
-            roi_percent: document.getElementById('admRoiPercent').value,
-            level1_percent: document.getElementById('admLevel1').value,
-            salary_percent: document.getElementById('admSalary').value
-        };
-        await setDoc(doc(db, "admin_settings", "vip4_config"), settings, { merge: true });
-        alert("Global Settings Saved!");
-    };
-
-    // ৪. Gift Code
-    window.saveGiftCode = async () => {
-        const code = document.getElementById('newGiftCode').value;
-        const amt = parseFloat(document.getElementById('giftAmt').value);
-        if(!code || isNaN(amt)) return alert("Fill data");
-        await updateDoc(doc(db, "admin_settings", "gift_codes"), { [code]: amt });
-        alert("Gift Code Saved!");
-    };
-
-    // ৫. User Control
-    window.searchUser = async () => {
-        const id = document.getElementById('userSearchId').value;
-        const uSnap = await getDoc(doc(db, "users", id));
-        if(uSnap.exists()){
-            const data = uSnap.data();
-            document.getElementById('userInfo').style.display = "block";
-            document.getElementById('uName').innerText = data.name || "N/A";
-            document.getElementById('uDep').innerText = data.total_deposit || 0;
-        } else { alert("Not found"); }
-    };
-
-    window.resetUserClaim = async () => {
-        const id = document.getElementById('userSearchId').value;
-        await updateDoc(doc(db, "users", id), {
-            claimed_dep: [], claimed_ref_target: []
-        });
-        alert("Claims Reset!");
-    };
-
+            const doc = await db.collection("settings").doc("deposit_config").get();
+            let targets = doc.exists ? doc.data().targets : [];
+            while(targets.length < 10) targets.push({ id: "dep_"+(targets.length+1), goal: 0, bonus: 0, title: "New Deposit Level", status: "inactive" });
+            wrapper.innerHTML = "";
+            targets.slice(0, 10).forEach((t, i) => {
+                wrapper.innerHTML += `<div class="config-card" data-id="${t.id}">
+                    <div><span class="label-text"><span class="row-num">${i+1}</span> Title</span><input type="text" value="${t.title}" class="inp-title"></div>
+                    <div><span class="label-text">Deposit Target</span><input type="number" value="${t.goal}" class="inp-goal"></div>
+                    <div><span class="label-text">Bonus (৳)</span><input type="number" value="${t.bonus}" class="inp-bonus"></div>
+                    <div><span class="label-text">Status</span><select class="inp-status"><option value="active" ${t.status==='active'?'selected':''}>Unlock</option><option value="inactive" ${t.status==='inactive'?'selected':''}>Lock</option></select></div>
+                </div>`;
+            });
+        } catch (e) { Swal.fire("Error", "লোড ব্যর্থ", "error"); }
+    }
+    async function saveDepSettings() {
+        const updated = Array.from(document.querySelectorAll(".config-card")).map(card => ({
+            id: card.getAttribute("data-id"),
+            title: card.querySelector(".inp-title").value,
+            goal: parseInt(card.querySelector(".inp-goal").value) || 0,
+            bonus: parseInt(card.querySelector(".inp-bonus").value) || 0,
+            status: card.querySelector(".inp-status").value
+        }));
+        await db.collection("settings").doc("deposit_config").set({ targets: updated });
+        Swal.fire("সফল", "১০টি ডিপোজিট লেভেল সেভ হয়েছে", "success");
+    }
+    window.onload = fetchDepSettings;
 </script>
 </body>
 </html>
