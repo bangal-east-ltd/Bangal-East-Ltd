@@ -15,7 +15,6 @@
         body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; padding: 15px; }
         .header { display: flex; align-items: center; gap: 15px; margin-bottom: 20px; }
         
-        /* মেম্বার স্ট্যাটাস কার্ড */
         .status-card {
             background: white; padding: 10px 15px; border-radius: 12px;
             margin-bottom: 15px; display: flex; justify-content: space-between;
@@ -49,11 +48,6 @@
             font-weight: bold; cursor: pointer; margin-top: 5px;
         }
         .claim-btn:disabled { background: #cbd5e0; cursor: not-allowed; }
-        
-        /* এরর মেসেজ যখন মেম্বার একটিভ না */
-        .lock-overlay {
-            font-size: 11px; color: var(--danger); margin-top: 4px; display: block;
-        }
     </style>
 </head>
 <body>
@@ -124,20 +118,24 @@
         const db = getFirestore(app);
         const loggedUser = localStorage.getItem("loggedUser");
 
+        // একটিভ টিম গণনা করার ফিক্সড ফাংশন
         async function getActiveTeam(uid) {
-            const q = query(collection(db, "users"), where("referrerID", "==", uid));
-            const snap = await getDocs(q);
-            let activeCount = 0;
-            snap.forEach(d => {
-                if((parseFloat(d.data().total_deposit) || 0) >= 100) activeCount++;
-            });
-            return activeCount;
+            try {
+                const q = query(collection(db, "users"), where("referrerID", "==", uid));
+                const snap = await getDocs(q);
+                let activeCount = 0;
+                snap.forEach(d => {
+                    // ডাটাবেসে total_deposit স্ট্রিং হিসেবে থাকলে তাকে নাম্বারে রূপান্তর
+                    const dep = parseFloat(d.data().total_deposit) || 0;
+                    if(dep >= 100) activeCount++;
+                });
+                return activeCount;
+            } catch (e) { return 0; }
         }
 
         function sync() {
             if(!loggedUser) return;
 
-            // অ্যাডমিন সেটিংস ফেচ করা
             onSnapshot(doc(db, "admin_settings", "rewards_control"), (adminSnap) => {
                 if(adminSnap.exists()){
                     const conf = adminSnap.data();
@@ -147,18 +145,18 @@
                 }
             });
 
-            // ইউজার ডাটা এবং একটিভ স্ট্যাটাস চেক
             onSnapshot(doc(db, "users", loggedUser), async (snap) => {
                 if (snap.exists()) {
                     const d = snap.data();
+                    
+                    // ফিক্সড কন্ডিশন: টোটাল ডিপোজিট চেক
                     const totalDep = parseFloat(d.total_deposit) || 0;
                     const isActive = totalDep >= 100;
 
-                    // UI আপডেট
                     document.getElementById('mainBalance').innerText = "৳ " + (parseFloat(d.balance) || 0).toFixed(2);
-                    document.getElementById('referAmt').innerText = "৳ " + (d.refer_income || 0);
-                    document.getElementById('levelAmt').innerText = "৳ " + (d.level_income || 0);
-                    document.getElementById('roiAmt').innerText = "৳ " + (d.daily_roi || 0);
+                    document.getElementById('referAmt').innerText = "৳ " + (parseFloat(d.refer_income) || 0).toFixed(2);
+                    document.getElementById('levelAmt').innerText = "৳ " + (parseFloat(d.level_income) || 0).toFixed(2);
+                    document.getElementById('roiAmt').innerText = "৳ " + (parseFloat(d.daily_roi) || 0).toFixed(2);
                     
                     const activeCount = await getActiveTeam(loggedUser);
                     document.getElementById('activeTeamCount').innerText = activeCount;
@@ -168,19 +166,19 @@
                         statusDiv.innerHTML = `<span>Status: <span class="active-dot">● Active</span></span> <span>Deposit: ৳${totalDep}</span>`;
                         toggleButtons(false);
                     } else {
-                        statusDiv.innerHTML = `<span>Status: <span class="inactive-dot">● Inactive</span></span> <span style="color:red">Need ৳100 Deposit</span>`;
-                        toggleButtons(true, "ডিপোজিট করুন");
+                        statusDiv.innerHTML = `<span>Status: <span class="inactive-dot">● Inactive</span></span> <span style="color:red">Deposit Need ৳100</span>`;
+                        toggleButtons(true);
                     }
                 }
             });
         }
 
-        function toggleButtons(disabled, msg = "") {
+        function toggleButtons(disabled) {
             const btns = ['refBtn', 'levelBtn', 'roiBtn'];
             btns.forEach(id => {
-                document.getElementById(id).disabled = disabled;
-                if(disabled) document.getElementById(id).innerText = "Locked";
-                else document.getElementById(id).innerText = "Claim";
+                const el = document.getElementById(id);
+                el.disabled = disabled;
+                el.innerText = disabled ? "Locked" : "Claim";
             });
         }
 
@@ -193,12 +191,15 @@
                 const amount = parseFloat(snap.data()[field]) || 0;
                 
                 if(amount > 0) { 
-                    await updateDoc(ref, { balance: increment(amount), [field]: 0 }); 
+                    await updateDoc(ref, { 
+                        balance: increment(amount), 
+                        [field]: 0 
+                    }); 
                     alert("Claimed Successfully!"); 
                 } else {
-                    alert("কোনো ব্যালেন্স নেই!");
+                    alert("Claim করার মতো কোনো ব্যালেন্স নেই!");
                 }
-            } catch (e) { alert("Error!"); }
+            } catch (e) { alert("Error claiming bonus!"); }
             btn.disabled = false;
         };
 
@@ -206,4 +207,3 @@
     </script>
 </body>
 </html>
-
