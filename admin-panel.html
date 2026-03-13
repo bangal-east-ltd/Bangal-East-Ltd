@@ -271,7 +271,7 @@
         const activeNav = document.getElementById('nav-' + id);
         if(activeNav) activeNav.classList.add('active');
     }
- // --- USER LIST & STATS ---
+
     onSnapshot(collection(db, "users"), (snapshot) => {
         let totalBonus = 0;
         snapshot.forEach(u => {
@@ -335,7 +335,6 @@
 
             snapshot.forEach(child => {
                 const d = child.data();
-                // Fix: Get User ID from data
                 const displayID = d.userID || "N/A";
 
                 if(d.status === "Pending") {
@@ -378,16 +377,35 @@
         });
     }
 
+    // --- এই ফাংশনটি আপডেট করা হয়েছে যাতে রিওয়ার্ড পেজ আপডেট হয় ---
     window.approveDep = async function(id, userId, amt) {
         const userRef = doc(db, "users", userId);
         const snap = await getDoc(userRef);
         if(snap.exists()){
-            await updateDoc(userRef, { balance: (parseFloat(snap.data().balance) || 0) + parseFloat(amt) });
-            await updateDoc(doc(db, "deposits", id), { status: "Success", time: new Date().toLocaleString() });
+            const userData = snap.data();
+            const now = new Date();
+            const currentMonth = now.toLocaleString('en-US', { month: 'long', year: 'numeric' });
+            
+            const newBalance = (parseFloat(userData.balance) || 0) + parseFloat(amt);
+            const newTotalDep = (parseFloat(userData.total_deposit) || 0) + parseFloat(amt);
+            
+            let newMonthlyDep = parseFloat(amt);
+            if (userData.last_reset_month === currentMonth) {
+                newMonthlyDep = (parseFloat(userData.monthly_deposit) || 0) + parseFloat(amt);
+            }
+
+            await updateDoc(userRef, { 
+                balance: newBalance,
+                total_deposit: newTotalDep,
+                monthly_deposit: newMonthlyDep,
+                last_reset_month: currentMonth
+            });
+
+            await updateDoc(doc(db, "deposits", id), { status: "Success", time: now.toLocaleString() });
         }
     }
 
-    window.rejectDep = async function(id) {
+   window.rejectDep = async function(id) {
         let reason = prompt("Reject Reason:");
         if(reason) await updateDoc(doc(db, "deposits", id), { status: "Rejected", note: reason });
     }
@@ -406,8 +424,9 @@
                 await updateDoc(doc(db, "withdraws", id), { status: "Rejected", note: reason });
             }
         }
-                   }
-     window.updateNumbers = async function() {
+    }
+
+    window.updateNumbers = async function() {
         await setDoc(doc(db, "admin_settings", "numbers"), { 
             bkash: document.getElementById('setBkash').value, 
             nagad: document.getElementById('setNagad').value, 
