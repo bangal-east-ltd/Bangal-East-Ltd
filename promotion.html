@@ -107,7 +107,7 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
-    const loggedUser = localStorage.getItem("loggedUser"); // Main rewards এর সাথে মিল রাখতে loggedUser ব্যবহার করা হয়েছে
+    const loggedUser = localStorage.getItem("loggedUser");
     let allTeamData = [];
     let currentLevel = 1;
 
@@ -115,14 +115,12 @@
         if(!loggedUser) { window.location.href="login.html"; return; }
 
         try {
-            // ইউজার ডাটা রিড করা
             const userSnap = await db.collection("users").doc(loggedUser).get();
             if (userSnap.exists) {
                 const userData = userSnap.data();
                 const myUID = userData.userID;
                 document.getElementById('myBalanceDisplay').innerText = "৳ " + (parseFloat(userData.balance) || 0).toFixed(2);
 
-                // রেফারেল লিঙ্ক জেনারেট
                 const baseURL = window.location.origin + window.location.pathname.replace(/\/[^\/]*$/, "");
                 const finalLink = baseURL + "/index.html?ref=" + myUID;
                 document.getElementById('displayLink').innerText = finalLink;
@@ -140,16 +138,16 @@
         const snapshot = await db.collection("users").get();
         const users = snapshot.docs.map(doc => doc.data());
 
-        // টিম খোঁজার লজিক (Level 1, 2, 3)
         function findReferrals(parentID, level) {
             if (level > 3) return;
-            // Main reward এর সাথে মিল রাখতে referrerID চেক করা হচ্ছে
             const refs = users.filter(u => String(u.referrerID) === String(parentID));
             
             refs.forEach(u => {
-                // Main reward এর মতো এখানেও total_deposit চেক করা হচ্ছে
-                const dep = parseFloat(u.total_deposit || 0); 
-                const isActive = dep >= 100; // ১০০ বা তার বেশি হলে Active
+                // এখানে লজিক পরিবর্তন করা হয়েছে: balance ১০০ বা তার বেশি হলে Active
+                const currentBal = parseFloat(u.balance || 0); 
+                const dep = parseFloat(u.total_deposit || 0); // টেবিল এ দেখানোর জন্য ডিপোজিট ডাটা রাখা হয়েছে
+                
+                const isActive = currentBal >= 100; // ব্যালেন্স চেক
                 
                 if(isActive) activeCount++;
                 totalTeamDep += dep;
