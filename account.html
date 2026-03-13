@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Account - Premium Dashboard</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
         * { margin:0; padding:0; box-sizing:border-box; font-family: 'Segoe UI', sans-serif; }
         
@@ -178,7 +179,7 @@
             font-size: 20px; color: white; margin-right: 15px;
         }
 
-        .bg-deposit { background: linear-gradient(135deg, #00d2ff, #3a7bd5); }
+        .bg-wallet { background: linear-gradient(135deg, #00d2ff, #3a7bd5); }
         .bg-withdraw { background: linear-gradient(135deg, #ff9966, #ff5e62); }
         .bg-profile { background: linear-gradient(135deg, #8e2de2, #4a00e0); }
         .bg-support { background: linear-gradient(135deg, #00b09b, #96c93d); }
@@ -237,7 +238,7 @@
 
     <div class="button-list">
         <a href="deposit.html" class="action-btn">
-            <div class="btn-icon bg-deposit"><i class="fas fa-wallet"></i></div>
+            <div class="btn-icon bg-wallet"><i class="fas fa-wallet"></i></div>
             <span>Deposit</span>
             <i class="fas fa-chevron-right chevron"></i>
         </a>
@@ -302,16 +303,16 @@
                         document.getElementById("userPhoneDisplay").innerText = currentUserID;
                         document.getElementById("userBalanceDisplay").innerText = balance.toFixed(2);
 
-                        // একাউন্টে ১০০ টাকা থাকলেই একটিভ দেখাবে (লজিক পরিবর্তন)
+                        // এখানে আপনার আপডেট করা স্ট্যাটাস চেক লজিক বসানো হয়েছে
                         const statusTag = document.getElementById("membershipStatus");
-                        if (balance >= 100) {
+                        if (userData.status === "active" || balance >= 100) {
                             isActive = true;
                             statusTag.innerText = "Active Member";
                             statusTag.className = "status-tag status-active";
                             localStorage.setItem("userActiveStatus", "active");
                         } else {
                             isActive = false;
-                            statusTag.innerText = "No Active (Min 100 Taka)";
+                            statusTag.innerText = "Inactive";
                             statusTag.className = "status-tag status-inactive";
                             localStorage.setItem("userActiveStatus", "inactive");
                         }
@@ -337,7 +338,7 @@
             if (isActive) {
                 window.location.href = url;
             } else {
-                alert("আপনার একাউন্টে পর্যাপ্ত ব্যালেন্স নেই। কমপক্ষে ১০০ টাকা থাকলে আপনার একাউন্ট সক্রিয় হবে এবং আপনি উইথড্র করতে পারবেন।");
+                alert("আপনার একাউন্টটি সক্রিয় নয়। প্যাকেজ কিনুন অথবা কমপক্ষে ১০০ টাকা ব্যালেন্স রাখুন।");
             }
         };
 
@@ -368,12 +369,25 @@
             }
         };
 
+        // লগআউট করার জন্য সুন্দর পপ-আপ ফাংশন
         window.handleLogout = function() {
-            if(confirm("লগআউট করতে চান?")) {
-                localStorage.clear();
-                window.location.replace("index.html");
-            }
+            Swal.fire({
+                title: 'লগআউট করতে চান?',
+                text: "আপনি কি নিশ্চিত যে আপনি আপনার একাউন্ট থেকে বের হতে চাইতেছেন?",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#e35d5b',
+                cancelButtonColor: '#11998e',
+                confirmButtonText: 'হ্যাঁ, লগআউট করুন',
+                cancelButtonText: 'না, ফিরে যান'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    localStorage.clear();
+                    window.location.replace("index.html");
+                }
+            });
         };
     </script>
 </body>
 </html>
+
