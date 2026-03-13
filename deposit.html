@@ -10,108 +10,96 @@
             --primary: #11998e; 
             --secondary: #38ef7d;
             --bg: #ffffff; 
-            --card-bg: #f8fafc; 
+            --card-bg: #ffffff; 
             --text-dark: #1e293b; 
             --text-light: #64748b;
+            --nagad: #f7941d;
+            --bkash: #e2136e;
         }
         * { margin:0; padding:0; box-sizing:border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        body { background: var(--bg); color: var(--text-dark); padding-bottom: 110px; }
+        body { background: #fdfdfd; color: var(--text-dark); padding-bottom: 110px; }
 
         .header {
             display: flex; justify-content: space-between; align-items: center;
             padding: 15px 20px; background: white; border-bottom: 1px solid #e2e8f0;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
             position: sticky; top: 0; z-index: 1000;
         }
         .header a { color: var(--text-dark); text-decoration: none; font-size: 20px; }
 
-        /* নতুন হিস্টোরি বাটন স্টাইল */
         .history-btn {
-            background: var(--primary);
-            color: white !important;
-            padding: 8px 12px;
-            border-radius: 8px;
-            font-size: 12px !important;
-            font-weight: 700;
-            display: flex;
-            align-items: center;
-            gap: 5px;
-            text-decoration: none;
-            box-shadow: 0 4px 10px rgba(17, 153, 142, 0.2);
+            background: var(--primary); color: white !important; padding: 8px 12px;
+            border-radius: 8px; font-size: 12px !important; font-weight: 700;
+            display: flex; align-items: center; gap: 5px; text-decoration: none;
         }
 
         .container { padding: 0 20px; }
         .section-title { 
             font-size: 15px; font-weight: 700; margin: 25px 0 15px; 
-            color: var(--primary); display: flex; align-items: center; gap: 8px; 
+            color: var(--text-dark); display: flex; align-items: center; gap: 8px; 
         }
 
-        /* মেথড কার্ড ডিজাইন - রঙিন */
+        /* মেথড কার্ড ডিজাইন - ছবির মতো রঙিন বর্ডার */
         .methods { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
         .method-card {
-            background: var(--card-bg); padding: 15px 5px; border-radius: 16px;
-            text-align: center; border: 2px solid transparent; cursor: pointer;
-            transition: 0.3s; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+            background: white; padding: 12px 5px; border-radius: 12px;
+            text-align: center; border: 1.5px solid #eee; cursor: pointer;
+            transition: 0.3s; position: relative;
         }
-        .method-card img { width: 42px; height: 42px; margin-bottom: 8px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        .method-card p { font-size: 12px; font-weight: bold; color: var(--text-light); }
+        .method-card img { width: 45px; height: 45px; margin-bottom: 5px; object-fit: contain; }
+        .method-card p { font-size: 11px; font-weight: bold; color: var(--text-light); }
         
-        .method-card.active { border-color: var(--primary); background: #e0f2f1; transform: translateY(-3px); }
+        /* একটিভ মেথড বর্ডার কালার */
+        .method-card.active { 
+            border: 2px solid var(--primary); 
+            box-shadow: 0 4px 12px rgba(17, 153, 142, 0.15);
+        }
         .method-card.active p { color: var(--primary); }
 
-        /* অ্যামাউন্ট চিপস */
+        /* অ্যামাউন্ট গ্রিড - ছবির মতো নিচের বর্ডার */
         .amount-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
         .amount-chip {
-            background: white; padding: 15px; border-radius: 12px; text-align: center;
-            font-weight: 700; color: var(--text-dark); border: 2px solid #e2e8f0; 
-            cursor: pointer; transition: 0.3s;
+            background: white; padding: 15px; border-radius: 10px; text-align: center;
+            font-weight: 700; color: var(--text-dark); 
+            border: 1px solid #e2e8f0;
+            border-bottom: 4px solid #11998e; /* নিচে রঙিন ডটার/বর্ডার */
+            cursor: pointer; transition: 0.2s;
         }
-        .amount-chip:hover { border-color: var(--secondary); background: #f0fdf4; }
         .amount-chip.active { 
-            background: linear-gradient(135deg, var(--primary), var(--secondary)); 
-            border-color: transparent; color: white; 
-            box-shadow: 0 5px 15px rgba(17, 153, 142, 0.4); 
+            background: linear-gradient(to bottom, #ffffff, #e0f2f1);
+            border-color: var(--primary);
+            border-bottom: 4px solid #00695c;
+            transform: scale(0.98);
         }
 
-        /* ইনপুট বক্স */
+        /* ইনপুট বক্স - ছবির মতো ডিজাইন */
         .input-group { 
-            background: var(--card-bg); padding: 25px; border-radius: 20px; 
-            margin-top: 25px; border: 1px solid #e2e8f0; 
-            box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05);
+            background: white; padding: 15px 0; border-radius: 20px; 
+            margin-top: 20px;
         }
         .input-box { margin-bottom: 20px; }
-        .input-box label { display: block; font-size: 13px; color: var(--text-light); margin-bottom: 10px; font-weight: 600; }
+        .input-box label { display: block; font-size: 13px; color: var(--text-light); margin-bottom: 8px; font-weight: 600; }
         .input-box input {
-            width: 100%; padding: 16px; border: 2px solid #e2e8f0; border-radius: 12px;
-            outline: none; font-size: 18px; background: white; color: var(--text-dark); 
-            transition: 0.3s; font-weight: 600;
+            width: 100%; padding: 14px; border: 1.5px solid #e2e8f0; border-radius: 10px;
+            outline: none; font-size: 16px; background: #fcfcfc; color: var(--text-dark); 
+            transition: 0.3s;
         }
-        .input-box input:focus { border-color: var(--primary); box-shadow: 0 0 0 4px rgba(17, 153, 142, 0.1); }
-
-        /* বোনাস ইনফো */
-        .bonus-info { 
-            background: #d1fae5; color: #065f46; padding: 12px; 
-            border-radius: 12px; font-size: 14px; margin-top: 10px; 
-            display: none; border: 1px solid #34d399; font-weight: 600;
-            text-align: center;
-        }
+        .input-box input:focus { border-color: var(--primary); background: white; }
 
         /* ফুটার */
         .deposit-footer {
             position: fixed; bottom: 0; left: 0; width: 100%;
-            background: white; padding: 20px; border-top: 1px solid #e2e8f0;
+            background: white; padding: 15px 20px; border-top: 1px solid #eee;
             display: flex; justify-content: space-between; align-items: center; 
-            z-index: 100; box-shadow: 0 -5px 20px rgba(0,0,0,0.05);
+            z-index: 100;
         }
         .submit-btn {
-            background: #cbd5e1; color: white; border: none; padding: 16px 45px;
-            border-radius: 15px; font-weight: 800; cursor: pointer; transition: 0.4s;
-            font-size: 16px;
+            background: #d1d5db; color: white; border: none; padding: 14px 40px;
+            border-radius: 12px; font-weight: 700; cursor: pointer; transition: 0.3s;
+            font-size: 15px;
         }
         .submit-btn.active { 
             background: linear-gradient(135deg, var(--primary), var(--secondary)); 
-            box-shadow: 0 8px 20px rgba(17, 153, 142, 0.3);
-            transform: scale(1.02);
+            box-shadow: 0 4px 15px rgba(17, 153, 142, 0.3);
         }
     </style>
 </head>
@@ -126,10 +114,10 @@
     </div>
 
     <div class="container">
-        <p class="section-title"><i class="fas fa-wallet"></i> Select Payment Method</p>
+        <p class="section-title"><i class="fas fa-wallet" style="color: var(--primary);"></i> Select Payment Method</p>
         <div class="methods">
             <div class="method-card active" onclick="selectMethod(this, 'Nagad')">
-                <img src="https://upload.wikimedia.org/wikipedia/en/thumb/8/8b/Nagad_Logo.svg/1200px-Nagad_Logo.svg.png">
+                <img src="https://itshamsul.com/wp-content/uploads/2024/02/nagad-logo-circle.png">
                 <p>Nagad</p>
             </div>
             <div class="method-card" onclick="selectMethod(this, 'bKash')">
@@ -146,7 +134,7 @@
             </div>
         </div>
 
-        <p class="section-title"><i class="fas fa-th-large"></i> Quick Select Amount</p>
+        <p class="section-title"><i class="fas fa-th-large" style="color: var(--primary);"></i> Quick Select Amount</p>
         <div class="amount-grid">
             <div class="amount-chip" onclick="setAmount(this, 100)">৳100</div>
             <div class="amount-chip" onclick="setAmount(this, 500)">৳500</div>
@@ -159,12 +147,9 @@
         <div class="input-group">
             <div class="input-box">
                 <label>Deposit Amount (৳100 - ৳25,000)</label>
-                <input type="number" id="amountInput" placeholder="Enter amount" oninput="validateForm()">
+                <input type="number" id="amountInput" placeholder="100" oninput="validateForm()">
             </div>
-            <div id="bonusBox" class="bonus-info">
-                <i class="fas fa-gift"></i> Congratulations! Bonus: ৳<span id="bonusAmt">0</span>
-            </div>
-            <div class="input-box" style="margin-top: 15px;">
+            <div class="input-box">
                 <label>Your Account Number</label>
                 <input type="number" id="userNumber" placeholder="01XXXXXXXXX" oninput="validateForm()">
             </div>
@@ -173,8 +158,8 @@
 
     <div class="deposit-footer">
         <div class="recharge-info">
-            <p style="font-size: 12px; color: var(--text-light); font-weight: 600;">Paying via:</p>
-            <b id="selectedMethodDisplay" style="color: var(--primary);">Nagad Fast</b>
+            <p style="font-size: 11px; color: var(--text-light); font-weight: 600;">Paying via:</p>
+            <b id="selectedMethodDisplay" style="color: var(--primary); font-size: 14px;">Nagad Fast</b>
         </div>
         <button id="depositBtn" class="submit-btn" onclick="saveAndProceed()" disabled>Next Step <i class="fas fa-chevron-right" style="font-size: 12px; margin-left: 5px;"></i></button>
     </div>
@@ -195,22 +180,18 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        // গ্লোবাল ভেরিয়েবল
         let selectedMethod = "Nagad";
 
-        // মেথড সিলেক্ট করার সময় এডমিন নম্বর লোড করা
         window.selectMethod = async function(el, m) {
             document.querySelectorAll('.method-card').forEach(c => c.classList.remove('active'));
             el.classList.add('active');
             selectedMethod = m;
             localStorage.setItem("dep_method", m);
             
-            // এডমিন সেটিংস থেকে নম্বর আনা
             const docRef = doc(db, "admin_settings", "numbers");
             const docSnap = await getDoc(docRef);
             if (docSnap.exists()) {
                 const data = docSnap.data();
-                // Firestore এ ফিল্ডের নাম ছোট হাতের হতে পারে (যেমন: bkash, nagad)
                 localStorage.setItem("admin_number", data[m.toLowerCase()] || "01XXXXXXXXX");
             }
             document.getElementById('selectedMethodDisplay').innerText = m + " Fast";
@@ -219,8 +200,6 @@
         window.saveAndProceed = function() {
             const amt = document.getElementById('amountInput').value;
             const userNo = document.getElementById('userNumber').value;
-            
-            // ডাটাবেজ থেকে User ID নেওয়ার জন্য লোকাল স্টোরেজ চেক
             const loggedUserID = localStorage.getItem("userID") || localStorage.getItem("loggedUserID") || "Unknown";
 
             if(amt < 100 || userNo.length < 11) {
@@ -231,14 +210,11 @@
             localStorage.setItem("dep_amt", amt);
             localStorage.setItem("dep_method", selectedMethod);
             localStorage.setItem("sender_num", userNo);
-            
-            // User ID টিকেও সেভ করা হলো যাতে পরবর্তী পেজে কাজে লাগে
             localStorage.setItem("target_user_id", loggedUserID);
             
             window.location.href = "payment_details.html"; 
         }
 
-        // ফর্ম ভ্যালিডেশন
         window.validateForm = function() {
             const amt = document.getElementById('amountInput').value;
             const num = document.getElementById('userNumber').value;
@@ -252,7 +228,6 @@
             }
         }
 
-        // কুইক অ্যামাউন্ট সেট করার ফাংশন
         window.setAmount = function(el, val) {
             document.querySelectorAll('.amount-chip').forEach(c => c.classList.remove('active'));
             el.classList.add('active');
@@ -260,9 +235,7 @@
             window.validateForm();
         }
 
-        // ডিফল্ট কল (শুরুতে নগদ লোড হবে)
         window.onload = () => {
-             // চেক যদি আগে থেকে মেথড সিলেক্ট না থাকে
              const nagadCard = document.querySelector('.method-card.active');
              if(nagadCard) window.selectMethod(nagadCard, 'Nagad');
         };
