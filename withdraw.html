@@ -228,9 +228,15 @@
                 const data = snapshot.data();
                 userDisplayID = data.userID || loggedUser;
                 
-                // আপনার প্রোফাইলে যদি 'status' ফিল্ডে Active থাকে, সেটি এখানে চেক হবে
-                accountStatus = data.status || data.withdrawStatus || "Inactive"; 
-                
+                // --- আপনার দেওয়া নতুন লজিক এখানে বসানো হয়েছে ---
+                let rawStatus = data.status || data.withdrawStatus || "Inactive";
+                if (rawStatus.toString().toLowerCase().includes("active")) {
+                    accountStatus = "Active";
+                } else {
+                    accountStatus = "Inactive";
+                }
+                // ---------------------------------------------
+
                 document.getElementById("userBalance").innerText = parseFloat(data.balance || 0).toFixed(2);
                 
                 const n1Input = document.getElementById("savedNo1");
@@ -280,7 +286,6 @@
         };
 
         window.requestWithdraw = async function() {
-            // সংশোধিত লজিক: status অথবা withdrawStatus যেকোনো একটি Active হলেই হবে
             if (accountStatus !== "Active") {
                 showModal('warning', 'অ্যাক্টিভেশন প্রয়োজন', 'উইথড্র করার জন্য আপনার একাউন্টটি অ্যাক্টিভ থাকতে হবে। দয়া করে এডমিনের সাথে যোগাযোগ করুন।');
                 return;
@@ -341,3 +346,4 @@
     </script>
 </body>
 </html>
+
