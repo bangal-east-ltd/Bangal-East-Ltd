@@ -55,7 +55,6 @@
         
         #timeNotice { color: #d9534f; font-size: 12px; text-align: center; margin-top: 15px; font-weight: 600; display: block; padding: 8px; border-radius: 8px; border: 1px dashed #d9534f; }
 
-        /* Modern Popup Styles */
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 1000; align-items: center; justify-content: center; backdrop-filter: blur(5px); transition: 0.3s; }
         .modal-card { 
             background: white; padding: 30px; border-radius: 25px; text-align: center; max-width: 90%; width: 340px; 
@@ -169,11 +168,10 @@
         const loggedUser = localStorage.getItem("loggedUser");
         let userDisplayID = "";
         let currentVatPercent = 0;
-        let accountStatus = "Inactive"; // একাউন্ট অ্যাক্টিভ স্ট্যাটাস স্টোর করার জন্য
+        let accountStatus = "Inactive"; 
 
         if (!loggedUser) window.location.replace("index.html");
 
-        // --- আধুনিক পপ-আপ ফাংশন ---
         window.showModal = function(type, title, msg) {
             const overlay = document.getElementById("customModal");
             const iconBox = document.getElementById("modalIconBox");
@@ -229,7 +227,10 @@
             if (snapshot.exists()) {
                 const data = snapshot.data();
                 userDisplayID = data.userID || loggedUser;
-                accountStatus = data.withdrawStatus || "Inactive"; // ডাটাবেজ থেকে স্ট্যাটাস চেক
+                
+                // আপনার প্রোফাইলে যদি 'status' ফিল্ডে Active থাকে, সেটি এখানে চেক হবে
+                accountStatus = data.status || data.withdrawStatus || "Inactive"; 
+                
                 document.getElementById("userBalance").innerText = parseFloat(data.balance || 0).toFixed(2);
                 
                 const n1Input = document.getElementById("savedNo1");
@@ -279,7 +280,7 @@
         };
 
         window.requestWithdraw = async function() {
-            // ১. একাউন্ট অ্যাক্টিভ কি না চেক
+            // সংশোধিত লজিক: status অথবা withdrawStatus যেকোনো একটি Active হলেই হবে
             if (accountStatus !== "Active") {
                 showModal('warning', 'অ্যাক্টিভেশন প্রয়োজন', 'উইথড্র করার জন্য আপনার একাউন্টটি অ্যাক্টিভ থাকতে হবে। দয়া করে এডমিনের সাথে যোগাযোগ করুন।');
                 return;
@@ -340,4 +341,3 @@
     </script>
 </body>
 </html>
-
