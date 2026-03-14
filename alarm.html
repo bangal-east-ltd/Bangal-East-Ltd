@@ -7,13 +7,8 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         * { margin:0; padding:0; box-sizing:border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background: #f4f7f6; min-height: 100vh; }
 
-        body {
-            background: #f4f7f6;
-            min-height: 100vh;
-        }
-
-        /* হেডার ডিজাইন */
         .header {
             background: #00ff6a;
             padding: 20px;
@@ -26,18 +21,11 @@
             z-index: 100;
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         }
-        .header a { color: white; text-decoration: none; font-size: 20px; transition: 0.3s; }
-        .header a:hover { opacity: 0.7; }
+        .header a { color: white; text-decoration: none; font-size: 20px; }
         .header h2 { font-size: 20px; font-weight: 600; }
 
         .container { padding: 15px; max-width: 500px; margin: 0 auto; }
-
-        /* নোটিফিকেশন লিস্ট */
-        .notification-list {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        }
+        .notification-list { display: flex; flex-direction: column; gap: 12px; }
 
         .alarm-card {
             background: white;
@@ -57,37 +45,19 @@
         }
 
         .alarm-icon {
-            width: 45px;
-            height: 45px;
+            width: 45px; height: 45px;
             background: #eefdf4;
             border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 18px;
-            color: #00ff6a;
-            flex-shrink: 0;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 18px; color: #00ff6a; flex-shrink: 0;
         }
 
         .alarm-info { flex: 1; }
         .alarm-info h4 { font-size: 15px; color: #333; margin-bottom: 3px; font-weight: 700; }
         .alarm-info p { font-size: 13px; color: #666; line-height: 1.4; }
-        .alarm-time { 
-            font-size: 11px; 
-            color: #aaa; 
-            margin-top: 8px; 
-            display: flex;
-            align-items: center;
-            gap: 5px;
-        }
+        .alarm-time { font-size: 11px; color: #aaa; margin-top: 8px; display: flex; align-items: center; gap: 5px; }
 
-        /* খালি থাকলে দেখাবে */
-        #emptyState {
-            text-align: center;
-            color: #888;
-            margin-top: 100px;
-            display: none;
-        }
+        #emptyState { text-align: center; color: #888; margin-top: 100px; display: none; }
         #emptyState i { font-size: 60px; margin-bottom: 15px; color: #ddd; }
     </style>
 </head>
@@ -100,15 +70,7 @@
 
     <div class="container">
         <div id="notificationList" class="notification-list">
-            <div class="alarm-card">
-                <div class="alarm-icon"><i class="fas fa-wallet"></i></div>
-                <div class="alarm-info">
-                    <h4>সিস্টেম চেক</h4>
-                    <p>নোটিফিকেশন সিস্টেম লোড হচ্ছে...</p>
-                    <div class="alarm-time"><i class="far fa-clock"></i> Just now</div>
-                </div>
             </div>
-        </div>
 
         <div id="emptyState">
             <i class="fas fa-bell-slash"></i>
@@ -118,9 +80,8 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        import { getFirestore, collection, query, where, onSnapshot, orderBy } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+        import { getFirestore, collection, query, where, onSnapshot, orderBy, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-        // আপনার ফায়ারবেস কনফিগ (আগের পেজের মতোই)
         const firebaseConfig = {
             apiKey: "AIzaSyCALYxA2M4BwIXq5KC3VMGsZpAFh8nL3fo",
             authDomain: "bengal-east-company-limited.firebaseapp.com",
@@ -139,28 +100,74 @@
         const notificationList = document.getElementById("notificationList");
         const emptyState = document.getElementById("emptyState");
 
-        // সময় ফরম্যাট করার ফাংশন
+        // --- আপনার অটোমেটিক নোটিফিকেশন ফাংশনগুলো নিচে যুক্ত করা হলো ---
+
+        window.notifyLogin = async function(userId) {
+            await addDoc(collection(db, "notifications"), {
+                title: "লগইন সফল!",
+                message: "আপনার অ্যাকাউন্টে সফলভাবে লগইন করা হয়েছে।",
+                user: userId,
+                timestamp: serverTimestamp(),
+                icon: "fa-sign-in-alt",
+                color: "#28a745"
+            });
+        }
+
+        window.notifyDeposit = async function(userId, amount, bonus) {
+            await addDoc(collection(db, "notifications"), {
+                title: "ডিপোজিট সফল!",
+                message: `আপনার ${amount} টাকা ডিপোজিট সফল হয়েছে। বোনাস পেয়েছেন ${bonus} টাকা।`,
+                user: userId,
+                timestamp: serverTimestamp(),
+                icon: "fa-wallet",
+                color: "#00ff6a"
+            });
+        }
+
+        window.notifyWithdraw = async function(userId, amount) {
+            await addDoc(collection(db, "notifications"), {
+                title: "উইথড্র সফল!",
+                message: `আপনার ${amount} টাকা উইথড্র রিকোয়েস্ট সফলভাবে সম্পন্ন হয়েছে।`,
+                user: userId,
+                timestamp: serverTimestamp(),
+                icon: "fa-check-double",
+                color: "#ffb347"
+            });
+        }
+
+        window.sendGlobalBonusAlert = async function(bonusPercent) {
+            await addDoc(collection(db, "notifications"), {
+                title: "ধামাকা বোনাস অফার!",
+                message: `আজকের ডিপোজিটে পাচ্ছেন ${bonusPercent}% অতিরিক্ত বোনাস!`,
+                user: "all",
+                timestamp: serverTimestamp(),
+                icon: "fa-gift",
+                color: "#ff4b2b"
+            });
+        }
+
+        // --- ডাটা দেখানোর রিয়েল-টাইম ফাংশন ---
+
         function formatTime(timestamp) {
             if (!timestamp) return "Just now";
-            const now = Date.now();
-            const diff = Math.floor((now - timestamp) / 1000);
+            const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+            const now = new Date();
+            const diff = Math.floor((now - date) / 1000);
             
             if (diff < 60) return "Just now";
             if (diff < 3600) return Math.floor(diff / 60) + "m ago";
             if (diff < 86400) return Math.floor(diff / 3600) + "h ago";
-            return new Date(timestamp).toLocaleDateString();
+            return date.toLocaleDateString();
         }
 
-        // রিয়েল-টাইম নোটিফিকেশন চেক (users_notifications কালেকশন থেকে)
         const q = query(
             collection(db, "notifications"), 
-            where("user", "in", [loggedUser, "all"]), // নির্দিষ্ট ইউজার অথবা সবার জন্য
+            where("user", "in", [loggedUser, "all"]),
             orderBy("timestamp", "desc")
         );
 
         onSnapshot(q, (snapshot) => {
             notificationList.innerHTML = "";
-            
             if (snapshot.empty) {
                 emptyState.style.display = "block";
             } else {
@@ -185,8 +192,7 @@
                 });
             }
         }, (error) => {
-            console.log("Error fetching notifications:", error);
-            notificationList.innerHTML = "<p style='text-align:center; color:red;'>ডাটা লোড করতে সমস্যা হয়েছে!</p>";
+            console.log("Error:", error);
         });
     </script>
 </body>
